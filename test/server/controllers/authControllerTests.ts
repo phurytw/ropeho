@@ -1,0 +1,152 @@
+/**
+ * @file Unit test for the authentication controller
+ * @author François Nguyen <https://github.com/lith-light-g>
+ */
+
+/// <reference path="../../typings.d.ts" />
+import { should, use } from "chai";
+import * as chaiAsPromised from "chai-as-promised";
+import * as supertest from "supertest";
+import app from "../../../src/server/app";
+import { Server } from "http";
+import { Express, Request, Response, NextFunction } from "express-serve-static-core";
+import * as express from "express";
+import { stub } from "sinon";
+import { head, filter } from "lodash";
+import { v4 } from "node-uuid";
+import { computeHashSync } from "../../../src/server/accounts/password";
+import { computeToken } from "../../../src/server/accounts/token";
+import { Roles } from "../../../src/enum";
+import config from "../../../src/config";
+import GenericRepository from "../../../src/server/dal/genericRepository";
+import * as passport from "passport";
+should();
+use(chaiAsPromised);
+
+import User = Ropeho.Models.User;
+
+describe("Auth controller", () => {
+    const testApp: Express = express(),
+        port: number = process.env.PORT || 3010,
+        testPassword: string = "123456",
+        users: User[] = [{
+            _id: v4(),
+            name: "User",
+            email: "user@test.com",
+            password: computeHashSync(testPassword).toString("hex"),
+            token: computeToken(),
+            productionIds: [],
+            type: Roles.User
+        }, {
+            _id: v4(),
+            name: "Administrator",
+            email: "admin@test.com",
+            password: computeHashSync(testPassword).toString("hex"),
+            token: computeToken(),
+            productionIds: [],
+            type: Roles.Administrator
+        }, {
+            _id: v4(),
+            name: "New user",
+            email: "new@test.com",
+            password: "",
+            token: computeToken(),
+            productionIds: [],
+            type: Roles.Administrator
+        }],
+        [user, admin, newUser]: User[] = users;
+    let server: Server,
+        agent: supertest.SuperTest<supertest.Test>,
+        getStub: sinon.SinonStub,
+        getByIdStub: sinon.SinonStub;
+    before(async () => {
+        // Set stubs
+        getStub = stub(GenericRepository.prototype, "get", (query: any, projection: any) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
+            const { email, token }: any = query;
+            if (email) {
+                resolve(filter<User>(users, (u: User) => u.email === email));
+                return;
+            }
+            if (token) {
+                // tslint:disable-next-line:possible-timing-attack
+                resolve(filter<User>(users, (u: User) => u.token === token));
+                return;
+            }
+            resolve([]);
+        }));
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string, projection: any) => new Promise<User>((resolve: (value?: User | PromiseLike<User>) => void) => {
+            resolve(head(filter(users, (u: User) => u._id === id)));
+        }));
+
+        // Setting up the server
+        await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
+            testApp.use(app);
+            server = testApp.listen(port, (err: Error) => err ? reject(err) : resolve());
+        });
+
+        agent = supertest(testApp);
+    });
+    beforeEach(() => {
+        getStub.reset();
+        getByIdStub.reset();
+    });
+    after(() => {
+        getStub.restore();
+        getByIdStub.restore();
+        server.close();
+        // Gotta do this because somehow functions used in passport after the first run cannot be stubbed
+        delete require.cache[require.resolve("passport")];
+    });
+    describe("Logging in", () => {
+        describe("With email and password credentials", () => {
+            it("Should reject if post data does not have email or password", () =>
+                agent.post("/api/auth")
+                    .send({ username: user.email, password: testPassword })
+                    .should.eventually.have.property("status", 400));
+            it("Should reject if user is not found", () =>
+                agent.post("/api/auth")
+                    .send({ email: "test@test.com", password: testPassword })
+                    .should.eventually.have.property("status", 401));
+            it("Should reject if password does not match", () =>
+                agent.post("/api/auth")
+                    .send({ email: user.email, password: `${testPassword}test` })
+                    .should.eventually.have.property("status", 401));
+            it("Should reject if the user is not registered", () =>
+                agent.post("/api/auth")
+                    .send({ email: newUser.email, password: testPassword })
+                    .should.eventually.have.property("status", 401));
+        });
+        it("Should accept and create a session otherwise", async () => {
+            const response: supertest.Response = await agent.post("/api/auth")
+                .send({ email: user.email, password: testPassword });
+            response.should.have.property("status", 200);
+            response.should.have.property("header").with.property("set-cookie").with.deep.property("[0]").that.contain("ropeho.sid");
+        });
+    });
+    it("Should log in using Facebook authentication", async () => {
+        const response: supertest.Response = await agent.get("/api/auth/facebook");
+        // Should send to facebook
+        response.should.have.property("status", 302);
+        response.should.have.property("header").with.property("location").that.contains("facebook");
+    });
+    it("Should redirect to admin homepage when Facebook Authentication is successful", async () => {
+        // Stub authenticate
+        const authenticateStub: sinon.SinonStub = stub(passport, "authenticate", () => (req: Request, res: Response, next: NextFunction) => {
+            next();
+        });
+        const response: supertest.Response = await agent.get("/api/auth/facebook?admin=1");
+        response.should.have.property("status", 302);
+        response.should.have.property("header").with.property("location").that.contains(config.hosts.admin);
+        authenticateStub.restore();
+    });
+    it("Should redirect to client homepage when Facebook Authentication is successful", async () => {
+        // Stub authenticate
+        const authenticateStub: sinon.SinonStub = stub(passport, "authenticate", () => (req: Request, res: Response, next: NextFunction) => {
+            next();
+        });
+        const response: supertest.Response = await agent.get("/api/auth/facebook");
+        response.should.have.property("status", 302);
+        response.should.have.property("header").with.property("location").that.contains(config.hosts.client);
+        authenticateStub.restore();
+    });
+});

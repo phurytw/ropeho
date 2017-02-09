@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "es6"
+        ],
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "jsx": "preserve",
+        "pretty": true
+    },
+    "exclude": [
+        "node_modules"  
+    ]
+}

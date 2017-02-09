@@ -1,0 +1,500 @@
+/**
+ * @file Generic repository that manages a Redis database
+ * @author François Nguyen <https://github.com/lith-light-g>
+ */
+
+/// <reference path="../typings.d.ts" />
+import { v4 } from "node-uuid";
+import { map, isArray, forEach, includes, pickBy, values, keys, without, isEmpty, tap, filter, join, uniq, startsWith } from "lodash";
+import * as _ from "lodash";
+import { createClient, RedisClient, Multi } from "redis";
+import * as redis from "redis";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import config from "../../config";
+import { plural, singular } from "pluralize";
+
+import RedisConfiguration = Ropeho.Configuration.RedisConfiguration;
+import IRedisRepositoryOptions = Ropeho.IRedisGenericRepositoryOptions;
+
+type ICombinedRedisOptions = RedisConfiguration & IRedisRepositoryOptions;
+type IDictionary = { [key: string]: string };
+type IIndexes = { [key: string]: boolean };
+
+/**
+ * Generic repository that uses Redis
+ */
+export default class RedisGenericRepository<T extends any> implements Ropeho.IGenericRepository<T> {
+    protected redis: RedisClient;
+    protected indexes: IIndexes;
+    protected idProperty: string;
+    protected pluralizedIdProperty: string;
+    protected namespace: string;
+    /**
+     * Generic repository that uses Redis
+     * @param {ICombinedRedisOptions} options redis repository options
+     */
+    constructor(options: ICombinedRedisOptions);
+    /**
+     * Generic repository that uses Redis
+     * @param {RedisConfiguration&IRedisRepositoryOptions} options Redis repository options
+     */
+    constructor(client: RedisClient, options?: IRedisRepositoryOptions);
+    constructor(clientOrOptions: any, options?: any) {
+        // Client provided
+        // any here is necessary because RedisClient is not a class in the definitions
+        if (clientOrOptions instanceof (redis as any).RedisClient) {
+            this.redis = clientOrOptions;
+            this.indexes = options.indexes || {};
+            this.idProperty = options.idProperty || config.database.defaultIdProperty;
+            this.namespace = options.namespace || "";
+        } else {
+            const { port, host, db, indexes, idProperty, namespace }: RedisConfiguration & IRedisRepositoryOptions = clientOrOptions;
+            this.redis = createClient(port, host, { prefix: namespace || "" });
+            this.indexes = pickBy<IIndexes, IIndexes>(indexes, (isUnique: boolean, index: string) => index !== idProperty);
+            this.idProperty = idProperty || config.database.defaultIdProperty;
+            this.namespace = namespace || "";
+        }
+        this.pluralizedIdProperty = plural(this.idProperty);
+        if (!(this.redis instanceof (redis as any).RedisClient)) {
+            throw new Error("Failed to create Redis client instance");
+        }
+    }
+    /**
+     * Gets all entities
+     * @param {T|T[]} entity Query
+     * @returns {Promise<T[]>} A promise that fulfills with the found entities
+     */
+    get(entity?: T | T[]): Promise<T> | Promise<T[]> {
+        const { idProperty, pluralizedIdProperty }: RedisGenericRepository<T> = this;
+        if (isArray<T>(entity)) {
+            return this.getById(map<T, string>(entity, (e: T) => e[idProperty]));
+        } else if (entity) {
+            return this.getById(entity[idProperty]);
+        } else {
+            // Get all entities
+            return new Promise<T[]>((resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
+                const { redis }: RedisGenericRepository<T> = this;
+                redis.lrange(pluralizedIdProperty, 0, -1, (err: Error, ids: string[]) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        const batch: Multi = (redis as any).batch();
+                        forEach<string>(ids, (id: string) => batch.get(id));
+                        batch.exec((err: Error, results: string[]) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(map<string, T>(results, (result: string) => JSON.parse(result)));
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    }
+    /**
+     * Gets all entities from theirs IDs
+     * @param {string|string[]} _id A string containing the ID or an array of strings containing IDs
+     * @returns {Promise<T>|Promise<T[]>} A promise that fulfills with the found entities
+     */
+    getById(_id: string | string[]): Promise<T> | Promise<T[]> {
+        const { idProperty }: RedisGenericRepository<T> = this;
+        if (isArray<string>(_id)) {
+            return new Promise<T[]>((resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
+                const batch: Multi = (this.redis as any).batch();
+                forEach<string>(_id, (id: string) => batch.get(id));
+                batch.exec((err: Error, results: string[]) => {
+                    if (err) {
+                        reject(err);
+                    } else if (includes<string>(results, null)) {
+                        reject(new Error(`The elements with IDs ${_(_id).without(..._(results).filter((r: string) => r !== null).map<string>((r: string) => (JSON.parse(r) as T)[idProperty]).value()).join(", ").valueOf()} could not be found`));
+                    } else {
+                        resolve(map<string, T>(results, (json: string) => JSON.parse(json)));
+                    }
+                });
+            });
+        } else {
+            return new Promise<T>((resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) =>
+                this.redis.get(_id, (err: Error, result: string) => {
+                    if (err) {
+                        reject(err);
+                    } else if (result === null) {
+                        reject(new Error(`The element with ID ${_id} could not be found`));
+                    } else {
+                        resolve(JSON.parse(result));
+                    }
+                }));
+        }
+    }
+    /**
+     * Creates an entity
+     * If _id is empty a new ID will be assigned
+     * @param {T|T[]} entity The entity to create or an array of entity to create
+     * @param {number|number[]} position The position to be inserted among other entities of the same type. If it's an array its elements represents the positions of the array of entities
+     * @returns {Promise<T>|Promise<T[]>} A promise that fulfills with the newly created elements
+     */
+    create(entity: T | T[]): Promise<T> | Promise<T[]> {
+        const { idProperty, pluralizedIdProperty, redis, indexes  }: RedisGenericRepository<T> = this;
+        // Different implementations for array and non array because of the return type
+        if (isArray<T>(entity)) {
+            return new Promise<T | T[]>((resolve: (value?: T | T[] | PromiseLike<T | T[]>) => void, reject: (reason?: any) => void) => {
+                const multi: Multi = redis.multi();
+                const alreadyExistsBatch: Multi = (redis as any).batch();
+                const existingUniqueKeys: { [key: string]: { id: string, value: any }[] } = {};
+                let existingIds: string[] = [];
+                for (let i: number = 0; i < entity.length; i++) {
+                    const element: T = entity[i];
+                    // Generate ID if ID doesn't have to be generated we must check that it doesn't exist
+                    if (element[idProperty]) {
+                        alreadyExistsBatch.exists(element[idProperty], (err: Error, exists: number) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            if (exists === 1) {
+                                existingIds = [...existingIds, element[idProperty]];
+                            }
+                        });
+                    } else {
+                        element[idProperty] = element[idProperty] || v4();
+                    }
+                    // Secondary indexes
+                    forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
+                        if (isUnique) {
+                            if (!element[property] || isEmpty(element[property])) {
+                                reject(new Error(`Element at index ${i} can not have the property ${property} null or empty`));
+                            }
+                            multi.hset(plural(property), uriFriendlyFormat(element[property]), element[idProperty]);
+                            // Check that the unique constraint is respected
+                            alreadyExistsBatch.hexists(plural(property), uriFriendlyFormat(element[property]), (err: Error, exists: number) => {
+                                if (err) {
+                                    reject(err);
+                                }
+                                if (exists === 1) {
+                                    existingUniqueKeys[property] = isArray<string>(existingUniqueKeys[property]) ?
+                                        [...existingUniqueKeys[property], { id: element[idProperty], value: element[property] }] :
+                                        [{ id: element[idProperty], value: element[property] }];
+                                }
+                            });
+                        } else {
+                            multi.set(`:${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
+                        }
+                    });
+                    multi.set(element[idProperty], JSON.stringify(element))
+                        .rpush(pluralizedIdProperty, element[idProperty]);
+                }
+                alreadyExistsBatch.exec((err: Error, results: string[]) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    // If one of the items or unique keys already exists we cancel the transaction
+                    if (existingIds.length > 0) {
+                        reject(new Error(`There are already entities with IDs ${join(existingIds, ", ")} in the database`));
+                    } else if (_(existingUniqueKeys).values().flatten().value().length > 0) {
+                        reject(new Error(_(existingUniqueKeys).keys().map<string>((property: string) => {
+                            return `There's already a '${property}' with value(s) ${_(existingUniqueKeys[property]).map<string>((data: { id: string, value: any }) => data.value).join(" or ")}`;
+                        }).join(". ")));
+                    } else {
+                        // Everything is valid we can go on !!
+                        multi.exec((err: Error) => err ? reject(err) : resolve(entity.length === 1 ? entity[0] : entity));
+                    }
+                });
+            });
+        } else {
+            return this.create([entity]);
+        }
+    }
+    /**
+     * Updates an entity
+     * @param {T|T[]} entity The entity to update or an array of entity to update
+     * @param {number|number[]} position The position to be inserted among other entities of the same type. If it's an array its elements represents the positions of the array of entities
+     * @returns {Promise<number>} A promise that fulfills the amount of entity successfully updated
+     */
+    update(entity: T | T[]): Promise<number> {
+        const { redis, idProperty, pluralizedIdProperty, indexes }: RedisGenericRepository<T> = this;
+        if (isArray<T>(entity)) {
+            return new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => {
+                const batch: Multi = (redis as any).batch();
+                const indexResults: { [key: string]: any } = {};
+                // We get all ids to see if the desired entity to update exists in the database
+                // If we don't do that it will create a new entity and this is not what we want (or I ??)
+                batch.lrange(pluralizedIdProperty, 0, -1);
+                // We only get unique properties because theirs keys are named after the values
+                // So if the value is updated we need to get the entire Hashset and compared IDs
+                // Non unique properties can be found from theirs IDs so it's not necessary to find them
+                forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
+                    if (isUnique) {
+                        batch.hgetall(plural(property), (err: Error, results: IDictionary) => err ? reject(err) : indexResults[property] = results);
+                    }
+                });
+                batch.exec((err: Error, [ids]: string[][]) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    const multi: Multi = redis.multi();
+                    for (let i: number = 0; i < entity.length; i++) {
+                        const element: T = entity[i];
+                        // If exists check
+                        if (!includes<string>(ids, element[idProperty])) {
+                            reject(`ID ${element[idProperty]} could not be found`);
+                        }
+                        // Secondary indexes operations
+                        forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
+                            if (isUnique) {
+                                if (!element[property] || isEmpty(element[property])) {
+                                    reject(new Error(`The property ${property} can not be null or empty`));
+                                }
+                                multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === element[idProperty]).keys().head())
+                                    .hset(plural(property), uriFriendlyFormat(element[property]), element[idProperty]);
+                            } else {
+                                multi.set(`:${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
+                            }
+                        });
+                        multi.set(element[idProperty], JSON.stringify(element));
+                    }
+                    multi.exec((err: Error) => err ? reject(err) : resolve(entity.length));
+                });
+            });
+        } else if (!isArray<T>(entity)) {
+            return this.update([entity]);
+        } else {
+            return new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => reject(new Error("Entity and position must both be arrays or both not be arrays")));
+        }
+    }
+    /**
+     * Deletes an entity
+     * @param {T|T[]|string|string[]} entity The entity to delete or its ID or an array of entity to delete or theirs IDs
+     * @returns {Promise<number>} A promise that gives the amount of entity successfully deleted
+     */
+    delete(entity: T | T[] | string | string[]): Promise<number> {
+        const { redis, idProperty, pluralizedIdProperty, indexes }: RedisGenericRepository<T> = this;
+        if (isArray(entity)) {
+            if (entity.length > 0) {
+                if (typeof entity[0] === "string") {
+                    return new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => {
+                        const batch: Multi = (redis as any).batch();
+                        const indexResults: { [key: string]: any } = {};
+                        // We only need unique secondary indexes as non unique indexes can be found from the ID
+                        forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
+                            if (isUnique) {
+                                batch.hgetall(plural(property), (err: Error, results: IDictionary) => err ? reject(err) : indexResults[property] = results);
+                            }
+                        });
+                        batch.exec((err: Error) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            const multi: Multi = redis.multi();
+                            let deletedElements: number = 0;
+                            forEach<string>(entity as string[], (e: string) => {
+                                // Delete the entity and its ID
+                                multi.del(e, (err: Error, isDeleted: number) => err ? reject(err) : deletedElements += isDeleted)
+                                    .lrem(pluralizedIdProperty, 0, e);
+                                forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
+                                    if (isUnique) {
+                                        multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === e).keys().head());
+                                    } else {
+                                        multi.del(`:${plural(property)}:${e}`);
+                                    }
+                                });
+                            });
+                            multi.exec((err: Error) => err ? reject(err) : resolve(deletedElements));
+                        });
+                    });
+                } else {
+                    return this.delete(map<T, string>(entity as T[], (e: T) => e[idProperty]));
+                }
+            } else {
+                return new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => resolve(0));
+            }
+        } else if (typeof entity === "string") {
+            return this.delete([entity as T]);
+        } else {
+            return this.delete([entity[idProperty]]);
+        }
+    }
+    /**
+     * Get or set order of entities within the collection
+     * Entities not targetted by the new order will be appended at the end of the array
+     * @param {string[]} order array of IDs, items will be ordered according to the array indexes. If not provided the promise will fulfill with the current order
+     * @returns {Promise<string[]>} A promise
+     */
+    order(order?: string[]): Promise<string[]> {
+        const { pluralizedIdProperty, redis }: RedisGenericRepository<T> = this;
+        return new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+            this.redis.lrange(pluralizedIdProperty, 0, -1, (err: Error, ids: string[]) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    if (isArray<string>(order)) {
+                        let multi: Multi = redis.multi().del(pluralizedIdProperty),
+                            existingId: string[] = [];
+                        forEach<string>(order, (id: string) => multi.exists(id));
+                        multi.exec((err: Error, [hasDeleted, ...results]: number[]) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            multi = redis.multi();
+                            for (let i: number = 0; i < results.length; i++) {
+                                const id: string = order[i];
+                                if (results[i] === 1) {
+                                    multi.rpush(pluralizedIdProperty, id);
+                                    existingId = [...existingId, id];
+                                }
+                            }
+                            const newOrder: string[] = [...existingId, ..._(ids).without(...existingId).tap((ids: string[]) => forEach<string>(ids, (id: string) => multi.rpush(pluralizedIdProperty, id))).value()];
+                            multi.exec((err: Error) => err ? reject(err) : resolve(newOrder));
+                        });
+                    } else {
+                        resolve(ids);
+                    }
+                }
+            });
+        });
+    }
+    /**
+     * Search entities
+     * @param {IDictionary} filters search criterias
+     * @param {number} range amount of items to look up (defaults to 10)
+     * @param {Promise<T[]>} A promise that fulfills with the found entities
+     */
+    search(filters: IDictionary, range: number = 10): Promise<T[]> {
+        return new Promise<T[]>(async (resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
+            const filterKeys: string[] = keys(filters);
+            if (filterKeys.length === 0) {
+                resolve([]);
+            } else {
+                const { redis, indexes }: RedisGenericRepository<T> = this;
+                let ids: string[] = [];
+                // Promise hscan
+                const hscan: (key: string, searchString: string, limit?: number) => Promise<string[]> =
+                    (key: string, searchString: string, limit: number = 10): Promise<string[]> =>
+                        new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+                            redis.hscan(plural(key), 0, "MATCH", `*${uriFriendlyFormat(searchString)}*`, "COUNT", limit, (err: Error, [cursor, rest]: string[][]) => {
+                                if (err) {
+                                    reject(err);
+                                }
+                                resolve(filter<string>(rest, (id: string, i: number) => i % 2 === 1));
+                            });
+                        });
+                // Promise scan
+                const scan: (key: string, searchString: string, limit?: number) => Promise<string[]> =
+                    (key: string, searchString: string, limit: number = 10): Promise<string[]> =>
+                        new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+                            let ids: string[] = [];
+                            redis.scan(0, "MATCH", `${isEmpty(this.namespace) ? "" : this.namespace}${plural(key)}:*`, "COUNT", limit, (err: Error, [cursor, rest]: string[][]) => {
+                                const batch: Multi = (redis as any).batch();
+                                forEach<string>(rest, (id: string) =>
+                                    batch.get(id.substring(this.namespace.length), (err: Error, value: string) => {
+                                        if (err) {
+                                            reject(err);
+                                        }
+                                        if (value && includes(value, searchString)) {
+                                            ids = [...ids, id.split(":")[isEmpty(this.namespace) ? 1 : 2]];
+                                        }
+                                    }));
+                                batch.exec((err: Error) => err ? reject(err) : resolve(ids));
+                            });
+                        });
+                for (const key of filterKeys) {
+                    const searchString: string = filters[key];
+                    switch (indexes[key]) {
+                        case true:
+                            ids = [...ids, ...(await hscan(key, searchString))];
+                            break;
+                        case false:
+                            ids = [...ids, ...(await scan(key, searchString))];
+                            break;
+                        default:
+                            reject(new Error(`Can not search by ${key}`));
+                            break;
+                    }
+                }
+                (this.getById(
+                    _(ids)
+                        .uniq()
+                        .filter((id: string) =>
+                            filter<string>(ids, (id2: string) => id2 === id).length === filterKeys.length).value()) as Promise<T[]>)
+                    .then((entities: T[]) => resolve(entities), (error: Error) => reject(error));
+            }
+        });
+    }
+    /**
+     * Rebuild indexes
+     * WARNING: This blocks the database for the keys operation !!
+     * @param {string[]} order optional new order
+     * @returns {Promise<void>} A nice promise
+     */
+    rebuildIndexes(order?: string[]): Promise<void> {
+        return new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
+            const { redis, indexes, idProperty, pluralizedIdProperty }: RedisGenericRepository<T> = this;
+            const smartGet: (key: string) => Promise<any> =
+                (key: string): Promise<any> => new Promise<any>((resolve: (value?: any | PromiseLike<any>) => void, reject: (reason?: any) => void) => {
+                    redis.type(key, (err: Error, type: string) => {
+                        if (err) {
+                            reject(err);
+                        }
+                        switch (type) {
+                            case "string":
+                                redis.get(key, (err: Error, data: string) => err ? reject(err) : resolve(data));
+                                break;
+                            case "list":
+                                redis.lrange(key, 0, -1, (err: Error, data: string[]) => err ? reject(err) : resolve(data));
+                                break;
+                            case "set":
+                                redis.smembers(key, (err: Error, data: string[]) => err ? reject(err) : resolve(data));
+                                break;
+                            case "zset":
+                                redis.zrange(key, 0, -1, (err: Error, data: string[]) => err ? reject(err) : resolve(data));
+                                break;
+                            case "hash":
+                                redis.hgetall(key, (err: Error, data: { [key: string]: string }) => err ? reject(err) : resolve(data));
+                                break;
+                            default:
+                                reject(new TypeError(`Invalid type ${type} for key ${key} (but how ??)`));
+                                break;
+                        }
+                    });
+                });
+            redis.keys("*", async (err: Error, items: string[]) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    let entityIds: string[] = [];
+                    const allKeys: string[] = [..._(indexes).keys().map((key: string) => plural(key)).value()];
+                    // Since we can't overwrite values without searching its index it's easier to rewrite the whole list
+                    const multi: Multi = redis.multi().del(pluralizedIdProperty);
+                    forEach<string>(items, (id: string) => {
+                        id = id.substring(this.namespace.length);
+                        for (const index of allKeys) {
+                            if (startsWith(id, index)) {
+                                return true;
+                            }
+                        }
+                        multi.rpush(pluralizedIdProperty, id);
+                        entityIds = [...entityIds, id];
+                    });
+                    for (const id of entityIds) {
+                        const entity: T = JSON.parse(await smartGet(id));
+                        forEach<string>(allKeys, (key: string) => {
+                            const property: string = singular(key);
+                            if (indexes[property]) {
+                                multi.hset(key, uriFriendlyFormat(entity[property]), entity[idProperty]);
+                            } else {
+                                multi.set(`${key}:${entity[idProperty]}`, uriFriendlyFormat(entity[property]));
+                            }
+                        });
+                    }
+                    multi.exec((err: Error) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            this.order(order).then(() => resolve(), (err: Error) => reject(err));
+                        }
+                    });
+                }
+            });
+        });
+    }
+}
+
+// Redis is secretly hurting my feelings and my butthole

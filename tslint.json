@@ -1,0 +1,146 @@
+{
+    "rulesDirectory": [
+        "node_modules/tslint-microsoft-contrib"
+    ],
+    "rules": {
+        "class-name": true,
+        "comment-format": [
+            true,
+            "check-space"
+        ],
+        "indent": [
+            true,
+            "spaces"
+        ],
+        "no-duplicate-variable": true,
+        "no-eval": true,
+        "no-internal-module": true,
+        "no-trailing-whitespace": true,
+        "no-unsafe-finally": true,
+        "no-var-keyword": true,
+        "one-line": [
+            true,
+            "check-open-brace",
+            "check-whitespace"
+        ],
+        "quotemark": [
+            true,
+            "double"
+        ],
+        "semicolon": [
+            true,
+            "always"
+        ],
+        "triple-equals": true,
+        "typedef-whitespace": [
+            true,
+            {
+                "call-signature": "nospace",
+                "index-signature": "nospace",
+                "parameter": "nospace",
+                "property-declaration": "nospace",
+                "variable-declaration": "nospace"
+            }
+        ],
+        "variable-name": [
+            true,
+            "ban-keywords"
+        ],
+        "whitespace": [
+            true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-separator",
+            "check-type"
+        ],
+        "adjacent-overload-signatures": true,
+        "only-arrow-functions": [
+            true
+        ],
+        "typedef": [
+            true,
+            "call-signature",
+            "parameter",
+            "arrow-parameter",
+            "property-declaration",
+            "variable-declaration",
+            "member-variable-declaration"
+        ],
+        "curly": true,
+        "no-conditional-assignment": true,
+        "no-console": [
+            true,
+            "log",
+            "error"
+        ],
+        "no-construct": true,
+        "no-debugger": true,
+        "no-empty": true,
+        "eofline": true,
+        "linebreak-style": [
+            true,
+            "CRLF"
+        ],
+        "arrow-parens": true,
+        "jsdoc-format": true,
+        "no-angle-bracket-type-assertion": true,
+        "no-consecutive-blank-lines": [
+            true
+        ],
+        // tslint-microsoft-contrib
+        "chai-prefer-contains-to-index-of": true,
+        "chai-vague-errors": true,
+        "function-name": [
+            true
+        ],
+        "insecure-random": true,
+        "missing-jsdoc": true,
+        "mocha-unneeded-done": true,
+        "no-banned-terms": true,
+        "no-constant-condition": true,
+        "no-delete-expression": true,
+        "no-duplicate-case": true,
+        "no-empty-interfaces": true,
+        "no-empty-line-after-opening-brace": true,
+        "no-for-in": true,
+        "no-function-expression": true,
+        "no-http-string": true,
+        "no-regex-spaces": true,
+        "no-single-line-block-comment": true,
+        "no-sparse-arrays": true,
+        "no-stateless-class": true,
+        "no-suspicious-comment": true,
+        "no-typeof-undefined": true,
+        "no-unnecessary-bind": true,
+        "no-unnecessary-field-initialization": true,
+        "no-unnecessary-local-variable": true,
+        "no-unnecessary-override": true,
+        "no-unnecessary-semicolons": true,
+        "no-unsupported-browser-code": true,
+        "no-unused-imports": true,
+        "no-with-statement": true,
+        "no-var-self": true,
+        "possible-timing-attack": true,
+        "prefer-array-literal": [
+            true,
+            {
+                "allow-type-parameters": true
+            }
+        ],
+        "prefer-const": true,
+        "react-a11y-event-has-role": true,
+        "react-a11y-image-button-has-alt": true,
+        "react-a11y-img-has-alt": true,
+        "react-a11y-lang": true,
+        "react-a11y-anchors": true,
+        "react-a11y-meta": true,
+        "react-a11y-tabindex-no-positive": true,
+        "react-a11y-titles": true,
+        "react-anchor-blank-noopener": true,
+        "react-this-binding-issue": true,
+        "react-unused-props-and-state": true,
+        "underscore-consistent-invocation": true,
+        "valid-typeof": true
+    }
+}
