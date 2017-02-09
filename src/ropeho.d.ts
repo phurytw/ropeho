@@ -97,10 +97,6 @@ declare namespace Ropeho {
             _id?: string;
             /** Category's name */
             name?: string;
-            /** Normalized name */
-            normalizedName?: string;
-            /** Position in the list */
-            position?: number;
             /** Productions affected to this category */
             productions?: Production[];
             /** Media shown up in the list */
@@ -290,6 +286,11 @@ declare namespace Ropeho {
             dest: string;
             force?: boolean;
         }
+    }
+
+    interface IRESTQuery {
+        [key: string]: string;
+        fields: string;
     }
 
     interface IGenericRepository<T> {

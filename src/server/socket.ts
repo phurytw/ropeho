@@ -10,8 +10,7 @@ import fetch from "node-fetch";
 import { Response } from "node-fetch";
 import { SocketState, MediaTypes } from "../enum";
 import mediaManager from "./media/mediaManager";
-import genericRepository from "./dal/nedbGenericRepository";
-import { productionCollection } from "./dal/dbInstance";
+import genericRepository from "./dal/genericRepository";
 import { map, filter, flatten, sumBy } from "lodash";
 import * as _ from "lodash";
 import config from "../config";
@@ -25,7 +24,10 @@ import Production = Ropeho.Models.Production;
 import Source = Ropeho.Models.Source;
 import Media = Ropeho.Models.Media;
 
-const productionRepository: Ropeho.IGenericRepository<Production> = new genericRepository<Production>(productionCollection);
+const productionRepository: Ropeho.IGenericRepository<Production> = new genericRepository<Production>({
+    ...config.redis,
+    ...config.database.productions
+});
 const redisClient: redis.RedisClient = redis.createClient(config.redis);
 const chunkSize: number = config.media.chunkSize;
 const authPath: string = `https://localhost:${process.env.PORT || 8000}/auth`;

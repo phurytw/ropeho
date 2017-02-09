@@ -25,7 +25,6 @@ import homeRoutes from "./controllers/home";
 import apiRoutes from "./controllers/index";
 
 // User
-import IRedisGenericRepositoryOptions = Ropeho.IRedisGenericRepositoryOptions;
 import IGenericRepository = Ropeho.IGenericRepository;
 import User = Ropeho.Models.User;
 
@@ -41,7 +40,7 @@ passport.use(new LocalStrategy({
         done(null, false, { message: `Email (${email}) is not valid` });
     } else {
         try {
-            const user: User = await userRepository.get({ email: normalizeEmail(email) });
+            const [user]: User[] = await userRepository.search({ email: normalizeEmail(email) as string });
             if (!user) {
                 done(null, false, { message: `No user found for ${email}` });
             } else if (!user.password) {
@@ -65,7 +64,7 @@ passport.use("facebook", new FacebookStrategy({
     callbackURL: ""
 }, async (acessToken: string, refreshToken: string, profile: passport.Profile, done: (error: any, user?: any) => void) => {
     try {
-        let user: User = await userRepository.get({ facebookId: profile.id });
+        let [user]: User[] = await userRepository.search({ facebookId: profile.id });
         const name: string = `${profile.name.givenName} ${profile.name.middleName} ${profile.name.familyName}`;
         if (!user) {
             user = await userRepository.create({

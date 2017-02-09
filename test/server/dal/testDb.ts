@@ -22,7 +22,6 @@ const [categoryA, categoryB]: Category[] = [
     {
         _id: v4(),
         name: "Category A",
-        position: 0,
         banner: {
             type: MediaTypes.Image,
             sources: [{
@@ -33,7 +32,6 @@ const [categoryA, categoryB]: Category[] = [
     {
         _id: v4(),
         name: "Category B",
-        position: 1,
         banner: {
             type: MediaTypes.Image,
             sources: [{
@@ -300,9 +298,6 @@ export const presentations: Container[] = [
         ]
     }
 ];
-// Automatically set normalized names
-forEach<{ name?: string, normalizedName?: string; }>([...categories, ...productions], (item: { name?: string, normalizedName?: string }) =>
-    assign<{ name?: string, normalizedName?: string; }, { name?: string, normalizedName?: string; }>(item, { normalizedName: uriFriendlyFormat(item.name) }));
 
 /** Initializes your collections with test data
  * @param categoryCollection Collection containing categories

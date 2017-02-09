@@ -8,7 +8,8 @@ import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "node-uuid";
-import { isArray, filter, head, map } from "lodash";
+import { isArray, filter, head, map, includes, forEach } from "lodash";
+import * as _ from "lodash";
 import GenericRepository from "../../../src/server/dal/genericRepository";
 import { Server } from "http";
 import * as express from "express";
@@ -21,6 +22,7 @@ import { computeToken } from "../../../src/server/accounts/token";
 import { Roles } from "../../../src/enum";
 import * as passport from "passport";
 import mailer from "../../../src/server/helpers/mailer";
+import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
 should();
 use(sinonChai);
 
@@ -80,32 +82,40 @@ describe("User controller", () => {
         deleteStub: sinon.SinonStub,
         getStub: sinon.SinonStub,
         getByIdStub: sinon.SinonStub,
+        searchStub: sinon.SinonStub,
         sendMailStub: sinon.SinonStub,
         actuallySendMail: boolean = false,
         middleware: RequestHandler,
-
         reqUser: User;
     before(async () => {
         // Stub the repository class methods
         createStub = stub(GenericRepository.prototype, "create").returnsArg(0);
-        updateStub = stub(GenericRepository.prototype, "update", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        deleteStub = stub(GenericRepository.prototype, "delete", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        getStub = stub(GenericRepository.prototype, "get", (query: any, projection: any) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
-            query = query || {};
-            const { email, token }: any = query;
-            if (email) {
-                resolve(filter<User>(users, (u: User) => u.email === email));
-                return;
+        updateStub = stub(GenericRepository.prototype, "update", (params: User | User[]) => params ? (isArray(params) ? params.length : 1) : 0);
+        deleteStub = stub(GenericRepository.prototype, "delete", (params: User | User[] | string | string[]) => params ? (isArray(params) ? params.length : 1) : 0);
+        getStub = stub(GenericRepository.prototype, "get", (entities: User | User[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+            if (!entities || (entities as User[]).length === 0) {
+                resolve(users);
+            } else {
+                resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
-            if (token) {
-                // tslint:disable-next-line:possible-timing-attack
-                resolve(filter<User>(users, (u: User) => u.token === token));
-                return;
-            }
-            resolve(users);
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string, projection: any) => new Promise<User>((resolve: (value?: User | PromiseLike<User>) => void) => {
-            resolve(head(filter(users, (u: User) => u._id === id)));
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+            if (isArray<string>(id)) {
+                resolve(filter(users, (u: User) => includes<string>(id, u._id)));
+            } else {
+                resolve(_(users).filter((u: User) => u._id === id).head());
+            }
+        }));
+        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
+            if (filters) {
+                forEach<boolean>(config.database.users.indexes, (isUnique: boolean, index: string) => {
+                    if (filters[index]) {
+                        resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
+                    }
+                });
+            } else {
+                resolve([]);
+            }
         }));
         sendMailStub = (() => {
             const original: Function = mailer.sendMail.bind(mailer),
@@ -145,6 +155,7 @@ describe("User controller", () => {
         getStub.reset();
         getByIdStub.reset();
         sendMailStub.reset();
+        searchStub.reset();
     });
     after(() => {
         server.close();
@@ -154,6 +165,7 @@ describe("User controller", () => {
         getStub.restore();
         getByIdStub.restore();
         sendMailStub.restore();
+        searchStub.restore();
     });
     describe("Creating an user", () => {
         it("Should reject if no email is specified", async () => {
@@ -327,17 +339,17 @@ describe("User controller", () => {
         it("Should returns matched users", async () => {
             reqUser = admin;
             const response: supertest.Response = await agent.get("/api/users")
-                .query({ fields: { email: user.email } });
+                .query({ email: user.email });
             response.should.have.property("status", 200);
             response.should.have.property("body").deep.equal([user]);
         });
         it("Should returns users with the desired format", async () => {
             reqUser = admin;
-            const projection: Object = { email: "1" },
+            const fields: Object = "email",
                 response: supertest.Response = await agent.get("/api/users")
-                    .query({ projection });
+                    .query({ fields });
             response.should.have.property("status", 200);
-            getStub.should.have.been.calledWith(undefined, projection);
+            response.should.have.property("body").deep.equal(map<User, User>(users, (u: User) => ({ email: u.email })));
         });
     });
     describe("Getting a user by ID", () => {
@@ -354,11 +366,11 @@ describe("User controller", () => {
         });
         it("Should returns users with the desired format", async () => {
             reqUser = admin;
-            const projection: Object = { email: "1" },
+            const fields: Object = "email",
                 response: supertest.Response = await agent.get(`/api/users/${user._id}`)
-                    .query({ projection });
+                    .query({ fields });
             response.should.have.property("status", 200);
-            getByIdStub.should.have.been.calledWith(user._id, projection);
+            response.should.have.property("body").deep.equal({ email: user.email });
         });
     });
     describe("Updating a user", () => {

@@ -9,7 +9,7 @@ import * as express from "express";
 import GenericRepository from "../dal/genericRepository";
 import { v4 } from "node-uuid";
 import { isEmail, normalizeEmail } from "validator";
-import { isEmpty } from "lodash";
+import { isEmpty, isString, keys, map, pickBy, includes } from "lodash";
 import { computeHash } from "../accounts/password";
 import { computeToken, isTokenValid } from "../accounts/token";
 import { isAdmin } from "../accounts/authorize";
@@ -27,56 +27,81 @@ const userRepository: IGenericRepository<User> = new GenericRepository<User>({
     ...config.database.users
 });
 
-router.get("/", isAdmin, async (req: Request, res: Response) => {
-    try {
-        res.status(200).send(await userRepository.get(req.query.fields, req.query.projection));
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-router.get("/:id", isAdmin, async (req: Request, res: Response) => {
-    try {
-        res.status(200).send(await userRepository.getById(req.params.id, req.query.projection));
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-router.post("/", isAdmin, async (req: Request, res: Response) => {
-    try {
-        // Check if email is valid
-        let { email }: User = req.body;
-        const { name }: User = req.body;
-        if (!email || !isEmail(email)) {
-            res.status(400).send("User does not have a valid email");
-            return;
+router.get("/",
+    isAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            const { query }: Request = req;
+            const fields: string[] = isString(query.fields) ? map<string, string>(query.fields.split(","), (f: string) => f.trim()) : [];
+            let found: User[];
+            delete query.fields;
+            // Fetching
+            if (keys(query).length > 0) {
+                found = await userRepository.search(query);
+            } else {
+                found = await userRepository.get() as User[];
+            }
+            // Removing unwanted fields
+            if (!isEmpty(fields)) {
+                found = map<User, User>(found, (c: User) => pickBy<User, User>(c, (value: any, key: string) => includes(fields, key)));
+            }
+            res.status(200).send(found);
+        } catch (error) {
+            res.status(500).send(error.message);
         }
-        email = normalizeEmail(email) as string;
-        // Check if email is in use
-        let [user]: User[] = await userRepository.search({ email });
-        if (user) {
-            res.status(401).send(`${email} is already used`);
-            return;
+    });
+
+router.get("/:id",
+    isAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            const fields: string[] = isString(req.query.fields) ? map<string, string>(req.query.fields.split(","), (f: string) => f.trim()) : [];
+            let found: User = await userRepository.getById(req.params.id);
+            // Removing unwanted fields
+            if (!isEmpty(fields)) {
+                found = pickBy<User, User>(found, (value: any, key: string) => includes(fields, key));
+            }
+            res.status(200).send(found);
+        } catch (error) {
+            res.status(500).send(error.message);
         }
-        user = { email, name };
-        // ID
-        user._id = user._id || v4();
-        // Invitation token
-        user.token = computeToken();
-        user = await userRepository.create(user);
-        // Send invitation email
-        await mailer.sendMail({
-            ...config.mailer.mailOptions,
-            to: user.email,
-            text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.hosts.client}/register/${user.token}`,
-            html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.hosts.client })
-        });
-        res.status(200).send(user);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
+    });
+
+router.post("/",
+    isAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            // Check if email is valid
+            let user: User = req.body,
+                { email }: User = user;
+            if (!email || !isEmail(email)) {
+                res.status(400).send("User does not have a valid email");
+                return;
+            }
+            email = normalizeEmail(email) as string;
+            // Check if email is in use
+            const [found]: User[] = await userRepository.search({ email });
+            if (found) {
+                res.status(401).send(`${email} is already used`);
+                return;
+            }
+            // ID
+            user._id = user._id || v4();
+            // Invitation token
+            user.token = computeToken();
+            user = await userRepository.create(user);
+            // Send invitation email
+            await mailer.sendMail({
+                ...config.mailer.mailOptions,
+                to: user.email,
+                text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.hosts.client}/register/${user.token}`,
+                html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.hosts.client })
+            });
+            res.status(200).send(user);
+        } catch (error) {
+            res.status(500).send(error.message);
+        }
+    });
 
 router.post("/register/:token", async (req: Request, res: Response) => {
     try {
@@ -164,30 +189,34 @@ router.get("/register/:token/facebook", (req: Request, res: Response, next: Next
         }
     });
 
-router.put("/:id", isAdmin, async (req: Request, res: Response) => {
-    try {
-        const nUpdated: number = await userRepository.update(req.body);
-        if (nUpdated === 0) {
-            res.status(404).send(`User ${req.params.id} could not be found`);
-        } else {
-            res.status(200).send(req.body);
+router.put("/:id",
+    isAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            const nUpdated: number = await userRepository.update(req.body);
+            if (nUpdated === 0) {
+                res.status(404).send(`User ${req.params.id} could not be found`);
+            } else {
+                res.status(200).send(req.body);
+            }
+        } catch (error) {
+            res.status(500).send(error.message);
         }
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
+    });
 
-router.delete("/:id", isAdmin, async (req: Request, res: Response) => {
-    try {
-        const nDeleted: number = await userRepository.delete(req.params.id);
-        if (nDeleted === 0) {
-            res.status(404).send(`User ${req.params.id} could not be found`);
-        } else {
-            res.status(200).send();
+router.delete("/:id",
+    isAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            const nDeleted: number = await userRepository.delete(req.params.id);
+            if (nDeleted === 0) {
+                res.status(404).send(`User ${req.params.id} could not be found`);
+            } else {
+                res.status(200).send();
+            }
+        } catch (error) {
+            res.status(500).send(error.message);
         }
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
+    });
 
 export default router;

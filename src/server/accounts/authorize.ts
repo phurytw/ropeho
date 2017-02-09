@@ -69,8 +69,12 @@ export const isFacebook: (req: Request, res: Response, next: NextFunction) => vo
  */
 export const deserializeCookie: (cookie: string) => Promise<string> =
     (cookie: string): Promise<string> => new Promise<string>((resolve: (value?: string | PromiseLike<string>) => void, reject: (reason?: any) => void) => {
+        cookie = decodeURIComponent(cookie);
         if (cookie.substr(0, 2) === "s:") {
-            redis.get(`sess:${unsign(cookie.slice(2), config.session.secret)}`, (err: Error, res: Express.Session): void => err ? reject(err) : resolve(res["passport"]["user"]));
+            redis.get(`sess:${unsign(cookie.slice(2), config.session.secret)}`, (err: Error, res: string): void => {
+                const parsed: Express.Session = JSON.parse(res);
+                err ? reject(err) : resolve(parsed["passport"]["user"]);
+            });
         } else {
             reject();
         }

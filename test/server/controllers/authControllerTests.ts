@@ -12,7 +12,8 @@ import { Server } from "http";
 import { Express, Request, Response, NextFunction } from "express-serve-static-core";
 import * as express from "express";
 import { stub } from "sinon";
-import { head, filter } from "lodash";
+import { head, filter, isArray, includes, forEach } from "lodash";
+import * as _ from "lodash";
 import { v4 } from "node-uuid";
 import { computeHashSync } from "../../../src/server/accounts/password";
 import { computeToken } from "../../../src/server/accounts/token";
@@ -20,6 +21,8 @@ import { Roles } from "../../../src/enum";
 import config from "../../../src/config";
 import GenericRepository from "../../../src/server/dal/genericRepository";
 import * as passport from "passport";
+import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
+
 should();
 use(chaiAsPromised);
 
@@ -58,24 +61,34 @@ describe("Auth controller", () => {
     let server: Server,
         agent: supertest.SuperTest<supertest.Test>,
         getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub;
+        getByIdStub: sinon.SinonStub,
+        searchStub: sinon.SinonStub;
     before(async () => {
         // Set stubs
-        getStub = stub(GenericRepository.prototype, "get", (query: any, projection: any) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
-            const { email, token }: any = query;
-            if (email) {
-                resolve(filter<User>(users, (u: User) => u.email === email));
-                return;
+        getStub = stub(GenericRepository.prototype, "get", (entities: User | User[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+            if (!entities || (entities as User[]).length === 0) {
+                resolve(users);
+            } else {
+                resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
-            if (token) {
-                // tslint:disable-next-line:possible-timing-attack
-                resolve(filter<User>(users, (u: User) => u.token === token));
-                return;
-            }
-            resolve([]);
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string, projection: any) => new Promise<User>((resolve: (value?: User | PromiseLike<User>) => void) => {
-            resolve(head(filter(users, (u: User) => u._id === id)));
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+            if (isArray<string>(id)) {
+                resolve(filter(users, (u: User) => includes<string>(id, u._id)));
+            } else {
+                resolve(_(users).filter((u: User) => u._id === id).head());
+            }
+        }));
+        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
+            if (filters) {
+                forEach<boolean>(config.database.users.indexes, (isUnique: boolean, index: string) => {
+                    if (filters[index]) {
+                        resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
+                    }
+                });
+            } else {
+                resolve([]);
+            }
         }));
 
         // Setting up the server
@@ -89,10 +102,12 @@ describe("Auth controller", () => {
     beforeEach(() => {
         getStub.reset();
         getByIdStub.reset();
+        searchStub.reset();
     });
     after(() => {
         getStub.restore();
         getByIdStub.restore();
+        searchStub.restore();
         server.close();
         // Gotta do this because somehow functions used in passport after the first run cannot be stubbed
         delete require.cache[require.resolve("passport")];
