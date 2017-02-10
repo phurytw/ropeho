@@ -9,8 +9,6 @@ import { v4 } from "node-uuid";
 import { MediaTypes, Roles, PresentationTypes } from "../../../src/enum";
 import { computeHashSync } from "../../../src/server/accounts/password";
 import { computeToken } from "../../../src/server/accounts/token";
-import { uriFriendlyFormat } from "../../../src/server/helpers/uriFriendlyFormat";
-import { assign, forEach } from "lodash";
 
 import Category = Ropeho.Models.Category;
 import Production = Ropeho.Models.Production;
@@ -23,9 +21,11 @@ const [categoryA, categoryB]: Category[] = [
         _id: v4(),
         name: "Category A",
         banner: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "cata_src"
             }]
         }
     },
@@ -33,9 +33,11 @@ const [categoryA, categoryB]: Category[] = [
         _id: v4(),
         name: "Category B",
         banner: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "catb_src"
             }]
         }
     }
@@ -51,44 +53,58 @@ const [productionA, productionB, productionC]: Production[] = [
         enabled: true,
         category_id: categoryA._id,
         banner: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodaban_src"
             }]
         },
         background: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodabg_src"
             }]
         },
         medias: [
             {
+                _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "proda0_0_src"
                 }],
                 visibility: true
             },
             {
+                _id: v4(),
                 type: MediaTypes.Video,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "proda1_0_src"
                 }, {
-                    src: "src"
+                    _id: v4(),
+                    src: "proda1_1_src"
                 }, {
-                    src: "src"
+                    _id: v4(),
+                    src: "proda1_2_src"
                 }],
                 visibility: true
             },
             {
+                _id: v4(),
                 type: MediaTypes.Slideshow,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "proda2_0_src"
                 }, {
-                    src: "src"
+                    _id: v4(),
+                    src: "proda2_1_src"
                 }, {
-                    src: "src"
+                    _id: v4(),
+                    src: "proda2_2_src"
                 }],
                 visibility: true,
                 delay: 5000
@@ -103,29 +119,37 @@ const [productionA, productionB, productionC]: Production[] = [
         enabled: false,
         category_id: categoryB._id,
         banner: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodbban_src"
             }]
         },
         background: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodbbg_src"
             }]
         },
         medias: [
             {
+                _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "prodb0_0_src"
                 }],
                 visibility: true
             },
             {
+                _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "prodb1_0_src"
                 }],
                 visibility: true
             }
@@ -139,29 +163,37 @@ const [productionA, productionB, productionC]: Production[] = [
         enabled: false,
         category_id: categoryB._id,
         banner: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodcban_src"
             }]
         },
         background: {
+            _id: v4(),
             type: MediaTypes.Image,
             sources: [{
-                src: "src"
+                _id: v4(),
+                src: "prodcbg_src"
             }]
         },
         medias: [
             {
+                _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "prodc0_0_src"
                 }],
                 visibility: true
             },
             {
+                _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
-                    src: "src"
+                    _id: v4(),
+                    src: "prodc1_0_src"
                 }],
                 visibility: true
             }
@@ -198,16 +230,20 @@ export const presentations: Container[] = [
         presentations: [
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "pream_src"
                     }]
                 },
                 mainText: "Text",
                 alternateMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preaa_src"
                     }]
                 },
                 alternateText: "Text",
@@ -221,16 +257,20 @@ export const presentations: Container[] = [
         presentations: [
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "prebm_src"
                     }]
                 },
                 mainText: "Text",
                 alternateMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preba_src"
                     }]
                 },
                 alternateText: "Text",
@@ -238,16 +278,20 @@ export const presentations: Container[] = [
             },
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "precm_src"
                     }]
                 },
                 mainText: "Text",
                 alternateMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preca_src"
                     }]
                 },
                 alternateText: "Text",
@@ -255,16 +299,20 @@ export const presentations: Container[] = [
             },
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "predm_src"
                     }]
                 },
                 mainText: "Text",
                 alternateMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preda_src"
                     }]
                 },
                 alternateText: "Text",
@@ -272,16 +320,20 @@ export const presentations: Container[] = [
             },
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preem_src"
                     }]
                 },
                 mainText: "Text",
                 alternateMedia: {
+                    _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
-                        src: "src"
+                        _id: v4(),
+                        src: "preea_src"
                     }]
                 },
                 alternateText: "Text",
@@ -289,6 +341,7 @@ export const presentations: Container[] = [
             },
             {
                 mainMedia: {
+                    _id: v4(),
                     type: MediaTypes.Text,
                     description: "Text",
                     sources: []
