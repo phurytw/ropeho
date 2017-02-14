@@ -155,8 +155,8 @@
             "passwordIteration": 1000,
             "passwordAlgorithm": "sha256",
             "facebook": {
-                "appId": "",
-                "appSecret": ""
+                "appId": "appId",
+                "appSecret": "appSecret"
             }
         },
         "hosts": {
