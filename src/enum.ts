@@ -30,6 +30,15 @@ export enum SocketState {
 export enum EntityType {
     Category = 0,
     Production = 1,
-    Presentation = 2,
-    User = 3
+    PresentationContainer = 2,
+    Presentation = 3,
+    User = 4,
+    Media = 5,
+    Source = 6
+}
+
+export enum MediaPermissions {
+    Locked = 0,
+    OwnerOnly = 1,
+    Public = 2
 }

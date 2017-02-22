@@ -21,8 +21,6 @@ import { Roles } from "../../../src/enum";
 import config from "../../../src/config";
 import GenericRepository from "../../../src/server/dal/genericRepository";
 import { isAdmin, isAuthenticated, deserializeCookie } from "../../../src/server/accounts/authorize";
-import { sign } from "cookie-signature";
-import redis from "../../../src/server/redis";
 import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
 should();
 use(chaiAsPromised);
@@ -38,7 +36,7 @@ describe("Authorize middlewares", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "Administrator",
@@ -46,7 +44,7 @@ describe("Authorize middlewares", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.Administrator
+            role: Roles.Administrator
         }, {
             _id: v4(),
             name: "Outdated",
@@ -54,7 +52,7 @@ describe("Authorize middlewares", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(config.users.tokenLength, -1),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "",
@@ -62,7 +60,7 @@ describe("Authorize middlewares", () => {
             password: "",
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }],
         [user, admin, outdated, pending]: User[] = users;
     let server: Server,
@@ -81,7 +79,7 @@ describe("Authorize middlewares", () => {
                 resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (isArray<string>(id)) {
                 resolve(filter(users, (u: User) => includes<string>(id, u._id)));
             } else {

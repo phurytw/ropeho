@@ -8,7 +8,6 @@ import { Router, Request, Response } from "express-serve-static-core";
 import * as express from "express";
 import GenericRepository from "../dal/genericRepository";
 import { isEmpty, isString, keys, map, isArray, includes, pickBy, every } from "lodash";
-import * as _ from "lodash";
 import { isAdmin } from "../accounts/authorize";
 import config from "../../config";
 

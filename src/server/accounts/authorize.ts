@@ -36,7 +36,7 @@ export const isAuthenticated: (req: Request, res: Response, next: NextFunction) 
 export const isAdmin: (req: Request, res: Response, next: NextFunction) => void =
     (req: Request, res: Response, next: NextFunction): void => {
         if (req.user) {
-            if ((req.user as Ropeho.Models.User).type === Roles.Administrator) {
+            if ((req.user as Ropeho.Models.User).role === Roles.Administrator) {
                 next();
             } else {
                 res.status(403).send("User is not an administrator");

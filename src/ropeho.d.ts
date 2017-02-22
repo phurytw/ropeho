@@ -9,7 +9,7 @@ declare namespace Ropeho {
             /** Unique email */
             email?: string;
             /** Role */
-            type?: number;
+            role?: number;
             /** IDs of the productions that can be downloaded by this user */
             productionIds?: string[];
             /** Invitation token that the user can access to register the account */
@@ -18,10 +18,6 @@ declare namespace Ropeho {
             password?: string;
             /** User's Facebook ID */
             facebookId?: string;
-
-            // View model
-            /** Productions that can be downloaded by this user */
-            productions?: Production[];
         }
 
         /** A Production is the entity that regroups many medias (usually photos) */
@@ -30,26 +26,18 @@ declare namespace Ropeho {
             _id?: string;
             /** Production's title */
             name?: string;
-            /** Normalized name */
-            normalizedName?: string;
             /** Description that appear when viewing this production */
             description?: string;
-            /** If visible this production can be browsed on the website */
-            visibility?: boolean;
-            /** If enabled users whom this production belongs to can view and download related medias */
-            enabled?: boolean;
-            /** Media shown up in the list */
+            /** If this production can be browsed on the website */
+            state?: number;
+            /** Media shown up in the menus */
             banner?: Media;
             /** Media shown up in the presentation behind the description */
             background?: Media;
             /** Medias related to this production */
             medias?: Media[];
             /** ID of the category this production belongs to */
-            category_id?: string;
-
-            // View model
-            /** Category this production belongs to */
-            category?: Category;
+            categoryId?: string;
         }
 
         /**
@@ -65,30 +53,30 @@ declare namespace Ropeho {
             delay?: number;
             /** 0=Image 1=Video 2=Text */
             type?: number;
-            /** Visible in website */
-            visibility?: boolean;
+            /** Visible in website, only to the client or locked */
+            state?: number;
             /** Source medias */
             sources?: Source[];
-            /** Raw source ID for videos */
-            rawId?: string;
         }
 
         /** Contains information about the source of a media and its positionning */
         interface Source {
             /** Unique ID */
             _id?: string;
-            /** Path to the media */
+            /** Path to the source media */
             src?: string;
-            /** Path to the thumbnail */
-            thumbnail?: string;
+            /** Path to the downsized media */
+            preview?: string;
+            /** Fallback image for videos */
+            fallback?: string;
+            /** Size of the source content */
+            size?: number;
             /** Zoom 1 = 100% */
             zoom?: number;
             /** X-Axis Placement */
             posX?: number;
             /** Y-Axis Placement */
             posY?: number;
-            /** MD5 Hash of the file */
-            hash?: string;
         }
 
         /** Every production must belong to a category */
@@ -97,8 +85,8 @@ declare namespace Ropeho {
             _id?: string;
             /** Category's name */
             name?: string;
-            /** Productions affected to this category */
-            productions?: Production[];
+            /** Productions IDs affected to this category */
+            productionIds?: Production[];
             /** Media shown up in the list */
             banner?: Media;
         }
@@ -120,17 +108,17 @@ declare namespace Ropeho {
          * A presentation is a media container that changes when the user hover over it
          */
         interface Presentation {
+            /** Unique ID */
+            _id?: string;
             /** Text to display over the presentation */
             mainText?: string;
-            /** Alternate text */
+            /** Alternate text to display when hovering */
             alternateText?: string;
-            /** presentation type */
-            type?: number;
             /** Link to content */
             href?: string;
             /** Media shown by default */
             mainMedia?: Media;
-            /** Media shown when hovered */
+            /** Media shown when hovering */
             alternateMedia?: Media;
         }
     }
@@ -146,41 +134,47 @@ declare namespace Ropeho {
             production: Configuration;
         }
 
-        /** Configuration object with all the necessary settings */
+        /** Configuration object with all the necessary configuration for the application */
         interface Configuration {
-            /** Settings related to database */
+            /** Database related configuration */
             database?: DatabaseConfiguration;
-            /** Settings related to user accounts */
+            /** Configuration related to user accounts */
             users?: UserConfiguration;
-            /** Settings related to session */
-            session?: SessionOptions;
+            /** Configuration related to session */
+            session?: SessionConfiguration;
+            /** Redis connection */
             redis?: RedisConfiguration;
             /** Hosts URLs */
-            hosts?: HostsOptions;
-            /** Mailer settings */
-            mailer?: MailerOptions;
-            /** Media settings */
-            media?: MediaOptions;
-            /** Task Queue settings */
-            taskQueue?: TaskQueueOptions;
+            hosts?: HostsConfiguration;
+            /** Mailer configuration */
+            mailer?: MailerConfiguration;
+            /** Media configuration */
+            media?: MediaConfiguration;
+            /** Task queue configuration */
+            taskQueue?: TaskQueueConfiguration;
         }
 
         /** Configuration related to the database */
         interface DatabaseConfiguration {
-            /** Options for the category collection */
-            categories: DatabaseSetting;
-            /** Options for the production collection */
-            productions: DatabaseSetting;
-            /** Options for the user collection */
-            users: DatabaseSetting;
-            /** Options for the presentation collection */
-            presentations: DatabaseSetting;
+            /** Configuration for the category collection */
+            categories: DatabaseCollectionConfiguration;
+            /** Configuration for the production collection */
+            productions: DatabaseCollectionConfiguration;
+            /** Configuration for the user collection */
+            users: DatabaseCollectionConfiguration;
+            /** Configuration for the presentation collection */
+            presentations: DatabaseCollectionConfiguration;
+            /** Default key name to use for IDs */
             defaultIdProperty: string;
         }
 
-        interface DatabaseSetting extends NeDB.DataStoreOptions {
+        /** Configuration of a database collection */
+        interface DatabaseCollectionConfiguration {
+            /** Redis namespace */
             namespace: string;
+            /** Secondary indexes set to true if it must be unique */
             indexes: { [key: string]: boolean };
+            /** Name of the ID property */
             idProperty: string;
         }
 
@@ -199,11 +193,11 @@ declare namespace Ropeho {
             /** Base algorithm used to generate hashes */
             passwordAlgorithm: string;
             /** Facebook app credentials */
-            facebook: FacebookOptions;
+            facebook: FacebookConfiguration;
         }
 
         /** Session options interface copied from express-session */
-        interface SessionOptions {
+        interface SessionConfiguration {
             secret: string;
             name?: string;
             store?: any;
@@ -217,90 +211,131 @@ declare namespace Ropeho {
         }
 
         /** Facebook app credentials */
-        interface FacebookOptions {
+        interface FacebookConfiguration {
             appId: string;
             appSecret: string;
         }
 
         /** Hosts URLs */
-        interface HostsOptions {
+        interface HostsConfiguration {
+            /** Web API server */
             api: string;
+            /** Client server */
             client: string;
+            /** Admin server */
             admin: string;
+            /** Media storage */
             media: string;
         }
 
-        /** Nodemailer settings */
-        interface MailerOptions {
+        /** Nodemailer configuration */
+        interface MailerConfiguration {
+            /** nodemailer options */
             transporterOptions: any;
+            /** Default mail options to use with sendMail */
             mailOptions: nodemailer.SendMailOptions;
         }
 
         /** Assets settings */
-        interface MediaOptions {
+        interface MediaConfiguration {
+            /** The directory to use when used with the local media manager */
             localDirectory: string;
+            /** The path to the S3 bucket (appended to media host) */
             s3Bucket: string;
+            /** Image encoding configuration */
             imageEncoding: {
+                /** WebP quality */
                 quality: number;
             };
+            /** Video encoding configuration */
             videoEncoding: {
+                /** WebM FPS */
                 fps: number;
+                /** WebM Quality */
                 bitrate: number;
+                /** WebM Resolution */
                 resolution: string;
             };
+            /** Chunk size when transferring files */
             chunkSize: number;
+            /** If true when uploading a media the previous media is overwritten */
+            overwrite: boolean;
         }
 
-        /** Task Queue settings */
-        interface TaskQueueOptions {
+        /** Task Queue configuration */
+        interface TaskQueueConfiguration {
+            /** Number of retries if a job fails */
             retriesOnFailure: number;
+            /** Maximum number of concurrent image processing tasks  */
             imageProcessingConcurrency: number;
+            /** Maximum number of concurrent video processing tasks  */
             videoProcessingConcurrency: number;
+            /** Maximum number of concurrent file uploading tasks  */
             fileUploadConcurrency: number;
         }
 
+        /** Redis configuration */
         interface RedisConfiguration {
+            /** Server host */
             host?: string;
+            /** Server port */
             port?: number;
             url?: string;
+            /** Database to select */
             db?: string;
+            /** Password to authenticate */
             password?: string;
         }
     }
 
     namespace Tasks {
+        /** Job data from kue */
         interface JobData<T> {
             data: T;
+            /** Job's ID */
             id: string;
         }
+        /** Options when creating a task to process an incoming video */
         interface ProcessImageOptions {
+            /** Image as a buffer */
             data: Buffer;
+            /** Destination in the media directory */
             dest: string;
         }
+        /** Options when creating a task to process an incoming image */
         interface ProcessVideoOptions {
+            /** Video as a buffer */
             data: Buffer;
+            /** Destination in the media directory */
             dest: string;
+            /** Destination of the fallback screenshot */
+            fallbackDest: string;
         }
+        /** Options when creating a task to process a file upload */
         interface FileUploadOptions {
+            /** File as a buffer */
             data: Buffer;
+            /** Destination in the media directory */
             dest: string;
-            force?: boolean;
         }
     }
 
-    interface IRESTQuery {
-        [key: string]: string;
-        fields: string;
-    }
-
+    /** Interface for the DAL */
     interface IGenericRepository<T> {
+        /** Gets provided entities or all of them */
         get(...options: any[]): Promise<T | T[]>;
+        /** Gets entities by IDs */
         getById(id: string | string[], ...options: any[]): Promise<T | T[]>;
+        /** Gets entities using filters */
         search(filters: { [key: string]: string }, ...options: any[]): Promise<T[]>;
+        /** Creates entities */
         create(entity: T | T[], ...options: any[]): Promise<T | T[]>;
+        /** Update entities */
         update(entity: T | T[], ...options: any[]): Promise<number>;
+        /** Deletes entities */
         delete(entity: T | T[] | string | string[], ...options: any[]): Promise<number>;
-        order(order?: string[]): Promise<string[]>;
+        /** Get/Set the order of the entities */
+        order(order?: string[], ...options: any[]): Promise<string[]>;
     }
 
     interface IRedisGenericRepositoryOptions {
@@ -310,17 +345,20 @@ declare namespace Ropeho {
     }
 
     interface IMediaManager {
-        upload(pathToMedia: string, media: Buffer): Promise<any>;
+        upload(pathToMedia: string, media: Buffer): Promise<void>;
         download(media: string): Promise<Buffer>;
-        delete(source: Ropeho.Models.Source | string): Promise<any>;
-        updatePermissions(media: string, permissions: boolean): Promise<any>;
+        delete(source: Ropeho.Models.Source | string): Promise<void>;
+        updatePermissions(media: string, permissions: boolean): Promise<void>;
         exists(path: string): Promise<boolean>;
         startDownload(media: string): NodeJS.ReadableStream;
         startUpload(media: string): NodeJS.WritableStream;
+        rename(source: string, dest: string): Promise<void>;
+        newName(path: string): Promise<string>;
     }
 
     interface CreateWebMOptions {
         dest?: string;
+        thumbnail?: string;
         offset?: number;
         duration?: number;
     }
@@ -328,18 +366,19 @@ declare namespace Ropeho {
     namespace Socket {
         interface DownloadOptions {
             cookie: string;
-            entities: Models.Production[];
+            targets: SourceTargetOptions[];
         }
         interface UploadOptions {
             cookie: string;
-            entityType: number;
-            entity: Models.Category | Models.Production | Models.PresentationContainer;
+            target: SourceTargetOptions;
+            hash: string;
+            filename?: string;
         }
         interface DownloadData {
             file: string;
+            hash: string;
             fileSize: number;
             totalSize: number;
-            data: Buffer;
         }
         interface SocketEvents {
             Connection: string;
@@ -351,7 +390,30 @@ declare namespace Ropeho {
             Upload: string;
             UploadEnd: string;
             BadRequest: string;
-            Error: string;
+            Exception: string;
+        }
+        /** Data structure to retrieve a specific media in the database */
+        interface MediaTargetOptions {
+            /** Optional namespace or entity type to narrow search */
+            entityType?: number | string;
+            /** ID of the Production/Category/Presentation */
+            mainId: string;
+            /** ID of the media containing the source */
+            mediaId: string;
+        }
+        /** Data structure to retrieve a specific source in the database */
+        interface SourceTargetOptions extends MediaTargetOptions {
+            /** ID of the source */
+            sourceId?: string;
+        }
+        interface SocketClient {
+            socket: SocketIO.Socket;
+            state: number;
+            data?: Buffer;
+            target?: SourceTargetOptions;
+            filename?: string;
+            hash?: string;
+            downloading?: string[];
         }
     }
 }
