@@ -31,7 +31,7 @@ import User = Ropeho.Models.User;
 // Passport
 const userRepository: IGenericRepository<User> = new GenericRepository<User>({
     ...config.redis,
-    ...config.users
+    ...config.database.users
 });
 passport.use(new LocalStrategy({
     usernameField: "email"
