@@ -32,4 +32,5 @@
 /// <reference types="sharp" />
 /// <reference types="connect-redis" />
 /// <reference types="pluralize" />
-/// <reference path="../../definitions/cookie-signature.d.ts" />
+/// <reference types="cookie-signature" />
+/// <reference path="../../definitions/tmp.d.ts" />

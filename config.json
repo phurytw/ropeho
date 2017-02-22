@@ -90,7 +90,8 @@
                 "bitrate": 500,
                 "resolution": "?x720"
             },
-            "chunkSize": 8192
+            "chunkSize": 8192,
+            "overwrite": false
         },
         "taskQueue": {
             "retriesOnFailure": 3,
@@ -190,7 +191,8 @@
                 "bitrate": 10,
                 "resolution": "?x60"
             },
-            "chunkSize": 8192
+            "chunkSize": 8192,
+            "overwrite": false
         },
         "taskQueue": {
             "retriesOnFailure": 3,
@@ -290,7 +292,8 @@
                 "bitrate": 500,
                 "resolution": "?x720"
             },
-            "chunkSize": 8192
+            "chunkSize": 8192,
+            "overwrite": false
         },
         "taskQueue": {
             "retriesOnFailure": 3,

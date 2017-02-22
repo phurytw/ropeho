@@ -27,4 +27,5 @@
 /// <reference types="socket.io" />
 /// <reference types="socket.io-client" />
 /// <reference types="redis" />
-/// <reference path="../definitions/cookie-signature.d.ts" />
+/// <reference types="deep-freeze" />
+/// <reference types="cookie-signature" />
