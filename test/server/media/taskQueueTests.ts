@@ -50,7 +50,8 @@ describe("Task queue", () => {
         it("Should add a video encoding task, execute it, and retry if it fails", async () => {
             await createProcessVideoTask({
                 data: new Buffer(0),
-                dest: ""
+                dest: "",
+                fallbackDest: ""
             });
             queueCreateSpy.should.have.been.calledOnce;
             queueCreateSpy.should.have.been.calledWith("video");
@@ -74,7 +75,7 @@ describe("Task queue", () => {
             createWebmStub: sinon.SinonStub;
         before(() => {
             mediaUploadStub = stub(mediaManager, "upload");
-            createWebmStub = stub(fileEncoder, "createWebm");
+            createWebmStub = stub(fileEncoder, "createWebm").returns([new Buffer(0), new Buffer(0)]);
             createWebpStub = stub(fileEncoder, "createWebp");
         });
         afterEach(() => {
@@ -106,10 +107,11 @@ describe("Task queue", () => {
                 id: "",
                 data: {
                     data: new Buffer(0),
-                    dest: ""
+                    dest: "",
+                    fallbackDest: ""
                 }
             }, callback);
-            mediaUploadStub.should.have.been.calledOnce;
+            mediaUploadStub.should.have.been.calledTwice;
             createWebmStub.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });

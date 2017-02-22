@@ -6,15 +6,17 @@
 /// <reference path="../../typings.d.ts" />
 import MediaManager from "../../../src/server/media/localMediaManager";
 import config from "../../../src/config";
-import { should } from "chai";
-import { accessSync, statSync, stat, readdirSync } from "fs";
-import { access, createWriteStream, createReadStream, unlink } from "fs"; // fs functions used in MediaManager
+import { should, use } from "chai";
+import * as chaiAsPromised from "chai-as-promised";
+import { accessSync, statSync, stat } from "fs";
+import { access, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync } from "fs"; // fs functions used in MediaManager
 import { mkdirSync, mkdir } from "fs"; // fs functions used in mkdirp
-import { join } from "path";
+import { join, dirname } from "path";
 import { stub } from "sinon";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
 should();
+use(chaiAsPromised);
 
 describe("Local media manager", () => {
     const path: string = join(process.cwd(), config.media.localDirectory),
@@ -32,7 +34,9 @@ describe("Local media manager", () => {
         createReadStreamStub: sinon.SinonStub,
         unlinkStub: sinon.SinonStub,
         mkdirSyncStub: sinon.SinonStub,
-        mkdirStub: sinon.SinonStub;
+        mkdirStub: sinon.SinonStub,
+        renameStub: sinon.SinonStub,
+        rmdirSyncStub: sinon.SinonStub;
     before(() => {
         // Type definitions are wrong !!
         const mockedFs: any = mockFs.fs({});
@@ -49,6 +53,8 @@ describe("Local media manager", () => {
         unlinkStub = stub(fs, "unlink", fakeFs.unlink);
         mkdirSyncStub = stub(fs, "mkdirSync", fakeFs.mkdirSync);
         mkdirStub = stub(fs, "mkdir", fakeFs.mkdir);
+        renameStub = stub(fs, "rename", fakeFs.rename);
+        rmdirSyncStub = stub(fs, "rmdirSync", fakeFs.rmdirSync);
     });
     after(() => {
         // Restore stubs and fs
@@ -63,6 +69,8 @@ describe("Local media manager", () => {
         mkdirSyncStub.restore();
         mkdirStub.restore();
         mockFs.restore();
+        renameStub.restore();
+        rmdirSyncStub.restore();
     });
     describe("Instantiating", async () => {
         it("Should create an empty media folder", () => {
@@ -103,14 +111,55 @@ describe("Local media manager", () => {
             await permissions;
         });
     });
-    describe("Deleting", async () => {
+    describe("Deleting", () => {
+        const testFile2: string = "test/sub_test/file2.txt";
+        before(async () => await mediaManager.upload(testFile2, testFileData));
         it("Should reject if the file does not exist", () =>
             mediaManager.delete(nonExistentFile).should.be.rejected);
-        it("Should delete a file", async () => {
+        it("Should delete a file but keep the directory if it is not empty", async () => {
             const promise: Promise<any> = mediaManager.delete(testFile);
             promise.should.be.fulfilled;
             await promise;
             should().throw(statSync.bind(null, (join((mediaManager as MediaManager).baseDirectory, testFile))));
+            should().not.throw(statSync.bind(null, (join((mediaManager as MediaManager).baseDirectory, dirname(testFile)))));
+        });
+        it("Should delete a file and its directory if it is empty", async () => {
+            const promise: Promise<any> = mediaManager.delete(testFile2);
+            promise.should.be.fulfilled;
+            await promise;
+            should().throw(statSync.bind(null, (join((mediaManager as MediaManager).baseDirectory, testFile))));
+            should().throw(statSync.bind(null, (join((mediaManager as MediaManager).baseDirectory, dirname(testFile)))));
+        });
+    });
+    describe("Utility functions", () => {
+        it("Should return false if the file does not exist", () =>
+            mediaManager.exists(testFile).should.eventually.be.false);
+        it("Should return true if the file does exist", async () => {
+            await mediaManager.upload(testFile, testFileData);
+            return mediaManager.exists(testFile).should.be.eventually.be.true;
+        });
+        it("Should create a new name for a specific file", async () => {
+            const files: string[] = [
+                "test/sub_test/test_file.txt",
+                "test/sub_test/test_file_3.txt",
+                "test/sub_test/test_file",
+                "test/sub_test/test_file_10",
+                "test/sub_test/.test_file"
+            ];
+            for (const f of files) {
+                await mediaManager.upload(f, testFileData);
+            }
+            const [testFileTxt, testFile3Txt, testFile, testFile10, dotTestFile]: string[] = files;
+            (await mediaManager.newName(testFileTxt)).should.equal("test/sub_test/test_file_4.txt");
+            (await mediaManager.newName(testFile3Txt)).should.equal("test/sub_test/test_file_4.txt");
+            (await mediaManager.newName(testFile)).should.equal("test/sub_test/test_file_11");
+            (await mediaManager.newName(testFile10)).should.equal("test/sub_test/test_file_11");
+            (await mediaManager.newName(dotTestFile)).should.equal("test/sub_test/.test_file_1");
+        });
+        it("Should move an existing file to another destination", async () => {
+            const newPath: string = "test/new_dir/new_name.txt";
+            await mediaManager.rename(testFile, newPath);
+            return mediaManager.exists(newPath).should.be.eventually.be.true;
         });
     });
 });

@@ -9,6 +9,7 @@ import ffmpeg = require("fluent-ffmpeg");
 import { getBufferFromFile, bufferToStream } from "./buffer";
 import { Stream } from "stream";
 import config from "../../config";
+import { fileSync, TmpFile } from "tmp";
 
 import CreateWebMOptions = Ropeho.CreateWebMOptions;
 
@@ -43,20 +44,20 @@ export const createWebp: (src: string | Buffer, dest?: string) => Promise<Buffer
  * @param {string} dest if defined the encoded video will be created at this location
  * @returns {Promise<Buffer>} a promise to a Buffer containing the new video data
  */
-export const createWebm: (src: string | Buffer | NodeJS.ReadableStream, options?: CreateWebMOptions) => Promise<Buffer> =
-    async (src: string | Buffer | NodeJS.ReadableStream, options: CreateWebMOptions = {}): Promise<Buffer> => {
+export const createWebm: (src: string | Buffer | NodeJS.ReadableStream, options?: CreateWebMOptions) => Promise<Buffer[]> =
+    async (src: string | Buffer | NodeJS.ReadableStream, options: CreateWebMOptions = {}): Promise<Buffer[]> => {
         // Should be a path, a Buffer, or a readable stream
         if (typeof src === "string" ||
             src instanceof Buffer ||
             (typeof (src as NodeJS.ReadableStream).read === "function" && typeof (src as NodeJS.ReadableStream).readable === "boolean" && typeof (src as NodeJS.ReadableStream).on === "function" && src instanceof Stream)) {
-            return new Promise<Buffer>((resolve: (value?: Buffer | PromiseLike<Buffer>) => void, reject: (reason?: any) => void) => {
+            return new Promise<Buffer[]>((resolve: (value?: Buffer[] | PromiseLike<Buffer[]>) => void, reject: (reason?: any) => void) => {
                 // If buffer convert it into a readable stream for ffmpeg
                 if (src instanceof Buffer) {
                     src = bufferToStream(src);
                 }
 
                 // Encoding
-                const { offset, duration, dest }: CreateWebMOptions = options;
+                const { offset, duration, dest, thumbnail }: CreateWebMOptions = options;
                 const command: any = ffmpeg(src).fps(fps).videoBitrate(bitrate).noAudio().size(resolution).format("webm");
                 if (offset) {
                     command.seekInput(offset);
@@ -65,18 +66,34 @@ export const createWebm: (src: string | Buffer | NodeJS.ReadableStream, options?
                     command.duration(duration);
                 }
 
+                // Thumbnail
+                const tmpFile: TmpFile = fileSync({ detachDescriptor: true });
+                command.screenshot({
+                    count: 1,
+                    filename: tmpFile.name
+                });
+                const makeThumbnail: (webm: Buffer) => void = (webm: Buffer) => {
+                    createWebp(tmpFile.name, thumbnail).then((thumbnail: Buffer) => {
+                        tmpFile.removeCallback();
+                        resolve([webm, thumbnail]);
+                    }, (err: Error) => reject(err));
+                };
+
                 // Output
                 if (dest) {
                     // Save to file
                     command.save(dest);
-                    resolve(null);
+                    makeThumbnail(null);
                 } else {
                     // Save to buffer
                     let data: Buffer = new Buffer(0);
                     command.pipe()
-                        .on("error", (err: Error) => reject(err))
+                        .on("error", (err: Error) => {
+                            tmpFile.removeCallback();
+                            reject(err);
+                        })
                         .on("data", (chunk: Buffer) => data = Buffer.concat([data, chunk]))
-                        .on("end", () => resolve(data));
+                        .on("end", () => makeThumbnail(data));
                 }
             });
         } else {

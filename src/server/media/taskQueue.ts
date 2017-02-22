@@ -34,18 +34,17 @@ export const processImageTask: (jobData: JobData<ProcessImageOptions>, cb: Funct
 
 export const processVideoTask: (jobData: JobData<ProcessVideoOptions>, cb: Function) => Promise<void> =
     (jobData: JobData<ProcessVideoOptions>, cb: Function): Promise<void> => new Promise<void>(async (resolve: () => void, reject: (reason?: any) => void) => {
-        const { data, dest }: ProcessVideoOptions = jobData.data;
-        await mediaManager.upload(dest, await createWebm(data) as Buffer);
+        const { data, dest, fallbackDest }: ProcessVideoOptions = jobData.data;
+        const [webm, thumb]: Buffer[] = await createWebm(data);
+        await mediaManager.upload(dest, webm);
+        await mediaManager.upload(fallbackDest, thumb);
         cb();
         resolve();
     });
 
 export const processUploadTask: (jobData: JobData<FileUploadOptions>, cb: Function) => Promise<void> =
     (jobData: JobData<FileUploadOptions>, cb: Function): Promise<void> => new Promise<void>(async (resolve: () => void, reject: (reason?: any) => void) => {
-        const { data, dest, force }: FileUploadOptions = jobData.data;
-        if (force && await mediaManager.exists(dest)) {
-            await mediaManager.delete(dest);
-        }
+        const { data, dest }: FileUploadOptions = jobData.data;
         await mediaManager.upload(dest, data);
         cb();
         resolve();

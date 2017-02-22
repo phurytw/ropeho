@@ -8,17 +8,20 @@ import { createWebp, createWebm } from "../../../src/server/media/fileEncoder";
 import * as fileEncoder from "../../../src/server/media/fileEncoder";
 import { getBufferFromFile, bufferToStream } from "../../../src/server/media/buffer";
 import { image, video } from "./testMedias";
-import { should } from "chai";
+import { should, use } from "chai";
+import * as sinonChai from "sinon-chai";
 import { stub, spy } from "sinon";
 import { join } from "path";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
 import { accessSync, createWriteStream, constants } from "fs";
 import { createReadStream, access } from "fs"; // fs functions used by toBuffer
+import { statSync, openSync, closeSync, unlinkSync } from "fs"; // fs functions used by tmp
 import * as sharp from "sharp";
 import { isString } from "lodash";
 import ffmpeg = require("fluent-ffmpeg");
 should();
+use(sinonChai);
 
 describe("Media encoder", () => {
     const testImage: Buffer = new Buffer(image, "base64"),
@@ -28,6 +31,10 @@ describe("Media encoder", () => {
         fakeFs: typeof fs,
         accessStub: sinon.SinonStub,
         accessSyncStub: sinon.SinonStub,
+        openSyncStub: sinon.SinonStub,
+        statSyncStub: sinon.SinonStub,
+        closeSyncStub: sinon.SinonStub,
+        unlinkSyncStub: sinon.SinonStub,
         createReadStreamStub: sinon.SinonStub,
         createWriteStreamStub: sinon.SinonStub,
         sharpToFileStub: sinon.SinonStub,
@@ -50,6 +57,12 @@ describe("Media encoder", () => {
         accessSyncStub = stub(fs, "accessSync", fakeFs.accessSync);
         createReadStreamStub = stub(fs, "createReadStream", fakeFs.createReadStream);
         createWriteStreamStub = stub(fs, "createWriteStream", fakeFs.createWriteStream);
+        statSyncStub = stub(fs, "statSync", fakeFs.statSync);
+        openSyncStub = stub(fs, "openSync", fakeFs.openSync);
+        closeSyncStub = stub(fs, "closeSync", fakeFs.closeSync);
+        unlinkSyncStub = stub(fs, "unlinkSync", fakeFs.unlinkSync);
+
+        // ffmpeg stubs
         ffmpegSaveStub = stub(ffmpeg.prototype, "save", (path: string) => fakeFs.writeFileSync(path, video));
         ffmpegPipeStub = stub(ffmpeg.prototype, "pipe", () => createReadStream("video.mp4"));
 
@@ -73,12 +86,12 @@ describe("Media encoder", () => {
         });
         createWebmStub = (() => {
             const original: typeof createWebm = createWebm.bind(fileEncoder);
-            return stub(fileEncoder, "createWebm", async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.CreateWebMOptions): Promise<Buffer> => {
+            return stub(fileEncoder, "createWebm", async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.CreateWebMOptions): Promise<Buffer[]> => {
                 if (isString(src)) {
                     src = await getBufferFromFile(src);
                 }
                 if (options && options.dest) {
-                    const data: Buffer = await original(src, { duration: options.duration, offset: options.offset }),
+                    const [data]: Buffer[] = await original(src, { ...options, dest: undefined }),
                         stream: NodeJS.WritableStream = createWriteStream(options.dest);
                     stream.on("error", (err: NodeJS.ErrnoException) => { throw err; });
                     stream.write(data);
@@ -101,6 +114,10 @@ describe("Media encoder", () => {
         createWebmStub.restore();
         ffmpegSaveStub.restore();
         ffmpegPipeStub.restore();
+        openSyncStub.restore();
+        statSyncStub.restore();
+        closeSyncStub.restore();
+        unlinkSyncStub.restore();
         mockFs.restore();
     });
     describe("Encoding images to webp", () => {
@@ -143,17 +160,27 @@ describe("Media encoder", () => {
             should().not.throw(accessSync.bind(null, "video.webm", constants.F_OK));
             fakeFs.unlink("video.webm");
         });
+        it("Should create a thumbnail", async () => {
+            await createWebm(testVideo, { dest: "video.webm", thumbnail: "thumb.png" });
+            should().not.throw(accessSync.bind(null, "video.webm", constants.F_OK));
+            should().not.throw(accessSync.bind(null, "thumb.png", constants.F_OK));
+            fakeFs.unlink("video.webm");
+            fakeFs.unlink("thumb.png");
+        });
         it("Should encode a file to a buffer", async () => {
-            const data: Buffer = await createWebm("video.mp4");
+            const [data, thumb]: Buffer[] = await createWebm("video.mp4");
             data.should.not.be.empty;
+            thumb.should.not.be.empty;
         });
         it("Should encode a buffer to a buffer", async () => {
-            const data: Buffer = await createWebm(testVideo);
+            const [data, thumb]: Buffer[] = await createWebm(testVideo);
             data.should.not.be.empty;
+            thumb.should.not.be.empty;
         });
         it("Should encode a readable stream to a buffer", async () => {
-            const data: Buffer = await createWebm(bufferToStream(testVideo));
+            const [data, thumb]: Buffer[] = await createWebm(bufferToStream(testVideo));
             data.should.not.be.empty;
+            thumb.should.not.be.empty;
         });
         it("Should clip the video", async () => {
             const durationSpy: sinon.SinonSpy = spy(ffmpeg.prototype, "duration"),

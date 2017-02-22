@@ -5,10 +5,12 @@
 
 /// <reference path="../typings.d.ts" />
 import { dirname, basename, join } from "path";
-import { constants, access, accessSync, createWriteStream, createReadStream, unlink } from "fs";
+import { constants, access, accessSync, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync } from "fs";
 import config from "../../config";
 import * as rimraf from "rimraf";
 import * as mkdirp from "mkdirp";
+import * as _ from "lodash";
+import { isEmpty, includes } from "lodash";
 
 /**
  * Uploads and downloads files to a local directory
@@ -112,7 +114,8 @@ export default class MediaManager implements Ropeho.IMediaManager {
                         if (err) {
                             reject(err);
                         }
-                        resolve();
+                        // Delete the directory if it's empty
+                        this.deleteEmptyDirs(media).then(() => resolve(), (err: NodeJS.ErrnoException) => reject(err));
                     });
                 }
             });
@@ -151,6 +154,117 @@ export default class MediaManager implements Ropeho.IMediaManager {
                     resolve(true);
                 }
             });
+        });
+    }
+    /**
+     * Create a new name for a file name to avoid overwriting it
+     * @param {string} path path to the file
+     * @return {Promise<string>} a promise that fulfills with the new file name
+     */
+    newName(path: string): Promise<string> {
+        return new Promise<string>(async (resolve: (value?: string | PromiseLike<string>) => void, reject: (reason?: any) => void) => {
+            try {
+                const exists: boolean = await this.exists(path);
+                if (!exists) {
+                    resolve(path);
+                } else {
+                    const suffixRegex: RegExp = /^(.+?)(_\d+)?(\.[a-z0-9]+)$/i,
+                        noExtRegex: RegExp = /^(.+?)(_\d+)?$/i,
+                        files: string[] = readdirSync(dirname(join(this.baseDirectory, path)));
+                    if (suffixRegex.test(path)) {
+                        // i.e. test_file_2.txt => test_file_3.txt
+                        // Get the base name
+                        const base: string = basename(path).replace(suffixRegex, "$1");
+                        // Get the number to append
+                        const suffix: number = _(files)
+                            // Filter names that has extension and the base name
+                            .filter((s: string) => suffixRegex.test(s) && includes(s, base))
+                            .map<RegExpExecArray>((s: string) => suffixRegex.exec(s))
+                            // Only keep the duplicate suffix number
+                            .filter((matches: RegExpExecArray) => !isEmpty(matches[2]))
+                            .map<number>((matches: RegExpExecArray) => parseInt(matches[2].slice(1)))
+                            // Minimum number is 1
+                            .concat<number>([0])
+                            .max();
+                        resolve(path.replace(suffixRegex, `$1_${suffix + 1}$3`));
+                    } else {
+                        // i.e. .test_file => .test_file_1
+                        // Get the base name
+                        const base: string = basename(path).replace(noExtRegex, "$1");
+                        // Get the number to append
+                        const suffix: number = _(files)
+                            // Filter names that has extension and the base name
+                            .filter((s: string) => noExtRegex.test(s) && !suffixRegex.test(s) && includes(s, base))
+                            .map<RegExpExecArray>((s: string) => noExtRegex.exec(s))
+                            // Only keep the duplicate suffix number
+                            .filter((matches: RegExpExecArray) => !isEmpty(matches[2]))
+                            .map<number>((matches: RegExpExecArray) => parseInt(matches[2].slice(1)))
+                            // Minimum number is 1
+                            .concat<number>([0])
+                            .max();
+                        resolve(path.replace(noExtRegex, `$1_${suffix + 1}`));
+                    }
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    /**
+     * Renames a file and moves it into its new destination folder if needed
+     * @param {string} source the file to rename/moves
+     * @param {string} dest the destination folder
+     */
+    rename(source: string, dest: string): Promise<void> {
+        return new Promise<void>(async (resolve: () => void, reject: (reason?: any) => void) => {
+            if (!(await this.exists(source))) {
+                reject(new Error("File not found"));
+            } else if (await this.exists(dest)) {
+                reject(new Error("There's already a file at this destination"));
+            } else {
+                dest = join(this.baseDirectory, dest);
+                // Create the directory if it does not exists
+                mkdirp(dirname(dest), (err: any, made: string) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    // Move the file to the new directory
+                    rename(join(this.baseDirectory, source), dest, (err: NodeJS.ErrnoException) => {
+                        if (err) {
+                            reject(err);
+                        }
+                        // Delete source directory if it's empty
+                        this.deleteEmptyDirs(source).then(() => resolve(), (err: NodeJS.ErrnoException) => reject(err));
+                    });
+                });
+            }
+        });
+    }
+    /**
+     * Deletes empty folders given a path until the base directory is reached
+     * @param {string} path folder to delete
+     * @returns {Promise<void>} a promise
+     */
+    private deleteEmptyDirs(path: string): Promise<void> {
+        return new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
+            let dir: string = dirname(path);
+            while (dir !== ".") {
+                const absoluteDir: string = join(this.baseDirectory, dir);
+                try {
+                    accessSync(absoluteDir, constants.S_IFDIR);
+                    const contents: string[] = readdirSync(absoluteDir);
+                    if (contents.length === 0) {
+                        rmdirSync(absoluteDir);
+                        dir = dirname(dir);
+                    } else {
+                        break;
+                    }
+                } catch (error) {
+                    reject(error);
+                    break;
+                }
+            }
+            resolve();
         });
     }
 }
