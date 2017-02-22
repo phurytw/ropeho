@@ -39,7 +39,7 @@ describe("Auth controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "Administrator",
@@ -47,7 +47,7 @@ describe("Auth controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.Administrator
+            role: Roles.Administrator
         }, {
             _id: v4(),
             name: "New user",
@@ -55,7 +55,7 @@ describe("Auth controller", () => {
             password: "",
             token: computeToken(),
             productionIds: [],
-            type: Roles.Administrator
+            role: Roles.Administrator
         }],
         [user, admin, newUser]: User[] = users;
     let server: Server,
@@ -72,7 +72,7 @@ describe("Auth controller", () => {
                 resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (isArray<string>(id)) {
                 resolve(filter(users, (u: User) => includes<string>(id, u._id)));
             } else {
