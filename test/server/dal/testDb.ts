@@ -6,7 +6,7 @@
 /// <reference path="../../typings.d.ts" />
 import * as nedb from "nedb";
 import { v4 } from "node-uuid";
-import { MediaTypes, Roles, PresentationTypes } from "../../../src/enum";
+import { MediaTypes, Roles, PresentationTypes, MediaPermissions } from "../../../src/enum";
 import { computeHashSync } from "../../../src/server/accounts/password";
 import { computeToken } from "../../../src/server/accounts/token";
 
@@ -25,9 +25,19 @@ const [categoryA, categoryB]: Category[] = [
             type: MediaTypes.Image,
             sources: [{
                 _id: v4(),
-                src: "cata_src"
-            }]
-        }
+                src: "cata_src",
+                fallback: "",
+                posX: 0,
+                posY: 0,
+                preview: "",
+                size: 0,
+                zoom: 0
+            }],
+            state: MediaPermissions.Public,
+            delay: 0,
+            description: ""
+        },
+        productionIds: []
     },
     {
         _id: v4(),
@@ -39,7 +49,8 @@ const [categoryA, categoryB]: Category[] = [
                 _id: v4(),
                 src: "catb_src"
             }]
-        }
+        },
+        productionIds: []
     }
 ];
 export const categories: Category[] = [categoryA, categoryB];
@@ -49,24 +60,41 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production A",
         description: "Description A",
-        visibility: true,
-        enabled: true,
-        category_id: categoryA._id,
+        state: MediaPermissions.Public,
+        categoryId: categoryA._id,
         banner: {
             _id: v4(),
             type: MediaTypes.Image,
             sources: [{
                 _id: v4(),
-                src: "prodaban_src"
-            }]
+                src: "prodaban_src",
+                fallback: "",
+                posX: 0,
+                posY: 0,
+                preview: "",
+                size: 0,
+                zoom: 0
+            }],
+            delay: 0,
+            description: "",
+            state: 0
         },
         background: {
             _id: v4(),
             type: MediaTypes.Image,
             sources: [{
                 _id: v4(),
-                src: "prodabg_src"
-            }]
+                src: "prodabg_src",
+                fallback: "",
+                posX: 0,
+                posY: 0,
+                preview: "",
+                size: 0,
+                zoom: 0
+            }],
+            delay: 0,
+            description: "",
+            state: 0
         },
         medias: [
             {
@@ -74,40 +102,87 @@ const [productionA, productionB, productionC]: Production[] = [
                 type: MediaTypes.Image,
                 sources: [{
                     _id: v4(),
-                    src: "proda0_0_src"
+                    src: "proda0_0_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }],
-                visibility: true
+                state: MediaPermissions.Public,
+                delay: 0,
+                description: ""
             },
             {
                 _id: v4(),
                 type: MediaTypes.Video,
                 sources: [{
                     _id: v4(),
-                    src: "proda1_0_src"
+                    src: "proda1_0_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }, {
                     _id: v4(),
-                    src: "proda1_1_src"
+                    src: "proda1_1_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }, {
                     _id: v4(),
-                    src: "proda1_2_src"
+                    src: "proda1_2_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }],
-                visibility: true
+                state: MediaPermissions.Public,
+                delay: 0,
+                description: ""
             },
             {
                 _id: v4(),
                 type: MediaTypes.Slideshow,
                 sources: [{
                     _id: v4(),
-                    src: "proda2_0_src"
+                    src: "proda2_0_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }, {
                     _id: v4(),
-                    src: "proda2_1_src"
+                    src: "proda2_1_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }, {
                     _id: v4(),
-                    src: "proda2_2_src"
+                    src: "proda2_2_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }],
-                visibility: true,
-                delay: 5000
+                state: MediaPermissions.Public,
+                delay: 5000,
+                description: ""
             }
         ]
     },
@@ -115,24 +190,41 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production B",
         description: "Description B",
-        visibility: true,
-        enabled: false,
-        category_id: categoryB._id,
+        state: MediaPermissions.OwnerOnly,
+        categoryId: categoryB._id,
         banner: {
             _id: v4(),
             type: MediaTypes.Image,
             sources: [{
                 _id: v4(),
-                src: "prodbban_src"
-            }]
+                src: "prodbban_src",
+                fallback: "",
+                posX: 0,
+                posY: 0,
+                preview: "",
+                size: 0,
+                zoom: 0
+            }],
+            state: MediaPermissions.Public,
+            delay: 0,
+            description: ""
         },
         background: {
             _id: v4(),
             type: MediaTypes.Image,
             sources: [{
                 _id: v4(),
-                src: "prodbbg_src"
-            }]
+                src: "prodbbg_src",
+                fallback: "",
+                posX: 0,
+                posY: 0,
+                preview: "",
+                size: 0,
+                zoom: 0
+            }],
+            state: MediaPermissions.Public,
+            delay: 0,
+            description: ""
         },
         medias: [
             {
@@ -140,18 +232,34 @@ const [productionA, productionB, productionC]: Production[] = [
                 type: MediaTypes.Image,
                 sources: [{
                     _id: v4(),
-                    src: "prodb0_0_src"
+                    src: "prodb0_0_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }],
-                visibility: true
+                state: MediaPermissions.Public,
+                delay: 0,
+                description: ""
             },
             {
                 _id: v4(),
                 type: MediaTypes.Image,
                 sources: [{
                     _id: v4(),
-                    src: "prodb1_0_src"
+                    src: "prodb1_0_src",
+                    fallback: "",
+                    posX: 0,
+                    posY: 0,
+                    preview: "",
+                    size: 0,
+                    zoom: 0
                 }],
-                visibility: true
+                state: MediaPermissions.Public,
+                delay: 0,
+                description: ""
             }
         ]
     },
@@ -159,9 +267,8 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production C",
         description: "Description C",
-        visibility: true,
-        enabled: false,
-        category_id: categoryB._id,
+        state: MediaPermissions.Locked,
+        categoryId: categoryB._id,
         banner: {
             _id: v4(),
             type: MediaTypes.Image,
@@ -186,7 +293,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     _id: v4(),
                     src: "prodc0_0_src"
                 }],
-                visibility: true
+                state: MediaPermissions.Public
             },
             {
                 _id: v4(),
@@ -195,7 +302,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     _id: v4(),
                     src: "prodc1_0_src"
                 }],
-                visibility: true
+                state: MediaPermissions.Public
             }
         ]
     }
@@ -210,7 +317,8 @@ export const users: User[] = [
         password: computeHashSync("123456").toString("hex"),
         token: computeToken(),
         productionIds: [],
-        type: Roles.Administrator
+        role: Roles.Administrator,
+        facebookId: "0123"
     },
     {
         _id: v4(),
@@ -219,7 +327,8 @@ export const users: User[] = [
         password: computeHashSync("123456").toString("hex"),
         token: computeToken(),
         productionIds: [productionB._id, productionC._id],
-        type: Roles.Administrator
+        role: Roles.Administrator,
+        facebookId: "4567"
     }
 ];
 
@@ -229,13 +338,23 @@ export const presentations: Container[] = [
         type: PresentationTypes.Horizontal,
         presentations: [
             {
+                _id: v4(),
                 mainMedia: {
                     _id: v4(),
                     type: MediaTypes.Image,
                     sources: [{
                         _id: v4(),
-                        src: "pream_src"
-                    }]
+                        src: "pream_src",
+                        fallback: "",
+                        posX: 0,
+                        posY: 0,
+                        preview: "",
+                        size: 0,
+                        zoom: 0
+                    }],
+                    delay: 0,
+                    description: "",
+                    state: 0
                 },
                 mainText: "Text",
                 alternateMedia: {
@@ -243,8 +362,17 @@ export const presentations: Container[] = [
                     type: MediaTypes.Image,
                     sources: [{
                         _id: v4(),
-                        src: "preaa_src"
-                    }]
+                        src: "preaa_src",
+                        fallback: "",
+                        posX: 0,
+                        posY: 0,
+                        preview: "",
+                        size: 0,
+                        zoom: 0
+                    }],
+                    delay: 0,
+                    description: "",
+                    state: 0
                 },
                 alternateText: "Text",
                 href: "https://facebook.com"
@@ -256,6 +384,7 @@ export const presentations: Container[] = [
         type: PresentationTypes.Spiral,
         presentations: [
             {
+                _id: v4(),
                 mainMedia: {
                     _id: v4(),
                     type: MediaTypes.Image,
@@ -277,6 +406,7 @@ export const presentations: Container[] = [
                 href: "https://facebook.com"
             },
             {
+                _id: v4(),
                 mainMedia: {
                     _id: v4(),
                     type: MediaTypes.Image,
@@ -346,7 +476,7 @@ export const presentations: Container[] = [
                     description: "Text",
                     sources: []
                 },
-                mainText: "",
+                mainText: ""
             }
         ]
     }
