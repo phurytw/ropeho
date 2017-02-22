@@ -38,7 +38,7 @@ describe("Category controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "Administrator",
@@ -46,7 +46,7 @@ describe("Category controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.Administrator
+            role: Roles.Administrator
         }],
         [user, admin]: User[] = users,
         [categoryA, categoryB]: Category[] = categories;
@@ -73,7 +73,7 @@ describe("Category controller", () => {
                 resolve(_(categories).filter((c: Category) => _(entities).map((e: Category) => e._id).includes(c._id)).thru((cats: Category[]) => (entities as Category[]).length === 1 ? head(cats) : cats).value());
             }
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<Category | Category[]>((resolve: (value?: Category | Category[] | PromiseLike<Category | Category[]>) => void) => {
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<Category | Category[]>((resolve: (value?: Category | Category[] | PromiseLike<Category | Category[]>) => void) => {
             if (isArray<string>(id)) {
                 resolve(filter(categories, (c: User) => includes<string>(id, c._id)));
             } else {
@@ -82,7 +82,7 @@ describe("Category controller", () => {
         }));
         searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<Category[]>((resolve: (value?: Category[] | PromiseLike<Category[]>) => void) => {
             if (filters && filters["name"]) {
-                resolve(filter<User>(categories, (c: Category) => includes(uriFriendlyFormat(c.name), uriFriendlyFormat(filters["name"]))));
+                resolve(filter<Category>(categories, (c: Category) => includes(uriFriendlyFormat(c.name), uriFriendlyFormat(filters["name"]))));
             } else {
                 resolve([]);
             }

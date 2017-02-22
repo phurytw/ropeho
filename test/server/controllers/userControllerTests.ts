@@ -39,7 +39,7 @@ describe("User controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "Administrator",
@@ -47,7 +47,7 @@ describe("User controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            type: Roles.Administrator
+            role: Roles.Administrator
         }, {
             _id: v4(),
             name: "Outdated",
@@ -55,7 +55,7 @@ describe("User controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(config.users.tokenLength, -1),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "",
@@ -63,7 +63,7 @@ describe("User controller", () => {
             password: "",
             token: computeToken(),
             productionIds: [],
-            type: Roles.User
+            role: Roles.User
         }, {
             _id: v4(),
             name: "Facebook Name",
@@ -72,7 +72,7 @@ describe("User controller", () => {
             token: computeToken(),
             productionIds: [],
             facebookId: "0123456789",
-            type: Roles.User
+            role: Roles.User
         }],
         [user, admin, outdated, pending, facebook]: User[] = users;
     let server: Server,
@@ -99,7 +99,7 @@ describe("User controller", () => {
                 resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
         }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[], projection: any) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
+        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (isArray<string>(id)) {
                 resolve(filter(users, (u: User) => includes<string>(id, u._id)));
             } else {
