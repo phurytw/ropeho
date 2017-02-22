@@ -9,7 +9,7 @@ import * as chaiAsPromised from "chai-as-promised";
 import RedisGenericRepository from "../../../src/server/dal/genericRepository";
 import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
 import config from "../../../src/config";
-import { createClient, RedisClient, Multi, ClientOpts } from "redis";
+import { createClient, RedisClient, Multi } from "redis";
 import { MediaTypes } from "../../../src/enum";
 import { categories as entities, users } from "./testDb";
 import { map, assign, forEach, includes } from "lodash";
@@ -18,7 +18,6 @@ import { normalizeEmail } from "validator";
 should();
 use(chaiAsPromised);
 
-import RedisConfiguration = Ropeho.Configuration.RedisConfiguration;
 import IGenericRepository = Ropeho.IGenericRepository;
 import Entity = Ropeho.Models.Category;
 import User = Ropeho.Models.User;
@@ -28,7 +27,7 @@ describe("Redis generic repository", () => {
     let repository: IGenericRepository<Entity>,
         redis: RedisClient;
     before((done: MochaDone) => {
-        redis = createClient(assign<Object, RedisConfiguration, ClientOpts>({}, config.redis, { prefix: namespace }));
+        redis = createClient({ ...config.redis, prefix: namespace });
         redis.on("ready", () => {
             // Initializing the repository
             repository = new RedisGenericRepository(redis, {
@@ -244,6 +243,8 @@ describe("Redis generic repository", () => {
                 userRepo.search({ name: "admin", email: "user" }).should.eventually.deep.equal([]));
             it("Should retrieve entities if results match all search filters (one match)", () =>
                 userRepo.search({ name: "user", email: "user" }).should.eventually.deep.equal([userB]));
+            it("Should ignore filters that cannot be used", () =>
+                userRepo.search({ name: "user", fake: "" }).should.eventually.deep.equal([userB]));
         });
         it("Should rebuild indexes from the current repository options", (done: MochaDone) => {
             redis.flushdb();

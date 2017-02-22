@@ -49,7 +49,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
             this.namespace = options.namespace || "";
         } else {
             const { port, host, db, indexes, idProperty, namespace }: RedisConfiguration & IRedisRepositoryOptions = clientOrOptions;
-            this.redis = createClient(port, host, { prefix: namespace || "" });
+            this.redis = createClient(port, host, { prefix: namespace || "", db });
             this.indexes = pickBy<IIndexes, IIndexes>(indexes, (isUnique: boolean, index: string) => index !== idProperty);
             this.idProperty = idProperty || config.database.defaultIdProperty;
             this.namespace = namespace || "";
@@ -57,6 +57,9 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
         this.pluralizedIdProperty = plural(this.idProperty);
         if (!(this.redis instanceof (redis as any).RedisClient)) {
             throw new Error("Failed to create Redis client instance");
+        }
+        if (!this.namespace) {
+            throw new Error("A namespace must be used with this repository class");
         }
     }
     /**
@@ -72,7 +75,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
             return this.getById(entity[idProperty]);
         } else {
             // Get all entities
-            return new Promise<T[]>((resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
+            return new Promise<T[]>(async (resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
                 const { redis }: RedisGenericRepository<T> = this;
                 redis.lrange(pluralizedIdProperty, 0, -1, (err: Error, ids: string[]) => {
                     if (err) {
@@ -113,7 +116,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     }
                 });
             });
-        } else {
+        } else if (!isEmpty(_id)) {
             return new Promise<T>((resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) =>
                 this.redis.get(_id, (err: Error, result: string) => {
                     if (err) {
@@ -124,13 +127,14 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                         resolve(JSON.parse(result));
                     }
                 }));
+        } else {
+            return new Promise<T>((resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => reject(new Error("No ID to retrieve")));
         }
     }
     /**
      * Creates an entity
      * If _id is empty a new ID will be assigned
      * @param {T|T[]} entity The entity to create or an array of entity to create
-     * @param {number|number[]} position The position to be inserted among other entities of the same type. If it's an array its elements represents the positions of the array of entities
      * @returns {Promise<T>|Promise<T[]>} A promise that fulfills with the newly created elements
      */
     create(entity: T | T[]): Promise<T> | Promise<T[]> {
@@ -176,7 +180,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                                 }
                             });
                         } else {
-                            multi.set(`:${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
+                            multi.set(`${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
                         }
                     });
                     multi.set(element[idProperty], JSON.stringify(element))
@@ -206,7 +210,6 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
     /**
      * Updates an entity
      * @param {T|T[]} entity The entity to update or an array of entity to update
-     * @param {number|number[]} position The position to be inserted among other entities of the same type. If it's an array its elements represents the positions of the array of entities
      * @returns {Promise<number>} A promise that fulfills the amount of entity successfully updated
      */
     update(entity: T | T[]): Promise<number> {
@@ -359,41 +362,37 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
      */
     search(filters: IDictionary, range: number = 10): Promise<T[]> {
         return new Promise<T[]>(async (resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
-            const filterKeys: string[] = keys(filters);
+            const { redis, indexes, namespace }: RedisGenericRepository<T> = this;
+            const filterKeys: string[] = _(filters).pickBy<IIndexes>((value: string, key: string) => _(indexes).keys().includes(key)).keys().value();
             if (filterKeys.length === 0) {
                 resolve([]);
             } else {
-                const { redis, indexes }: RedisGenericRepository<T> = this;
                 let ids: string[] = [];
                 // Promise hscan
                 const hscan: (key: string, searchString: string, limit?: number) => Promise<string[]> =
                     (key: string, searchString: string, limit: number = 10): Promise<string[]> =>
                         new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
-                            redis.hscan(plural(key), 0, "MATCH", `*${uriFriendlyFormat(searchString)}*`, "COUNT", limit, (err: Error, [cursor, rest]: string[][]) => {
-                                if (err) {
-                                    reject(err);
-                                }
-                                resolve(filter<string>(rest, (id: string, i: number) => i % 2 === 1));
-                            });
+                            this.hscanAll(plural(key), `*${uriFriendlyFormat(searchString)}*`).then((ids: string[]) =>
+                                resolve(filter<string>(ids, (id: string, i: number) => i % 2 === 1)),
+                                (err: Error) => reject(err));
                         });
                 // Promise scan
                 const scan: (key: string, searchString: string, limit?: number) => Promise<string[]> =
                     (key: string, searchString: string, limit: number = 10): Promise<string[]> =>
-                        new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+                        new Promise<string[]>(async (resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
                             let ids: string[] = [];
-                            redis.scan(0, "MATCH", `${isEmpty(this.namespace) ? "" : this.namespace}${plural(key)}:*`, "COUNT", limit, (err: Error, [cursor, rest]: string[][]) => {
-                                const batch: Multi = (redis as any).batch();
-                                forEach<string>(rest, (id: string) =>
-                                    batch.get(id.substring(this.namespace.length), (err: Error, value: string) => {
-                                        if (err) {
-                                            reject(err);
-                                        }
-                                        if (value && includes(value, searchString)) {
-                                            ids = [...ids, id.split(":")[isEmpty(this.namespace) ? 1 : 2]];
-                                        }
-                                    }));
-                                batch.exec((err: Error) => err ? reject(err) : resolve(ids));
-                            });
+                            const batch: Multi = (redis as any).batch(),
+                                keys: string[] = await this.scanAll(`${isEmpty(namespace) ? "" : namespace}${plural(key)}:*`);
+                            forEach<string>(keys, (id: string) =>
+                                batch.get(id.substring(namespace.length), (err: Error, value: string) => {
+                                    if (err) {
+                                        reject(err);
+                                    }
+                                    if (value && includes(value, searchString)) {
+                                        ids = [...ids, id.split(":")[isEmpty(namespace) ? 1 : 2]];
+                                    }
+                                }));
+                            batch.exec((err: Error) => err ? reject(err) : resolve(ids));
                         });
                 for (const key of filterKeys) {
                     const searchString: string = filters[key];
@@ -403,9 +402,6 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                             break;
                         case false:
                             ids = [...ids, ...(await scan(key, searchString))];
-                            break;
-                        default:
-                            reject(new Error(`Can not search by ${key}`));
                             break;
                     }
                 }
@@ -426,7 +422,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
      */
     rebuildIndexes(order?: string[]): Promise<void> {
         return new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
-            const { redis, indexes, idProperty, pluralizedIdProperty }: RedisGenericRepository<T> = this;
+            const { redis, indexes, idProperty, pluralizedIdProperty, namespace }: RedisGenericRepository<T> = this;
             const smartGet: (key: string) => Promise<any> =
                 (key: string): Promise<any> => new Promise<any>((resolve: (value?: any | PromiseLike<any>) => void, reject: (reason?: any) => void) => {
                     redis.type(key, (err: Error, type: string) => {
@@ -464,7 +460,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     // Since we can't overwrite values without searching its index it's easier to rewrite the whole list
                     const multi: Multi = redis.multi().del(pluralizedIdProperty);
                     forEach<string>(items, (id: string) => {
-                        id = id.substring(this.namespace.length);
+                        id = id.substring(namespace.length);
                         for (const index of allKeys) {
                             if (startsWith(id, index)) {
                                 return true;
@@ -493,6 +489,61 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     });
                 }
             });
+        });
+    }
+    /**
+     * Scans recursively until the entire database has been scanned
+     * @param {string} match match pattern
+     * @returns {Promise<string[]>} a promise that fulfills with the retrieved keys
+     */
+    protected scanAll(match?: string): Promise<string[]> {
+        return new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+            let ids: string[] = [];
+            const { redis }: RedisGenericRepository<T> = this;
+            const recursiveScan: (cursor: string, match?: string) => void =
+                (cursor: string, match?: string): void => {
+                    redis.scan(cursor, ...match && !isEmpty(match) ? ["MATCH", `*${match}`] : [],
+                        (err: Error, [cursor, array]: (string | string[])[]) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            ids = [...ids, ...array as string[]];
+                            if (cursor === "0") {
+                                resolve(ids);
+                            } else {
+                                recursiveScan(cursor as string, match);
+                            }
+                        });
+                };
+            recursiveScan("0", match);
+        });
+    }
+    /**
+     * Scans recursively until the entire sorted set has been scanned
+     * @param {string} key sorted set key
+     * @param {string} match match pattern
+     * @returns {Promise<string[]>} a promise that fulfills with the retrieved keys
+     */
+    protected hscanAll(key: string, match?: string): Promise<string[]> {
+        return new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
+            let ids: string[] = [];
+            const { redis }: RedisGenericRepository<T> = this;
+            const recursiveHscan: (cursor: string, key: string, match?: string) => void =
+                (cursor: string, key: string, match?: string): void => {
+                    redis.hscan(key, cursor, ...match && !isEmpty(match) ? ["MATCH", match] : [],
+                        (err: Error, [cursor, array]: (string | string[])[]) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            ids = [...ids, ...array as string[]];
+                            if (cursor === "0") {
+                                resolve(ids);
+                            } else {
+                                recursiveHscan(cursor as string, key, match);
+                            }
+                        });
+                };
+            recursiveHscan("0", key, match);
         });
     }
 }
