@@ -1,3 +1,12 @@
 node_modules/
 bower_components/
 *.ppk
+src/admin/**/*
+src/client/**/*
+src/common/**/*
+.babelrc
+.bootstraprc
+wallaby*
+webpack*
+*admin*
+*client*
