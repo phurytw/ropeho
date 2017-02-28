@@ -18,7 +18,7 @@ import { normalizeEmail } from "validator";
 should();
 use(chaiAsPromised);
 
-import IGenericRepository = Ropeho.IGenericRepository;
+import IGenericRepository = Ropeho.Models.IGenericRepository;
 import Entity = Ropeho.Models.Category;
 import User = Ropeho.Models.User;
 
@@ -201,12 +201,8 @@ describe("Redis generic repository", () => {
         const [userA, userB]: User[] = users;
         before(() => {
             userRepo = new RedisGenericRepository<User>(redis, {
-                namespace,
-                idProperty: config.database.defaultIdProperty,
-                indexes: {
-                    name: false,
-                    email: true
-                }
+                ...config.database.users,
+                namespace
             });
         });
         beforeEach((done: MochaDone) => {
@@ -215,6 +211,8 @@ describe("Redis generic repository", () => {
             forEach<User>(users, (u: User) => {
                 multi.set(u._id, JSON.stringify(u))
                     .hset("emails", uriFriendlyFormat(normalizeEmail(u.email) as string), u._id)
+                    .hset("facebookIds", uriFriendlyFormat(u.facebookId), u._id)
+                    .hset("tokens", uriFriendlyFormat(u.token), u._id)
                     .set(`names:${u._id}`, uriFriendlyFormat(u.name))
                     .rpush("_ids", u._id);
             });
@@ -222,17 +220,31 @@ describe("Redis generic repository", () => {
                 done();
             });
         });
-        describe("Unique indexes", () => {
+        describe("Non nullable unique indexes", () => {
             it("Should reject if it has no email", () =>
-                userRepo.create([{}, {}]).should.be.eventually.rejected);
+                userRepo.create([{ token: "token", name: "name" }, { token: "token", name: "name" }]).should.be.eventually.rejected);
             it("Should reject if the email already exists", () =>
-                userRepo.create({ email: userA.email }).should.eventually.be.rejected);
+                userRepo.create({ email: userA.email, token: "token", name: "name" }).should.eventually.be.rejected);
         });
-        describe("Non unique indexes", () => {
+        describe("Nullable non unique indexes", () => {
             it("Should accept if it has no name", () =>
-                userRepo.create({ email: "test@test.com" }).should.eventually.be.fulfilled);
+                userRepo.create({ email: "test@test.com", token: "token" }).should.eventually.be.fulfilled);
             it("Should accept if the same name already exists", () =>
-                userRepo.create({ name: entities[0].name, email: "test@test.com" }).should.eventually.be.fulfilled);
+                userRepo.create({ name: entities[0].name, email: "test@test.com", token: "token" }).should.eventually.be.fulfilled);
+        });
+        describe("Nullable unique indexes", () => {
+            it("Should accept if it has no facebookId", () =>
+                userRepo.create({ facebookId: `${userA.facebookId}0123`, email: "test@test.com", token: "token", name: "name" }).should.eventually.be.fulfilled);
+            it("Should reject if the facebookId already exists", () =>
+                userRepo.create({ facebookId: userA.facebookId, email: "test@test.com", token: "token", name: "name" }).should.eventually.be.rejected);
+            it("Should be able to remove a unique index", (done: MochaDone) => {
+                userRepo.update({ ...userA, facebookId: "" }).then(() => {
+                    redis.hgetall("facebookIds", (err: Error, results: string[]) => {
+                        includes<string>(results, userA._id).should.be.false;
+                        done();
+                    });
+                });
+            });
         });
         describe("Searching", () => {
             it("Should retrieve entities matching a unique index", () =>

@@ -5,7 +5,7 @@
 
 /// <reference path="../typings.d.ts" />
 import { v4 } from "node-uuid";
-import { map, isArray, forEach, includes, pickBy, values, keys, without, isEmpty, tap, filter, join, uniq, startsWith } from "lodash";
+import { map, isArray, forEach, includes, pickBy, values, keys, without, tap, filter, join, uniq, startsWith } from "lodash";
 import * as _ from "lodash";
 import { createClient, RedisClient, Multi } from "redis";
 import * as redis from "redis";
@@ -14,16 +14,17 @@ import config from "../../config";
 import { plural, singular } from "pluralize";
 
 import RedisConfiguration = Ropeho.Configuration.RedisConfiguration;
-import IRedisRepositoryOptions = Ropeho.IRedisGenericRepositoryOptions;
+import IRedisRepositoryOptions = Ropeho.Models.IRedisGenericRepositoryOptions;
+import IIndexOptions = Ropeho.Models.IIndexOptions;
 
 type ICombinedRedisOptions = RedisConfiguration & IRedisRepositoryOptions;
 type IDictionary = { [key: string]: string };
-type IIndexes = { [key: string]: boolean };
+type IIndexes = { [key: string]: IIndexOptions };
 
 /**
  * Generic repository that uses Redis
  */
-export default class RedisGenericRepository<T extends any> implements Ropeho.IGenericRepository<T> {
+export default class RedisGenericRepository<T extends any> implements Ropeho.Models.IGenericRepository<T> {
     protected redis: RedisClient;
     protected indexes: IIndexes;
     protected idProperty: string;
@@ -116,7 +117,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     }
                 });
             });
-        } else if (!isEmpty(_id)) {
+        } else if (_id) {
             return new Promise<T>((resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) =>
                 this.redis.get(_id, (err: Error, result: string) => {
                     if (err) {
@@ -162,25 +163,29 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                         element[idProperty] = element[idProperty] || v4();
                     }
                     // Secondary indexes
-                    forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
-                        if (isUnique) {
-                            if (!element[property] || isEmpty(element[property])) {
-                                reject(new Error(`Element at index ${i} can not have the property ${property} null or empty`));
+                    forEach<IIndexes>(indexes, (indexConfig: IIndexOptions, property: string) => {
+                        const { nullable, unique }: IIndexOptions = indexConfig,
+                            value: string = element[property],
+                            id: string = element[idProperty];
+                        if (!nullable && !value) {
+                            reject(new Error(`Element at index ${i} can not have the property ${property} null or empty`));
+                        } else if (value) {
+                            if (unique) {
+                                multi.hset(plural(property), uriFriendlyFormat(value), id);
+                                // Check that the unique constraint is respected
+                                alreadyExistsBatch.hexists(plural(property), uriFriendlyFormat(value), (err: Error, exists: number) => {
+                                    if (err) {
+                                        reject(err);
+                                    }
+                                    if (exists === 1) {
+                                        existingUniqueKeys[property] = isArray<string>(existingUniqueKeys[property]) ?
+                                            [...existingUniqueKeys[property], { id: id, value }] :
+                                            [{ id: id, value }];
+                                    }
+                                });
+                            } else {
+                                multi.set(`${plural(property)}:${id}`, uriFriendlyFormat(value));
                             }
-                            multi.hset(plural(property), uriFriendlyFormat(element[property]), element[idProperty]);
-                            // Check that the unique constraint is respected
-                            alreadyExistsBatch.hexists(plural(property), uriFriendlyFormat(element[property]), (err: Error, exists: number) => {
-                                if (err) {
-                                    reject(err);
-                                }
-                                if (exists === 1) {
-                                    existingUniqueKeys[property] = isArray<string>(existingUniqueKeys[property]) ?
-                                        [...existingUniqueKeys[property], { id: element[idProperty], value: element[property] }] :
-                                        [{ id: element[idProperty], value: element[property] }];
-                                }
-                            });
-                        } else {
-                            multi.set(`${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
                         }
                     });
                     multi.set(element[idProperty], JSON.stringify(element))
@@ -194,9 +199,9 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     if (existingIds.length > 0) {
                         reject(new Error(`There are already entities with IDs ${join(existingIds, ", ")} in the database`));
                     } else if (_(existingUniqueKeys).values().flatten().value().length > 0) {
-                        reject(new Error(_(existingUniqueKeys).keys().map<string>((property: string) => {
-                            return `There's already a '${property}' with value(s) ${_(existingUniqueKeys[property]).map<string>((data: { id: string, value: any }) => data.value).join(" or ")}`;
-                        }).join(". ")));
+                        reject(new Error(_(existingUniqueKeys).keys().map<string>((property: string) =>
+                            `There's already a '${property}' with value(s) ${_(existingUniqueKeys[property]).map<string>((data: { id: string, value: any }) => data.value).join(" or ")}`)
+                            .join(". ")));
                     } else {
                         // Everything is valid we can go on !!
                         multi.exec((err: Error) => err ? reject(err) : resolve(entity.length === 1 ? entity[0] : entity));
@@ -224,8 +229,8 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                 // We only get unique properties because theirs keys are named after the values
                 // So if the value is updated we need to get the entire Hashset and compared IDs
                 // Non unique properties can be found from theirs IDs so it's not necessary to find them
-                forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
-                    if (isUnique) {
+                forEach<IIndexes>(indexes, (indexConfig: IIndexOptions, property: string) => {
+                    if (indexConfig.unique) {
                         batch.hgetall(plural(property), (err: Error, results: IDictionary) => err ? reject(err) : indexResults[property] = results);
                     }
                 });
@@ -241,15 +246,25 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                             reject(`ID ${element[idProperty]} could not be found`);
                         }
                         // Secondary indexes operations
-                        forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
-                            if (isUnique) {
-                                if (!element[property] || isEmpty(element[property])) {
-                                    reject(new Error(`The property ${property} can not be null or empty`));
-                                }
-                                multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === element[idProperty]).keys().head())
-                                    .hset(plural(property), uriFriendlyFormat(element[property]), element[idProperty]);
+                        forEach<IIndexes>(indexes, (indexConfig: IIndexOptions, property: string) => {
+                            const { nullable, unique }: IIndexOptions = indexConfig,
+                                value: string = element[property],
+                                id: string = element[idProperty];
+                            if (!nullable && !value) {
+                                reject(new Error(`Element at index ${i} can not have the property ${property} null or empty`));
                             } else {
-                                multi.set(`:${plural(property)}:${element[idProperty]}`, uriFriendlyFormat(element[property]));
+                                if (unique) {
+                                    multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === id).keys().head());
+                                    if (value) {
+                                        multi.hset(plural(property), uriFriendlyFormat(value), value);
+                                    }
+                                } else {
+                                    if (value) {
+                                        multi.set(`:${plural(property)}:${id}`, uriFriendlyFormat(value));
+                                    } else {
+                                        multi.del(`:${plural(property)}:${id}`, uriFriendlyFormat(value));
+                                    }
+                                }
                             }
                         });
                         multi.set(element[idProperty], JSON.stringify(element));
@@ -292,8 +307,8 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                                 // Delete the entity and its ID
                                 multi.del(e, (err: Error, isDeleted: number) => err ? reject(err) : deletedElements += isDeleted)
                                     .lrem(pluralizedIdProperty, 0, e);
-                                forEach<IIndexes>(indexes, (isUnique: boolean, property: string) => {
-                                    if (isUnique) {
+                                forEach<IIndexes>(indexes, (indexConfig: IIndexOptions, property: string) => {
+                                    if (indexConfig.unique) {
                                         multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === e).keys().head());
                                     } else {
                                         multi.del(`:${plural(property)}:${e}`);
@@ -382,21 +397,21 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                         new Promise<string[]>(async (resolve: (value?: string[] | PromiseLike<string[]>) => void, reject: (reason?: any) => void) => {
                             let ids: string[] = [];
                             const batch: Multi = (redis as any).batch(),
-                                keys: string[] = await this.scanAll(`${isEmpty(namespace) ? "" : namespace}${plural(key)}:*`);
+                                keys: string[] = await this.scanAll(`${!namespace ? "" : namespace}${plural(key)}:*`);
                             forEach<string>(keys, (id: string) =>
                                 batch.get(id.substring(namespace.length), (err: Error, value: string) => {
                                     if (err) {
                                         reject(err);
                                     }
                                     if (value && includes(value, searchString)) {
-                                        ids = [...ids, id.split(":")[isEmpty(namespace) ? 1 : 2]];
+                                        ids = [...ids, id.split(":")[!namespace ? 1 : 2]];
                                     }
                                 }));
                             batch.exec((err: Error) => err ? reject(err) : resolve(ids));
                         });
                 for (const key of filterKeys) {
                     const searchString: string = filters[key];
-                    switch (indexes[key]) {
+                    switch (indexes[key].unique) {
                         case true:
                             ids = [...ids, ...(await hscan(key, searchString))];
                             break;
@@ -456,7 +471,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                     reject(err);
                 } else {
                     let entityIds: string[] = [];
-                    const allKeys: string[] = [..._(indexes).keys().map((key: string) => plural(key)).value()];
+                    const allKeys: string[] = [..._(indexes).keys().map(plural).value()];
                     // Since we can't overwrite values without searching its index it's easier to rewrite the whole list
                     const multi: Multi = redis.multi().del(pluralizedIdProperty);
                     forEach<string>(items, (id: string) => {
@@ -473,7 +488,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
                         const entity: T = JSON.parse(await smartGet(id));
                         forEach<string>(allKeys, (key: string) => {
                             const property: string = singular(key);
-                            if (indexes[property]) {
+                            if (indexes[property].unique) {
                                 multi.hset(key, uriFriendlyFormat(entity[property]), entity[idProperty]);
                             } else {
                                 multi.set(`${key}:${entity[idProperty]}`, uriFriendlyFormat(entity[property]));
@@ -502,7 +517,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
             const { redis }: RedisGenericRepository<T> = this;
             const recursiveScan: (cursor: string, match?: string) => void =
                 (cursor: string, match?: string): void => {
-                    redis.scan(cursor, ...match && !isEmpty(match) ? ["MATCH", `*${match}`] : [],
+                    redis.scan(cursor, ...match ? ["MATCH", `*${match}`] : [],
                         (err: Error, [cursor, array]: (string | string[])[]) => {
                             if (err) {
                                 reject(err);
@@ -530,7 +545,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.IGe
             const { redis }: RedisGenericRepository<T> = this;
             const recursiveHscan: (cursor: string, key: string, match?: string) => void =
                 (cursor: string, key: string, match?: string): void => {
-                    redis.hscan(key, cursor, ...match && !isEmpty(match) ? ["MATCH", match] : [],
+                    redis.hscan(key, cursor, ...match ? ["MATCH", match] : [],
                         (err: Error, [cursor, array]: (string | string[])[]) => {
                             if (err) {
                                 reject(err);

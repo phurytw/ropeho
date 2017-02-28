@@ -3,24 +3,42 @@
         "database": {
             "categories": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "category:",
                 "idProperty": "_id"
             },
             "productions": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "production:",
                 "idProperty": "_id"
             },
             "users": {
                 "indexes": {
-                    "name": false,
-                    "email": true,
-                    "token": true,
-                    "facebookId": true
+                    "name": {
+                        "unique": false,
+                        "nullable": true
+                    },
+                    "email": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "token": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "facebookId": {
+                        "unique": true,
+                        "nullable": true
+                    }
                 },
                 "namespace": "user:",
                 "idProperty": "_id"
@@ -45,7 +63,7 @@
         "redis": {
             "host": "localhost",
             "port": 6379,
-            "db": "1"
+            "db": 1
         },
         "users": {
             "tokenLength": 48,
@@ -104,24 +122,42 @@
         "database": {
             "categories": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "category:",
                 "idProperty": "_id"
             },
             "productions": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "production:",
                 "idProperty": "_id"
             },
             "users": {
                 "indexes": {
-                    "name": false,
-                    "email": true,
-                    "token": true,
-                    "facebookId": true
+                    "name": {
+                        "unique": false,
+                        "nullable": true
+                    },
+                    "email": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "token": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "facebookId": {
+                        "unique": true,
+                        "nullable": true
+                    }
                 },
                 "namespace": "user:",
                 "idProperty": "_id"
@@ -146,7 +182,7 @@
         "redis": {
             "host": "localhost",
             "port": 6379,
-            "db": "2"
+            "db": 2
         },
         "users": {
             "tokenLength": 48,
@@ -205,24 +241,42 @@
         "database": {
             "categories": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "category:",
                 "idProperty": "_id"
             },
             "productions": {
                 "indexes": {
-                    "name": true
+                    "name": {
+                        "unique": true,
+                        "nullable": false
+                    }
                 },
                 "namespace": "production:",
                 "idProperty": "_id"
             },
             "users": {
                 "indexes": {
-                    "name": false,
-                    "email": true,
-                    "token": true,
-                    "facebookId": true
+                    "name": {
+                        "unique": false,
+                        "nullable": true
+                    },
+                    "email": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "token": {
+                        "unique": true,
+                        "nullable": false
+                    },
+                    "facebookId": {
+                        "unique": true,
+                        "nullable": true
+                    }
                 },
                 "namespace": "user:",
                 "idProperty": "_id"
@@ -247,7 +301,7 @@
         "redis": {
             "host": "localhost",
             "port": 6379,
-            "db": "0"
+            "db": 0
         },
         "users": {
             "tokenLength": 48,
