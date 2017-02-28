@@ -12,13 +12,13 @@ import * as sinonChai from "sinon-chai";
 import GenericRepository from "../../src/server/dal/genericRepository";
 import GlobalRepository from "../../src/server/dal/globalRepository";
 import mediaManager from "../../src/server/media/mediaManager";
-import { filter, isArray, includes, map, isEmpty, range, head, keys } from "lodash";
+import { filter, isArray, includes, map, range, head, last, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import { attach, socketEvents, getClients, getLocked, kickClient, getUploading, getDownloading } from "../../src/server/socket";
 import { v4 } from "node-uuid";
 import { Roles, EntityType, MediaTypes } from "../../src/enum";
 import config from "../../src/config";
-import { productions, categories, presentations } from "./dal/testDb";
+import { productions, categories as cats, presentations } from "./dal/testDb";
 import * as authorize from "../../src/server/accounts/authorize";
 import { basename, join } from "path";
 import * as task from "../../src/server/media/taskQueue";
@@ -49,6 +49,10 @@ describe("Socket IO Server", () => {
             forceNew: true,
             reconnection: false
         },
+        categories: Category[] = [...cats, cloneDeep<Category>({
+            ...head<Category>(cats),
+            _id: v4()
+        })],
         [productionA, productionB, productionC]: Production[] = productions,
         users: User[] = [{
             _id: v4(),
@@ -112,13 +116,13 @@ describe("Socket IO Server", () => {
                 }
                 results = [...results, _(collection).filter((e: Entity) => e._id === _id).head()];
             }
-            resolve(isArray<string>(ids) ? results : head(results));
+            resolve(cloneDeep<Entity>(isArray<string>(ids) ? results : head(results)));
         }));
         getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (isArray<string>(id)) {
-                resolve(filter(users, (u: User) => includes<string>(id, u._id)));
+                resolve(_(users).filter((u: User) => includes<string>(id, u._id)).cloneDeep());
             } else {
-                resolve(_(users).filter((u: User) => u._id === id).head());
+                resolve(_(users).filter((u: User) => u._id === id).thru(cloneDeep).head());
             }
         }));
         cookieStub = stub(authorize, "deserializeCookie", () =>
@@ -273,7 +277,7 @@ describe("Socket IO Server", () => {
                 const paths: string[] = _([productionB.banner, productionB.background, ...productionB.medias])
                     .map<Source>((m: Media) => m.sources)
                     .flatten<Source>()
-                    .filter((s: Source) => !isEmpty(s.src))
+                    .filter((s: Source) => s.src.length !== 0)
                     .map((s: Source) => s.src)
                     .value();
                 clientIo.on(socketEvents.DownloadEnd, () => {
@@ -574,9 +578,10 @@ describe("Socket IO Server", () => {
             });
             it("Should create a new name if it is its first upload", (done: MochaDone) => {
                 entityType = EntityType.Category;
-                const media: Media = category.banner,
+                const category: Category = last<Category>(categories),
+                    media: Media = category.banner,
                     [src]: Source[] = media.sources;
-                categories[0].banner.sources[0].src = "";
+                src.src = "";
                 clientIo.on(socketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         videoEncStub.should.have.been.calledOnce;
@@ -603,10 +608,11 @@ describe("Socket IO Server", () => {
             });
             it("Should create a new name if it is its first upload with an optional filename", (done: MochaDone) => {
                 entityType = EntityType.Category;
-                const media: Media = category.banner,
+                const category: Category = last<Category>(categories),
+                    media: Media = category.banner,
                     [src]: Source[] = media.sources,
                     filename: string = "test.txt";
-                categories[0].banner.sources[0].src = "";
+                src.src = "";
                 clientIo.on(socketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         videoEncStub.should.have.been.calledOnce;
