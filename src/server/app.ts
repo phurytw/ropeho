@@ -16,7 +16,6 @@ import config from "../config";
 import GenericRepository from "./dal/genericRepository";
 import { verifyPassword } from "./accounts/password";
 import { normalizeEmail, isEmail } from "validator";
-import { isString } from "lodash";
 import { renderFile } from "ejs";
 import * as connectRedis from "connect-redis";
 
@@ -25,7 +24,7 @@ import homeRoutes from "./controllers/home";
 import apiRoutes from "./controllers/index";
 
 // User
-import IGenericRepository = Ropeho.IGenericRepository;
+import IGenericRepository = Ropeho.Models.IGenericRepository;
 import User = Ropeho.Models.User;
 
 // Passport
@@ -36,7 +35,7 @@ const userRepository: IGenericRepository<User> = new GenericRepository<User>({
 passport.use(new LocalStrategy({
     usernameField: "email"
 }, async (email: string, password: string, done: (error: any, user?: any, options?: { message: string; }) => void): Promise<void> => {
-    if (!isString(email) || !isEmail(email)) {
+    if (typeof email !== "string" || !isEmail(email)) {
         done(null, false, { message: `Email (${email}) is not valid` });
     } else {
         try {

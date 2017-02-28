@@ -9,7 +9,7 @@ import * as express from "express";
 import GenericRepository from "../dal/genericRepository";
 import { v4 } from "node-uuid";
 import { isEmail, normalizeEmail } from "validator";
-import { isEmpty, isString, keys, map, pickBy, includes } from "lodash";
+import { isEmpty, keys, map, pickBy, includes, trim } from "lodash";
 import { computeHash } from "../accounts/password";
 import { computeToken, isTokenValid } from "../accounts/token";
 import { isAdmin } from "../accounts/authorize";
@@ -17,22 +17,30 @@ import mailer from "../helpers/mailer";
 import { renderAsString } from "../app";
 import { authenticate, AuthenticateOptions } from "passport";
 import config from "../../config";
+import { isUser } from "../helpers/entityUtilities";
+import ErrorResponse from "../helpers/errorResponse";
+import { Roles, ErrorCodes } from "../../enum";
 
 import User = Ropeho.Models.User;
-import IGenericRepository = Ropeho.IGenericRepository;
+import Production = Ropeho.Models.Production;
+import IGenericRepository = Ropeho.Models.IGenericRepository;
 
 const router: Router = express.Router();
 const userRepository: IGenericRepository<User> = new GenericRepository<User>({
     ...config.redis,
     ...config.database.users
 });
+const productionRepository: IGenericRepository<Production> = new GenericRepository<Production>({
+    ...config.redis,
+    ...config.database.productions
+});
 
 router.get("/",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            const { query }: Request = req;
-            const fields: string[] = isString(query.fields) ? map<string, string>(query.fields.split(","), (f: string) => f.trim()) : [];
+            const { query, user }: Request = req;
+            const fields: string[] = typeof query.fields === "string" ? map<string, string>(query.fields.split(","), trim) : [];
             let found: User[];
             delete query.fields;
             // Fetching
@@ -43,11 +51,25 @@ router.get("/",
             }
             // Removing unwanted fields
             if (!isEmpty(fields)) {
-                found = map<User, User>(found, (c: User) => pickBy<User, User>(c, (value: any, key: string) => includes(fields, key)));
+                found = map<User, User>(found, (c: User) => pickBy<User, User>(c, (value: any, key: string) => key === "productionIds" || includes(fields, key)));
+            }
+            // If productionIds or productions is not filtered out we get associated productions
+            if (isEmpty(fields) || includes<string>(fields, "productions")) {
+                for (const user of found) {
+                    user.productions = await productionRepository.getById(user.productionIds) as Production[];
+                    // Remove productions if not requested
+                    if (!isEmpty(fields) && !includes<string>(fields, "productions")) {
+                        delete user.productions;
+                    }
+                    // Remove productionIds if not requested
+                    if (!isEmpty(fields) && !includes<string>(fields, "productionIds")) {
+                        delete user.productionIds;
+                    }
+                }
             }
             res.status(200).send(found);
         } catch (error) {
-            res.status(500).send(error.message);
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 
@@ -55,15 +77,24 @@ router.get("/:id",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            const fields: string[] = isString(req.query.fields) ? map<string, string>(req.query.fields.split(","), (f: string) => f.trim()) : [];
+            const { query, user }: Request = req;
+            const fields: string[] = typeof query.fields === "string" ? map<string, string>(query.fields.split(","), trim) : [];
             let found: User = await userRepository.getById(req.params.id);
             // Removing unwanted fields
             if (!isEmpty(fields)) {
-                found = pickBy<User, User>(found, (value: any, key: string) => includes(fields, key));
+                found = pickBy<User, User>(found, (value: any, key: string) => key === "productionIds" || includes(fields, key));
+            }
+            // If productionIds or productions is not filtered out we get associated productions
+            if (isEmpty(fields) || includes<string>(fields, "productions")) {
+                found.productions = await productionRepository.getById(found.productionIds) as Production[];
+            }
+            // Remove productionIds if not requested
+            if (!isEmpty(fields) && !includes<string>(fields, "productionIds")) {
+                delete found.productionIds;
             }
             res.status(200).send(found);
         } catch (error) {
-            res.status(500).send(error.message);
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 
@@ -72,23 +103,40 @@ router.post("/",
     async (req: Request, res: Response) => {
         try {
             // Check if email is valid
-            let user: User = req.body,
-                { email }: User = user;
+            let user: User = req.body;
+            const { email }: User = user;
+            const { facebookId, name, productionIds }: User = user;
+            // Check if email was valid
             if (!email || !isEmail(email)) {
-                res.status(400).send("User does not have a valid email");
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: "User does not have a valid email",
+                    userMessage: "L'adresse mail est incorrecte",
+                    errorCode: ErrorCodes.InvalidRequest
+                }).send(res);
                 return;
             }
-            email = normalizeEmail(email) as string;
-            // Check if email is in use
-            const [found]: User[] = await userRepository.search({ email });
-            if (found) {
-                res.status(401).send(`${email} is already used`);
-                return;
-            }
+            user.email = normalizeEmail(email) as string;
             // ID
             user._id = user._id || v4();
             // Invitation token
             user.token = computeToken();
+            // Other properties
+            user.facebookId = facebookId || "";
+            user.name = name || "";
+            user.password = "";
+            user.productionIds = productionIds || [];
+            user.role = Roles.User;
+            // It prevents users to have unwanted properties stored in the database
+            if (!isUser(user)) {
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: "User is not valid",
+                    userMessage: "Les données envoyés sont incorrectes",
+                    errorCode: ErrorCodes.InvalidRequest
+                }).send(res);
+                return;
+            }
             user = await userRepository.create(user);
             // Send invitation email
             await mailer.sendMail({
@@ -99,7 +147,32 @@ router.post("/",
             });
             res.status(200).send(user);
         } catch (error) {
-            res.status(500).send(error.message);
+            const user: User = req.body,
+                { email, facebookId }: User = user;
+            // Check if email is in use
+            const [emailFound]: User[] = await userRepository.search({ email });
+            if (emailFound) {
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `${email} is already used`,
+                    userMessage: `L'adresse mail ${email} est déjà utilisée par un autre compte`,
+                    errorCode: ErrorCodes.AlreadyExists
+                }).send(res);
+                return;
+            }
+            // Check if facebookId is in use
+            const [fbFound]: User[] = await userRepository.search({ facebookId });
+            if (emailFound) {
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `Facebook account ${facebookId} is already used`,
+                    userMessage: `Ce compte Facebook est déjà utilisé par un autre compte`,
+                    errorCode: ErrorCodes.AlreadyExists
+                }).send(res);
+                return;
+            }
+            // Other errors
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 
@@ -108,34 +181,59 @@ router.post("/register/:token", async (req: Request, res: Response) => {
         let [user]: User[] = await userRepository.search({ token: req.params.token });
         // Validate token
         if (!user) {
-            res.status(404).send(`User not found with token ${req.params.token}`);
+            new ErrorResponse({
+                status: 400,
+                developerMessage: `User not found with token ${req.params.token}`,
+                userMessage: "Lien invalide",
+                errorCode: ErrorCodes.NotFound
+            }).send(res);
             return;
         }
         if (!isTokenValid(user.token)) {
-            res.status(401).send(`Token is invalid or has expired`);
+            new ErrorResponse({
+                status: 400,
+                developerMessage: `Token is invalid or has expired`,
+                userMessage: "Le délai d'inscription a expiré veuillez nous contacter pour renouveller votre lien",
+                errorCode: ErrorCodes.AssistanceRequired
+            }).send(res);
             return;
         }
         // Check if user is already registered
         if (user.password || user.facebookId) {
-            res.status(401).send(`User is already registered`);
+            new ErrorResponse({
+                status: 400,
+                developerMessage: `User is already registered`,
+                userMessage: "Ce compte a déjà terminé son inscription",
+                errorCode: ErrorCodes.AlreadyExists
+            }).send(res);
             return;
         }
         // Validate name and password
+        const { name, password }: User = req.body;
+        if (!name) {
+            new ErrorResponse({
+                status: 400,
+                developerMessage: "Username is required",
+                userMessage: "Un nom est requis",
+                errorCode: ErrorCodes.InvalidRequest
+            }).send(res);
+            return;
+        }
+        if (!password) {
+            new ErrorResponse({
+                status: 400,
+                developerMessage: "Password is required",
+                userMessage: "Un mot de passe est requis",
+                errorCode: ErrorCodes.InvalidRequest
+            }).send(res);
+            return;
+        }
         user = {
             ...user,
-            name: req.body.name,
-            password: req.body.password
+            name,
+            password: (await computeHash(password)).toString("hex")
         };
-        if (isEmpty(user.name)) {
-            res.status(400).send("Username is required");
-            return;
-        }
-        if (isEmpty(user.password)) {
-            res.status(400).send("Password is required");
-            return;
-        }
         // Update user with password
-        user.password = (await computeHash(user.password)).toString("hex");
         await userRepository.update(user);
         // Send confirmation email
         await mailer.sendMail({
@@ -147,7 +245,7 @@ router.post("/register/:token", async (req: Request, res: Response) => {
         });
         res.status(200).send();
     } catch (error) {
-        res.status(500).send(error.message);
+        new ErrorResponse({ developerMessage: error }).send(res);
     }
 });
 
@@ -158,16 +256,31 @@ router.get("/register/:token/facebook", (req: Request, res: Response, next: Next
             let [user]: User[] = await userRepository.search({ token: req.params.token });
             // Validate token
             if (!user) {
-                res.status(404).send(`User not found with token ${req.params.token}`);
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `User not found with token ${req.params.token}`,
+                    userMessage: "Lien invalide",
+                    errorCode: ErrorCodes.NotFound
+                }).send(res);
                 return;
             }
             if (!isTokenValid(user.token)) {
-                res.status(401).send(`Token is invalid or has expired`);
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `Token is invalid or has expired`,
+                    userMessage: "Le délai d'inscription a expiré veuillez nous contacter pour renouveller votre lien",
+                    errorCode: ErrorCodes.AssistanceRequired
+                }).send(res);
                 return;
             }
             // Check if user is already registered
             if (user.password || user.facebookId) {
-                res.status(401).send(`User is already registered`);
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `User is already registered`,
+                    userMessage: "Ce compte a déjà terminé son inscription",
+                    errorCode: ErrorCodes.AlreadyExists
+                }).send(res);
                 return;
             }
             // Fuse facebook account and user
@@ -185,7 +298,7 @@ router.get("/register/:token/facebook", (req: Request, res: Response, next: Next
             });
             res.status(200).send();
         } catch (error) {
-            res.status(500).send(error.message);
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 
@@ -193,14 +306,33 @@ router.put("/:id",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            const nUpdated: number = await userRepository.update(req.body);
-            if (nUpdated === 0) {
-                res.status(404).send(`User ${req.params.id} could not be found`);
-            } else {
-                res.status(200).send(req.body);
+            let user: User = await userRepository.getById(req.body._id);
+            user = {
+                ...user,
+                ...req.body
+            };
+            if (!user) {
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `User ${req.params.id} could not be found`,
+                    userMessage: "Utilisateur introuvable",
+                    errorCode: ErrorCodes.NotFound
+                }).send(res);
+                return;
             }
+            if (!isUser(user)) {
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: "User is invalid",
+                    userMessage: "Les modifications apportés à l'utilisateur ne sont pas valides",
+                    errorCode: ErrorCodes.NotFound
+                }).send(res);
+                return;
+            }
+            const nUpdated: number = await userRepository.update(user);
+            res.status(200).send(req.body);
         } catch (error) {
-            res.status(500).send(error.message);
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 
@@ -210,12 +342,17 @@ router.delete("/:id",
         try {
             const nDeleted: number = await userRepository.delete(req.params.id);
             if (nDeleted === 0) {
-                res.status(404).send(`User ${req.params.id} could not be found`);
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: `User ${req.params.id} could not be found`,
+                    userMessage: "Utilisateur introuvable",
+                    errorCode: ErrorCodes.NotFound
+                }).send(res);
             } else {
                 res.status(200).send();
             }
         } catch (error) {
-            res.status(500).send(error.message);
+            new ErrorResponse({ developerMessage: error }).send(res);
         }
     });
 

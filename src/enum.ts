@@ -42,3 +42,14 @@ export enum MediaPermissions {
     OwnerOnly = 1,
     Public = 2
 }
+
+export enum ErrorCodes {
+    UnexpectedError,
+    AuthenticationRequired,
+    Restricted,
+    InvalidRequest,
+    AlreadyExists,
+    AssistanceRequired,
+    NotFound,
+    Unavailable
+}

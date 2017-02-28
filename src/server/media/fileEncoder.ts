@@ -11,7 +11,7 @@ import { Stream } from "stream";
 import config from "../../config";
 import { fileSync, TmpFile } from "tmp";
 
-import CreateWebMOptions = Ropeho.CreateWebMOptions;
+import CreateWebMOptions = Ropeho.Media.CreateWebMOptions;
 
 const { media: { imageEncoding: { quality }, videoEncoding: { fps, bitrate, resolution } } }: Ropeho.Configuration.Configuration = config;
 

@@ -6,17 +6,19 @@
 /// <reference path="../typings.d.ts" />
 import GlobalRepository from "../dal/globalRepository";
 import config from "../../config";
-import { EntityType } from "../../enum";
-import { isObject, isString, isFinite, keys, isArray, flatMap, map } from "lodash";
+import { EntityType, MediaPermissions } from "../../enum";
+import { isFinite, keys, isArray, flatMap, map, every, includes, filter } from "lodash";
 import * as _ from "lodash";
+import { isUUID } from "validator";
 
-import IGenericRepository = Ropeho.IGenericRepository;
+import IGenericRepository = Ropeho.Models.IGenericRepository;
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
 import Production = Ropeho.Models.Production;
 import Category = Ropeho.Models.Category;
 import Presentation = Ropeho.Models.Presentation;
 import PresentationContainer = Ropeho.Models.PresentationContainer;
+import User = Ropeho.Models.User;
 import SourceTargetOptions = Ropeho.Socket.SourceTargetOptions;
 
 interface Entity {
@@ -200,7 +202,7 @@ export const getMedias: (entity: Entity) => Media[] =
 export const isSource: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isSource: boolean = isObject(entity);
+        let isSource: boolean = typeof entity === "object";
         if (!isSource) {
             return false;
         }
@@ -211,10 +213,15 @@ export const isSource: (entity: Entity) => boolean =
             const val: any = entity[key];
             switch (key) {
                 case "_id":
+                    if (!isUUID(val, 4)) {
+                        isSource = false;
+                    }
+                    propCount++;
+                    break;
                 case "src":
                 case "preview":
                 case "fallback":
-                    if (!isString(val)) {
+                    if (typeof val !== "string") {
                         isSource = false;
                     }
                     propCount++;
@@ -245,7 +252,7 @@ export const isSource: (entity: Entity) => boolean =
 export const isMedia: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isMedia: boolean = isObject(entity);
+        let isMedia: boolean = typeof entity === "object";
         if (!isMedia) {
             return false;
         }
@@ -256,8 +263,13 @@ export const isMedia: (entity: Entity) => boolean =
             const val: any = entity[key];
             switch (key) {
                 case "_id":
+                    if (!isUUID(val, 4)) {
+                        isMedia = false;
+                    }
+                    propCount++;
+                    break;
                 case "description":
-                    if (!isString(val)) {
+                    if (typeof val !== "string") {
                         isMedia = false;
                     }
                     propCount++;
@@ -274,7 +286,7 @@ export const isMedia: (entity: Entity) => boolean =
                     if (!isArray<Source>(val)) {
                         isMedia = false;
                     } else {
-                        isMedia = !_(val).map<boolean>((src: Source) => isSource(src)).includes(false);
+                        isMedia = !_(val).map<boolean>(isSource).includes(false);
                     }
                     propCount++;
                     break;
@@ -295,7 +307,7 @@ export const isMedia: (entity: Entity) => boolean =
 export const isProduction: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isProduction: boolean = isObject(entity);
+        let isProduction: boolean = typeof entity === "object";
         if (!isProduction) {
             return false;
         }
@@ -316,15 +328,19 @@ export const isProduction: (entity: Entity) => boolean =
                     if (!isArray<Media>(val)) {
                         isProduction = false;
                     } else {
-                        isProduction = !_(val).map<boolean>((m: Media) => isMedia(m)).includes(false);
+                        isProduction = !_(val).map<boolean>(isMedia).includes(false);
                     }
                     propCount++;
                     break;
                 case "_id":
+                    if (!isUUID(val, 4)) {
+                        isProduction = false;
+                    }
+                    propCount++;
+                    break;
                 case "name":
                 case "description":
-                case "categoryId":
-                    if (!isString(val)) {
+                    if (typeof val !== "string") {
                         isProduction = false;
                     }
                     propCount++;
@@ -341,7 +357,7 @@ export const isProduction: (entity: Entity) => boolean =
             }
         }
         // It must includes all properties
-        return isProduction && propCount === 8;
+        return isProduction && propCount === 7;
     };
 
 /**
@@ -352,7 +368,7 @@ export const isProduction: (entity: Entity) => boolean =
 export const isCategory: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isCategory: boolean = isObject(entity);
+        let isCategory: boolean = typeof entity === "object";
         if (!isCategory) {
             return false;
         }
@@ -369,12 +385,22 @@ export const isCategory: (entity: Entity) => boolean =
                     propCount++;
                     break;
                 case "_id":
+                    if (!isUUID(val, 4)) {
+                        isCategory = false;
+                    }
+                    propCount++;
+                    break;
                 case "name":
+                    if (typeof val !== "string") {
+                        isCategory = false;
+                    }
+                    propCount++;
+                    break;
                 case "productionIds":
                     if (!isArray<string>(val)) {
                         isCategory = false;
                     } else {
-                        isCategory = !_(val).map<boolean>((id: string) => isString(id)).includes(false);
+                        isCategory = isCategory ? !_(val).map<boolean>((id: string) => isUUID(id, 4)).includes(false) : false;
                     }
                     propCount++;
                     break;
@@ -395,7 +421,7 @@ export const isCategory: (entity: Entity) => boolean =
 export const isPresentation: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isPresentation: boolean = isObject(entity);
+        let isPresentation: boolean = typeof entity === "object";
         if (!isPresentation) {
             return false;
         }
@@ -418,10 +444,15 @@ export const isPresentation: (entity: Entity) => boolean =
                     propCount++;
                     break;
                 case "_id":
+                    if (!isUUID(val)) {
+                        isPresentation = false;
+                    }
+                    propCount++;
+                    break;
                 case "mainText":
                 case "alternateText":
                 case "href":
-                    if (!isString(val)) {
+                    if (typeof val !== "string") {
                         isPresentation = false;
                     }
                     propCount++;
@@ -443,7 +474,7 @@ export const isPresentation: (entity: Entity) => boolean =
 export const isPresentationContainer: (entity: Entity) => boolean =
     (entity: Entity): boolean => {
         // Param itself must be an object
-        let isPresentationContainer: boolean = isObject(entity);
+        let isPresentationContainer: boolean = typeof entity === "object";
         if (!isPresentationContainer) {
             return false;
         }
@@ -454,7 +485,7 @@ export const isPresentationContainer: (entity: Entity) => boolean =
             const val: any = entity[key];
             switch (key) {
                 case "_id":
-                    if (!isString(val)) {
+                    if (!isUUID(val, 4)) {
                         isPresentationContainer = false;
                     }
                     propCount++;
@@ -469,7 +500,7 @@ export const isPresentationContainer: (entity: Entity) => boolean =
                     if (!isArray<Presentation>(val)) {
                         isPresentationContainer = false;
                     } else {
-                        isPresentationContainer = !_(val).map<boolean>((pre: Presentation) => isPresentation(pre)).includes(false);
+                        isPresentationContainer = !_(val).map<boolean>(isPresentation).includes(false);
                     }
                     propCount++;
                     break;
@@ -480,6 +511,63 @@ export const isPresentationContainer: (entity: Entity) => boolean =
         }
         // It must includes all properties
         return isPresentationContainer && propCount === 3;
+    };
+
+/**
+ * Check if entity is a User
+ * @param {Entity} entity the entity to Check
+ * @returns {boolean} true if it is a User
+ */
+export const isUser: (entity: Entity) => boolean =
+    (entity: Entity): boolean => {
+        // Param itself must be an object
+        let isUser: boolean = typeof entity === "object";
+        if (!isUser) {
+            return false;
+        }
+        let propCount: number = 0;
+        const properties: string[] = keys(entity),
+            length: number = properties.length;
+        for (const key of properties) {
+            const val: any = entity[key];
+            switch (key) {
+                case "_id":
+                    if (!isUUID(val, 4)) {
+                        isUser = false;
+                    }
+                    propCount++;
+                    break;
+                case "name":
+                case "email":
+                case "token":
+                case "password":
+                case "facebookId":
+                    if (typeof val !== "string") {
+                        isUser = false;
+                    }
+                    propCount++;
+                    break;
+                case "role":
+                    if (!isFinite(val)) {
+                        isUser = false;
+                    }
+                    propCount++;
+                    break;
+                case "productionIds":
+                    if (!isArray<string>(val)) {
+                        isUser = false;
+                    } else {
+                        isUser = !_(val).map<boolean>(isUUID).includes(false);
+                    }
+                    propCount++;
+                    break;
+                default:
+                    isUser = false;
+                    break;
+            }
+        }
+        // It must includes all properties
+        return isUser && propCount === 8;
     };
 
 /**
@@ -501,7 +589,45 @@ export const getEntityType: (entity: Entity) => EntityType =
             return EntityType.Media;
         } else if (isSource(entity)) {
             return EntityType.Source;
+        } else if (isUser(entity)) {
+            return EntityType.User;
         } else {
             throw new TypeError("Invalid entity");
+        }
+    };
+
+/**
+ * Filters out private data
+ * @param {Production} production a {Production}
+ * @param {string[]|boolean} owned productions to keep or true to keep everything
+ * @returns {Production} the filtered out {Production}
+ */
+export const filterProduction: (production: Production, owned?: string[] | boolean) => Production =
+    (production: Production, owned?: string[] | boolean): Production => {
+        // Validate
+        if (!isProduction(production)) {
+            throw new TypeError("Parameter `production` is not a valid");
+        }
+        if (owned === true) {
+            // If admin filter nothing
+            return production;
+        } else if (production.state === MediaPermissions.Locked) {
+            // Only admins can view locked content
+            return undefined;
+        } else {
+            owned = isArray<string>(owned) && every(owned, (id: string) => isUUID(id, 4)) ? owned : [];
+            if (production.state !== MediaPermissions.Public && !includes<string>(owned, production._id)) {
+                // If not public it has to be owned to be viewed
+                return undefined;
+            } else if (includes<string>(owned, production._id)) {
+                // If owned it can be viewed entirely
+                return production;
+            } else {
+                // If public and not owned we filter out private medias
+                return {
+                    ...production,
+                    medias: filter<Media>(production.medias, (m: Media) => m.state === MediaPermissions.Public)
+                };
+            }
         }
     };

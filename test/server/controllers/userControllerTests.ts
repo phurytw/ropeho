@@ -1,5 +1,5 @@
 /**
- * @file Unit test for the user controller
+ * @file Unit tests for the user controller
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
@@ -8,7 +8,7 @@ import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "node-uuid";
-import { isArray, filter, head, map, includes, forEach } from "lodash";
+import { isArray, filter, head, map, includes, forEach, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import GenericRepository from "../../../src/server/dal/genericRepository";
 import { Server } from "http";
@@ -27,19 +27,44 @@ should();
 use(sinonChai);
 
 import User = Ropeho.Models.User;
+import Production = Ropeho.Models.Production;
 
 describe("User controller", () => {
     const testApp: Express = express(),
         port: number = process.env.PORT || 3010,
         testPassword: string = "123456",
+        production: Production = {
+            _id: v4(),
+            name: "name",
+            background: {
+                _id: v4(),
+                delay: 0,
+                description: "",
+                sources: [],
+                state: 0,
+                type: 0
+            },
+            banner: {
+                _id: v4(),
+                delay: 0,
+                description: "",
+                sources: [],
+                state: 0,
+                type: 0
+            },
+            description: "",
+            medias: [],
+            state: 0
+        },
         users: User[] = [{
             _id: v4(),
             name: "User",
             email: "user@test.com",
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
-            productionIds: [],
-            role: Roles.User
+            productionIds: [production._id],
+            role: Roles.User,
+            facebookId: ""
         }, {
             _id: v4(),
             name: "Administrator",
@@ -47,7 +72,8 @@ describe("User controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(),
             productionIds: [],
-            role: Roles.Administrator
+            role: Roles.Administrator,
+            facebookId: ""
         }, {
             _id: v4(),
             name: "Outdated",
@@ -55,7 +81,8 @@ describe("User controller", () => {
             password: computeHashSync(testPassword).toString("hex"),
             token: computeToken(config.users.tokenLength, -1),
             productionIds: [],
-            role: Roles.User
+            role: Roles.User,
+            facebookId: ""
         }, {
             _id: v4(),
             name: "",
@@ -63,7 +90,8 @@ describe("User controller", () => {
             password: "",
             token: computeToken(),
             productionIds: [],
-            role: Roles.User
+            role: Roles.User,
+            facebookId: ""
         }, {
             _id: v4(),
             name: "Facebook Name",
@@ -89,28 +117,37 @@ describe("User controller", () => {
         reqUser: User;
     before(async () => {
         // Stub the repository class methods
-        createStub = stub(GenericRepository.prototype, "create").returnsArg(0);
+        createStub = stub(GenericRepository.prototype, "create", (usr: User) => new Promise<User>((resolve: (value?: User | PromiseLike<User>) => void, reject: (reason?: any) => void) => {
+            const unique: string[] = ["facebookId", "email", "token"];
+            forEach<string>(unique, (i: string) => {
+                if (((usr as any)[i]) && _(users).map<string>((u: User) => uriFriendlyFormat((u as any)[i])).includes(uriFriendlyFormat((usr as any)[i]))) {
+                    reject(`${i} ${(usr as any)[i]} already in use`);
+                }
+            });
+            resolve(usr);
+        }));
         updateStub = stub(GenericRepository.prototype, "update", (params: User | User[]) => params ? (isArray(params) ? params.length : 1) : 0);
         deleteStub = stub(GenericRepository.prototype, "delete", (params: User | User[] | string | string[]) => params ? (isArray(params) ? params.length : 1) : 0);
         getStub = stub(GenericRepository.prototype, "get", (entities: User | User[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (!entities || (entities as User[]).length === 0) {
-                resolve(users);
+                resolve(cloneDeep<User>(users));
             } else {
                 resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
             }
         }));
         getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
             if (isArray<string>(id)) {
-                resolve(filter(users, (u: User) => includes<string>(id, u._id)));
+                // Need to add productions because we use both with getById
+                resolve(_([...users, production]).filter((u: User) => includes<string>(id, u._id)).cloneDeep());
             } else {
-                resolve(_(users).filter((u: User) => u._id === id).head());
+                resolve(cloneDeep<User>(_(users).filter((u: User) => u._id === id).head()));
             }
         }));
         searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
             if (filters) {
-                forEach<boolean>(config.database.users.indexes, (isUnique: boolean, index: string) => {
+                forEach<{ [key: string]: Ropeho.Models.IIndexOptions }>(config.database.users.indexes, (isUnique: boolean, index: string) => {
                     if (filters[index]) {
-                        resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
+                        resolve(_(users).filter((u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))).cloneDeep());
                     }
                 });
             } else {
@@ -189,8 +226,7 @@ describe("User controller", () => {
             reqUser = admin;
             const response: supertest.Response = await agent.post("/api/users")
                 .send({ email: user.email });
-            response.should.have.property("status", 401);
-            createStub.should.have.not.been.called;
+            response.should.have.property("status", 400);
         });
         it("Should accept and create a new user with a token and an ID if email is valid and send an invitation", async () => {
             // Execute as administrator
@@ -213,7 +249,7 @@ describe("User controller", () => {
             reqUser = user;
             const response: supertest.Response = await agent.post("/api/users")
                 .send({ email: "test@test.com" });
-            response.should.have.property("status", 403);
+            response.should.have.property("status", 400);
         });
     });
     describe("Registering an user", () => {
@@ -225,26 +261,26 @@ describe("User controller", () => {
             it("Should reject if token is not found", async () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${nonExistentToken}`)
                     .send({ name: "test", password: testPassword });
-                response.should.have.property("status", 404);
+                response.should.have.property("status", 400);
                 const errorMessage: string = response.text;
                 errorMessage.should.contain(nonExistentToken);
             });
             it("Should reject if token is expired", async () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${outdated.token}`)
                     .send({ name: "test", password: testPassword });
-                response.should.have.property("status", 401);
+                response.should.have.property("status", 400);
                 const errorMessage: string = response.text;
                 errorMessage.should.contain("expired");
             });
             it("Should reject if the user has already setup his password", async () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${user.token}`)
                     .send({ name: "test", password: testPassword });
-                response.should.have.property("status", 401);
+                response.should.have.property("status", 400);
             });
             it("Should reject if the user has link his account to Facebook", async () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${facebook.token}`)
                     .send({ name: "test", password: testPassword });
-                response.should.have.property("status", 401);
+                response.should.have.property("status", 400);
             });
             it("Should accept with a valid token and send a confirmation email", async () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${pending.token}`)
@@ -309,7 +345,7 @@ describe("User controller", () => {
             it("Should reject if user is already registered", async () => {
                 reqUser = facebook;
                 const response: supertest.Response = await agent.get(`/api/users/register/${user.token}/facebook`);
-                response.should.have.property("status", 401);
+                response.should.have.property("status", 400);
             });
             it("Should register the user with a Facebook ID and send a confirmation email", async () => {
                 reqUser = facebook;
@@ -328,49 +364,61 @@ describe("User controller", () => {
         it("Should reject if user is not an administrator", async () => {
             reqUser = user;
             const response: supertest.Response = await agent.get("/api/users");
-            response.should.have.property("status", 403);
+            response.should.have.property("status", 400);
         });
-        it("Should returns all users", async () => {
+        it("Should return all users", async () => {
             reqUser = admin;
             const response: supertest.Response = await agent.get("/api/users");
             response.should.have.property("status", 200);
-            response.body.should.deep.equal(users);
+            response.body.should.deep.equal(map<User, User>(users, (u: User) => ({
+                ...u,
+                productions: includes(u.productionIds, production._id) ? [production] : []
+            })));
         });
-        it("Should returns matched users", async () => {
+        it("Should return matched users", async () => {
             reqUser = admin;
             const response: supertest.Response = await agent.get("/api/users")
                 .query({ email: user.email });
             response.should.have.property("status", 200);
-            response.should.have.property("body").deep.equal([user]);
+            response.should.have.property("body").deep.equal([{
+                ...user,
+                productions: [production]
+            }]);
         });
-        it("Should returns users with the desired format", async () => {
+        it("Should return users with the desired format", async () => {
             reqUser = admin;
-            const fields: Object = "email",
+            const fields: Object = "email,productions",
                 response: supertest.Response = await agent.get("/api/users")
                     .query({ fields });
             response.should.have.property("status", 200);
-            response.should.have.property("body").deep.equal(map<User, User>(users, (u: User) => ({ email: u.email })));
+            response.should.have.property("body").deep.equal(map<User, User>(users, (u: User) => ({
+                email: u.email,
+                productions: includes(u.productionIds, production._id) ? [production] : []
+            })));
         });
     });
     describe("Getting a user by ID", () => {
         it("Should reject if user is not an administrator", async () => {
             reqUser = user;
             const response: supertest.Response = await agent.get(`/api/users/${user._id}`);
-            response.should.have.property("status", 403);
+            response.should.have.property("status", 400);
         });
-        it("Should the matched user", async () => {
+        it("Should get the matched user", async () => {
             reqUser = admin;
             const response: supertest.Response = await agent.get(`/api/users/${user._id}`);
             response.should.have.property("status", 200);
-            response.should.have.property("body").deep.equal(user);
+            response.should.have.property("body").deep.equal({
+                ...user,
+                productions: [production]
+            });
         });
-        it("Should returns users with the desired format", async () => {
+        it("Should return users with the desired format", async () => {
             reqUser = admin;
-            const fields: Object = "email",
+            const fields: Object = "email,productions",
                 response: supertest.Response = await agent.get(`/api/users/${user._id}`)
                     .query({ fields });
             response.should.have.property("status", 200);
-            response.should.have.property("body").deep.equal({ email: user.email });
+            response.should.have.property("body").deep.equal({ email: user.email, productions: [production] });
         });
     });
     describe("Updating a user", () => {
@@ -378,7 +426,7 @@ describe("User controller", () => {
             reqUser = user;
             const response: supertest.Response = await agent.put(`/api/users/${user._id}`)
                 .send({ ...user, name: "New Name" });
-            response.should.have.property("status", 403);
+            response.should.have.property("status", 400);
         });
         it("Should update a user", async () => {
             reqUser = admin;
@@ -389,21 +437,12 @@ describe("User controller", () => {
             updateStub.should.have.been.calledWith(usr);
             updateStub.should.have.been.calledOnce;
         });
-        it("Should update multiple users", async () => {
-            reqUser = admin;
-            const usrs: User = map<User, User>(users, (u: User) => ({ ...u, name: "New Name" }));
-            const response: supertest.Response = await agent.put(`/api/users/${user._id}`)
-                .send(usrs);
-            response.should.have.property("status", 200);
-            updateStub.should.have.been.calledWith(usrs);
-            updateStub.should.have.been.calledOnce;
-        });
     });
     describe("Deleting a user", () => {
         it("Should reject if user is not an administrator", async () => {
             reqUser = user;
             const response: supertest.Response = await agent.delete(`/api/users/${user._id}`);
-            response.should.have.property("status", 403);
+            response.should.have.property("status", 400);
         });
         it("Should delete a user", async () => {
             reqUser = admin;

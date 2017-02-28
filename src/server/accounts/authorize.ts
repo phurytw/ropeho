@@ -8,7 +8,9 @@ import { Request, Response, NextFunction } from "express-serve-static-core";
 import { Roles } from "../../enum";
 import redis from "../redis";
 import config from "../../config";
+import { ErrorCodes } from "../../enum";
 import { unsign } from "cookie-signature";
+import ErrorResponse from "../helpers/errorResponse";
 
 /**
  * Request handler that checks if user is authenticated
@@ -22,7 +24,12 @@ export const isAuthenticated: (req: Request, res: Response, next: NextFunction) 
         if (req.user) {
             next();
         } else {
-            res.status(403).send("User is not authenticated");
+            new ErrorResponse({
+                status: 400,
+                developerMessage: "User is not authenticated",
+                errorCode: ErrorCodes.AuthenticationRequired,
+                userMessage: "Connexion requise"
+            }).send(res);
         }
     };
 
@@ -39,10 +46,20 @@ export const isAdmin: (req: Request, res: Response, next: NextFunction) => void 
             if ((req.user as Ropeho.Models.User).role === Roles.Administrator) {
                 next();
             } else {
-                res.status(403).send("User is not an administrator");
+                new ErrorResponse({
+                    status: 400,
+                    developerMessage: "User is not an administrator",
+                    errorCode: ErrorCodes.Restricted,
+                    userMessage: "Accès interdit"
+                }).send(res);
             }
         } else {
-            res.status(403).send("User is not authenticated");
+            new ErrorResponse({
+                status: 400,
+                developerMessage: "User is not authenticated",
+                errorCode: ErrorCodes.AuthenticationRequired,
+                userMessage: "Connexion requise"
+            }).send(res);
         }
     };
 
@@ -59,7 +76,12 @@ export const isFacebook: (req: Request, res: Response, next: NextFunction) => vo
         if (facebookId) {
             next();
         } else {
-            res.status(403).send("User is not authenticated");
+            new ErrorResponse({
+                status: 400,
+                developerMessage: "User does not have a Facebook ID",
+                errorCode: ErrorCodes.InvalidRequest,
+                userMessage: "Cet utilisateur ne peut pas se connecter avec Facebook"
+            }).send(res);
         }
     };
 

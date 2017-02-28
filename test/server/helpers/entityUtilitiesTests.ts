@@ -7,10 +7,27 @@
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { spy } from "sinon";
-import { isProduction, isSource, isMedia, isCategory, isPresentation, isPresentationContainer, getMedias, getSources, updateSourceInMedia, updateMediaInEntity, getEntityType, getAllSourceTargetOptionsFromEntity, getMediaFromEntity, getSourceFromMedia } from "../../../src/server/helpers/entityUtilities";
+import {
+    isProduction,
+    isSource,
+    isMedia,
+    isCategory,
+    isPresentation,
+    isPresentationContainer,
+    getMedias,
+    getSources,
+    updateSourceInMedia,
+    updateMediaInEntity,
+    getEntityType,
+    getAllSourceTargetOptionsFromEntity,
+    getMediaFromEntity,
+    getSourceFromMedia,
+    isUser,
+    filterProduction
+} from "../../../src/server/helpers/entityUtilities";
 import * as entityUtilities from "../../../src/server/helpers/entityUtilities";
-import { EntityType } from "../../../src/enum";
-import { categories, productions, presentations } from "../dal/testDb";
+import { EntityType, MediaPermissions } from "../../../src/enum";
+import { categories, productions, presentations, users } from "../dal/testDb";
 import { flatMap, cloneDeep, forEach } from "lodash";
 import * as deepFreeze from "deep-freeze";
 import { isUUID } from "validator";
@@ -24,6 +41,7 @@ import PresentationContainer = Ropeho.Models.PresentationContainer;
 import Presentation = Ropeho.Models.Presentation;
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
+import User = Ropeho.Models.User;
 import SourceTargetOptions = Ropeho.Socket.SourceTargetOptions;
 
 describe("Entity utilities", () => {
@@ -32,7 +50,8 @@ describe("Entity utilities", () => {
         [presentationA, presentationB]: Presentation[] = containerA.presentations,
         [categoryA, categoryB]: Category[] = categories,
         [mediaA, mediaB, mediaC]: Media[] = productionA.medias,
-        [sourceA, sourceB, sourceC]: Source[] = mediaC.sources;
+        [sourceA, sourceB, sourceC]: Source[] = mediaC.sources,
+        [userA, userB]: User[] = users;
     describe("Type checking functions", () => {
         describe("isSource", () => {
             it("Should return false if parameter is not a source", () => {
@@ -129,6 +148,22 @@ describe("Entity utilities", () => {
                 isPresentationContainer(fakeCont).should.be.false;
             });
             it("Should return true if it is a valid presentation container", () => isPresentationContainer(containerA).should.be.true);
+        });
+        describe("isUser", () => {
+            it("Should return false if parameter is not a user", () => {
+                isUser(mediaA).should.be.false;
+                isUser(sourceA).should.be.false;
+                isUser(productionA).should.be.false;
+                isUser(categoryA).should.be.false;
+                isUser(presentationA).should.be.false;
+                isUser("" as any).should.be.false;
+                isUser({}).should.be.false;
+                isUser(undefined).should.be.false;
+                const fakeUsr: User = { ...userA };
+                delete fakeUsr.productionIds;
+                isUser(fakeUsr).should.be.false;
+            });
+            it("Should return true if it is a valid user", () => isUser(userA).should.be.true);
         });
         describe("Detecting entity types", () => {
             it("Should throw if the entity is unknown", () => should().throw(getEntityType.bind(entityUtilities, {})));
@@ -275,12 +310,74 @@ describe("Entity utilities", () => {
             forEach<SourceTargetOptions>(stos, (sto: SourceTargetOptions) => {
                 const { mainId, mediaId, sourceId }: SourceTargetOptions = sto;
                 mainId.should.be.ok;
-                isUUID(mainId).should.be.true;
+                isUUID(mainId, 4).should.be.true;
                 mediaId.should.be.ok;
-                isUUID(mediaId).should.be.true;
+                isUUID(mediaId, 4).should.be.true;
                 sourceId.should.be.ok;
-                isUUID(sourceId).should.be.true;
+                isUUID(sourceId, 4).should.be.true;
             });
+        });
+    });
+    describe("Filtering a production", () => {
+        it("Should filter out data not owned", () => should().not.exist(filterProduction({
+            ...productionA,
+            state: MediaPermissions.OwnerOnly
+        })));
+        it("Should filter out data that are made private", () => should().not.exist(filterProduction({
+            ...productionA,
+            state: MediaPermissions.Locked
+        })));
+        it("Should filter out data that are made private even if owned", () => should().not.exist(filterProduction({
+            ...productionA,
+            state: MediaPermissions.Locked
+        }, [productionA._id])));
+        it("Should filter out medias that are not owned", () => filterProduction({
+            ...productionA,
+            medias: [{
+                _id: v4(),
+                delay: 0,
+                description: "",
+                sources: [],
+                state: MediaPermissions.OwnerOnly,
+                type: 0
+            }]
+        }).should.deep.equal({ ...productionA, state: MediaPermissions.Public, medias: [] }));
+        it("Should keep the entire production if it is owned", () => {
+            const prod: Production = {
+                ...productionA,
+                state: MediaPermissions.OwnerOnly
+            };
+            filterProduction(prod, [productionA._id]).should.deep.equal(prod);
+        });
+        it("Should keep the entire production if second parameter is true", () => {
+            const prod: Production = {
+                ...productionA,
+                state: MediaPermissions.OwnerOnly
+            };
+            filterProduction(prod, true).should.deep.equal(prod);
+        });
+        it("Should not filter out banner and background no matter theirs states", () => {
+            const prod: Production = {
+                ...productionA,
+                state: MediaPermissions.Public,
+                banner: {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [],
+                    state: MediaPermissions.OwnerOnly,
+                    type: 0
+                },
+                background: {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [],
+                    state: MediaPermissions.OwnerOnly,
+                    type: 0
+                }
+            };
+            filterProduction(prod, true).should.deep.equal(prod);
         });
     });
 });

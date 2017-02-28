@@ -88,7 +88,7 @@ describe("Authorize middlewares", () => {
         }));
         searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
             if (filters) {
-                forEach<boolean>(config.database.users.indexes, (isUnique: boolean, index: string) => {
+                forEach<{ [key: string]: Ropeho.Models.IIndexOptions }>(config.database.users.indexes, (isUnique: boolean, index: string) => {
                     if (filters[index]) {
                         resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
                     }
@@ -138,7 +138,7 @@ describe("Authorize middlewares", () => {
     describe("Verifying if user is authenticated", () => {
         it("Should reject if no cookie is provided", () =>
             agent.get("/authorizeTests")
-                .should.eventually.have.property("status", 403));
+                .should.eventually.have.property("status", 400));
         it("Should accept if user is authenticated", () =>
             agent.get("/authorizeTests")
                 .set("Cookie", userCookie)
@@ -147,18 +147,18 @@ describe("Authorize middlewares", () => {
     describe("Verifying if user is administrator", () => {
         it("Should reject if no cookie is provided", () =>
             agent.get("/authorizeTests/admin")
-                .should.eventually.have.property("status", 403));
+                .should.eventually.have.property("status", 400));
         it("Should reject if user is authenticated but not administrator", () =>
             agent.get("/authorizeTests/admin")
                 .set("Cookie", userCookie)
-                .should.eventually.have.property("status", 403));
+                .should.eventually.have.property("status", 400));
         it("Should accept if user is an administrator", async () =>
             agent.get("/authorizeTests/admin")
                 .set("Cookie", adminCookie)
                 .should.eventually.have.property("status", 200));
     });
     describe("Verifying cookie manually", () => {
-        it("Should returns the user ID", () =>
+        it("Should return the user ID", () =>
             deserializeCookie(`${adminCookie.split("=")[1]}`).should.eventually.equal(admin._id));
     });
 });

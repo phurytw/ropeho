@@ -23,7 +23,7 @@ describe("Local media manager", () => {
         testFile: string = "test/sub_test/file.txt",
         nonExistentFile: string = "test/sub_test/aNotExistentFile.txt",
         testFileData: Buffer = new Buffer("This is a text file", "UTF-8");
-    let mediaManager: Ropeho.IMediaManager,
+    let mediaManager: Ropeho.Media.IMediaManager,
         fakeFs: typeof fs,
         accessSyncStub: sinon.SinonStub,
         statSyncStub: sinon.SinonStub,

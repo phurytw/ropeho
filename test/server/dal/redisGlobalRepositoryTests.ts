@@ -19,7 +19,7 @@ should();
 use(chaiAsPromised);
 use(sinonChai);
 
-import IGenericRepository = Ropeho.IGenericRepository;
+import IGenericRepository = Ropeho.Models.IGenericRepository;
 import Category = Ropeho.Models.Category;
 import User = Ropeho.Models.User;
 
@@ -135,7 +135,8 @@ describe("Redis global repository", () => {
             _id: v4(),
             facebookId: "facebok",
             email: "newusr@test.com",
-            token: "token"
+            token: "token",
+            name: "newusr"
         }];
         it("Should reject if ID collides with another", async () => {
             await userRepo.create({

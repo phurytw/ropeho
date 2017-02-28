@@ -18,6 +18,9 @@ declare namespace Ropeho {
             password?: string;
             /** User's Facebook ID */
             facebookId?: string;
+
+            /** Productions owned by this user */
+            productions?: Production[];
         }
 
         /** A Production is the entity that regroups many medias (usually photos) */
@@ -36,8 +39,6 @@ declare namespace Ropeho {
             background?: Media;
             /** Medias related to this production */
             medias?: Media[];
-            /** ID of the category this production belongs to */
-            categoryId?: string;
         }
 
         /**
@@ -86,9 +87,12 @@ declare namespace Ropeho {
             /** Category's name */
             name?: string;
             /** Productions IDs affected to this category */
-            productionIds?: Production[];
+            productionIds?: string[];
             /** Media shown up in the list */
             banner?: Media;
+
+            /** Productions affected to this category */
+            productions?: Production[];
         }
 
         /**
@@ -120,6 +124,35 @@ declare namespace Ropeho {
             mainMedia?: Media;
             /** Media shown when hovering */
             alternateMedia?: Media;
+        }
+
+        /** Interface for the DAL */
+        interface IGenericRepository<T> {
+            /** Gets provided entities or all of them */
+            get(...options: any[]): Promise<T | T[]>;
+            /** Gets entities by IDs */
+            getById(id: string | string[], ...options: any[]): Promise<T | T[]>;
+            /** Gets entities using filters */
+            search(filters: { [key: string]: string }, ...options: any[]): Promise<T[]>;
+            /** Creates entities */
+            create(entity: T | T[], ...options: any[]): Promise<T | T[]>;
+            /** Update entities */
+            update(entity: T | T[], ...options: any[]): Promise<number>;
+            /** Deletes entities */
+            delete(entity: T | T[] | string | string[], ...options: any[]): Promise<number>;
+            /** Get/Set the order of the entities */
+            order(order?: string[], ...options: any[]): Promise<string[]>;
+        }
+
+        interface IRedisGenericRepositoryOptions {
+            indexes?: { [key: string]: IIndexOptions };
+            namespace?: string;
+            idProperty?: string;
+        }
+
+        interface IIndexOptions {
+            unique: boolean;
+            nullable: boolean;
         }
     }
 
@@ -172,8 +205,8 @@ declare namespace Ropeho {
         interface DatabaseCollectionConfiguration {
             /** Redis namespace */
             namespace: string;
-            /** Secondary indexes set to true if it must be unique */
-            indexes: { [key: string]: boolean };
+            /** Secondary indexes set to 1 if it must be unique or 2 if it must be unique but nullable */
+            indexes: { [key: string]: Models.IIndexOptions };
             /** Name of the ID property */
             idProperty: string;
         }
@@ -320,47 +353,25 @@ declare namespace Ropeho {
         }
     }
 
-    /** Interface for the DAL */
-    interface IGenericRepository<T> {
-        /** Gets provided entities or all of them */
-        get(...options: any[]): Promise<T | T[]>;
-        /** Gets entities by IDs */
-        getById(id: string | string[], ...options: any[]): Promise<T | T[]>;
-        /** Gets entities using filters */
-        search(filters: { [key: string]: string }, ...options: any[]): Promise<T[]>;
-        /** Creates entities */
-        create(entity: T | T[], ...options: any[]): Promise<T | T[]>;
-        /** Update entities */
-        update(entity: T | T[], ...options: any[]): Promise<number>;
-        /** Deletes entities */
-        delete(entity: T | T[] | string | string[], ...options: any[]): Promise<number>;
-        /** Get/Set the order of the entities */
-        order(order?: string[], ...options: any[]): Promise<string[]>;
-    }
+    namespace Media {
+        interface IMediaManager {
+            upload(pathToMedia: string, media: Buffer): Promise<void>;
+            download(media: string): Promise<Buffer>;
+            delete(source: Ropeho.Models.Source | string): Promise<void>;
+            updatePermissions(media: string, permissions: boolean): Promise<void>;
+            exists(path: string): Promise<boolean>;
+            startDownload(media: string): NodeJS.ReadableStream;
+            startUpload(media: string): NodeJS.WritableStream;
+            rename(source: string, dest: string): Promise<void>;
+            newName(path: string): Promise<string>;
+        }
 
-    interface IRedisGenericRepositoryOptions {
-        indexes?: { [key: string]: boolean };
-        namespace?: string;
-        idProperty?: string;
-    }
-
-    interface IMediaManager {
-        upload(pathToMedia: string, media: Buffer): Promise<void>;
-        download(media: string): Promise<Buffer>;
-        delete(source: Ropeho.Models.Source | string): Promise<void>;
-        updatePermissions(media: string, permissions: boolean): Promise<void>;
-        exists(path: string): Promise<boolean>;
-        startDownload(media: string): NodeJS.ReadableStream;
-        startUpload(media: string): NodeJS.WritableStream;
-        rename(source: string, dest: string): Promise<void>;
-        newName(path: string): Promise<string>;
-    }
-
-    interface CreateWebMOptions {
-        dest?: string;
-        thumbnail?: string;
-        offset?: number;
-        duration?: number;
+        interface CreateWebMOptions {
+            dest?: string;
+            thumbnail?: string;
+            offset?: number;
+            duration?: number;
+        }
     }
 
     namespace Socket {
@@ -415,6 +426,26 @@ declare namespace Ropeho {
             hash?: string;
             downloading?: string[];
         }
+    }
+
+    interface IErrorResponse {
+        status?: number;
+        developerMessage?: Error | string;
+        userMessage?: Error | string;
+        errorCode?: number;
+    }
+
+    interface SearchResults {
+        categories?: Models.Category[];
+        productions?: Models.Production[];
+        users?: Models.User[];
+    }
+
+    interface TaskList {
+        tasks?: any[];
+        clients?: Socket.SocketClient[];
+        downloading?: string[];
+        uploading?: string[];
     }
 }
 

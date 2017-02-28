@@ -18,7 +18,6 @@ import { accessSync, createWriteStream, constants } from "fs";
 import { createReadStream, access } from "fs"; // fs functions used by toBuffer
 import { statSync, openSync, closeSync, unlinkSync } from "fs"; // fs functions used by tmp
 import * as sharp from "sharp";
-import { isString } from "lodash";
 import ffmpeg = require("fluent-ffmpeg");
 should();
 use(sinonChai);
@@ -86,8 +85,8 @@ describe("Media encoder", () => {
         });
         createWebmStub = (() => {
             const original: typeof createWebm = createWebm.bind(fileEncoder);
-            return stub(fileEncoder, "createWebm", async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.CreateWebMOptions): Promise<Buffer[]> => {
-                if (isString(src)) {
+            return stub(fileEncoder, "createWebm", async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.Media.CreateWebMOptions): Promise<Buffer[]> => {
+                if (typeof src === "string") {
                     src = await getBufferFromFile(src);
                 }
                 if (options && options.dest) {

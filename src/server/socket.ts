@@ -10,7 +10,7 @@ import { SocketState, Roles, MediaTypes, EntityType } from "../enum";
 import mediaManager from "./media/mediaManager";
 import GenericRepository from "./dal/genericRepository";
 import GlobalRepository from "./dal/globalRepository";
-import { map, filter, without, sumBy, isArray, isEmpty, head, isString, cloneDeep, identity, includes } from "lodash";
+import { map, filter, without, sumBy, isArray, isEmpty, head, cloneDeep, identity, includes } from "lodash";
 import * as _ from "lodash";
 import config from "../config";
 import { deserializeCookie } from "./accounts/authorize";
@@ -32,11 +32,11 @@ import Category = Ropeho.Models.Category;
 import Source = Ropeho.Models.Source;
 import Media = Ropeho.Models.Media;
 
-const globalRepository: Ropeho.IGenericRepository<Production> = new GlobalRepository({
+const globalRepository: Ropeho.Models.IGenericRepository<Production> = new GlobalRepository({
     ...config.redis,
     idProperty: config.database.defaultIdProperty
 });
-const userRepository: Ropeho.IGenericRepository<User> = new GenericRepository<User>({
+const userRepository: Ropeho.Models.IGenericRepository<User> = new GenericRepository<User>({
     ...config.redis,
     ...config.database.users
 });
@@ -88,7 +88,7 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     const { targets, cookie }: DownloadOptions = downloadOptions;
 
                     // Client must be authenticated
-                    if (!isString(cookie) || isEmpty(cookie)) {
+                    if (typeof cookie !== "string" || !cookie) {
                         client.emit(socketEvents.BadRequest, "Authentication is required");
                         return;
                     }
@@ -221,7 +221,7 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     const { hash, target, cookie, filename }: UploadOptions = uploadOptions;
 
                     // Client must be admin
-                    if (!isString(cookie) || isEmpty(cookie)) {
+                    if (typeof cookie !== "string" || !cookie) {
                         client.emit(socketEvents.BadRequest, "Authentication is required");
                         return;
                     }
@@ -342,7 +342,7 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                         break;
                 }
                 if (!config.media.overwrite) {
-                    if (isEmpty(source.src)) {
+                    if (!source.src) {
                         const filename: string = clients[client.id].filename || "";
                         if ((entity as Production | Category).name) {
                             subDir = uriFriendlyFormat((entity as Production | Category).name);
@@ -413,5 +413,7 @@ export const kickClient: (clientId: string) => void =
         if (clients[clientId]) {
             clients[clientId].socket.disconnect(true);
             delete clients[clientId];
+        } else {
+            throw new Error(`Client with ID ${clientId} could not be found`);
         }
     };

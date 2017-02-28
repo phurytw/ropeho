@@ -10,12 +10,12 @@ import config from "../../config";
 import * as rimraf from "rimraf";
 import * as mkdirp from "mkdirp";
 import * as _ from "lodash";
-import { isEmpty, includes } from "lodash";
+import { includes } from "lodash";
 
 /**
  * Uploads and downloads files to a local directory
  */
-export default class MediaManager implements Ropeho.IMediaManager {
+export default class MediaManager implements Ropeho.Media.IMediaManager {
     constructor(public baseDirectory: string = config.media.localDirectory) {
         this.baseDirectory = join(process.cwd(), dirname(baseDirectory), basename(baseDirectory));
         mkdirp.sync(this.baseDirectory);
@@ -181,7 +181,7 @@ export default class MediaManager implements Ropeho.IMediaManager {
                             .filter((s: string) => suffixRegex.test(s) && includes(s, base))
                             .map<RegExpExecArray>((s: string) => suffixRegex.exec(s))
                             // Only keep the duplicate suffix number
-                            .filter((matches: RegExpExecArray) => !isEmpty(matches[2]))
+                            .filter((matches: RegExpExecArray) => matches[2])
                             .map<number>((matches: RegExpExecArray) => parseInt(matches[2].slice(1)))
                             // Minimum number is 1
                             .concat<number>([0])
@@ -197,7 +197,7 @@ export default class MediaManager implements Ropeho.IMediaManager {
                             .filter((s: string) => noExtRegex.test(s) && !suffixRegex.test(s) && includes(s, base))
                             .map<RegExpExecArray>((s: string) => noExtRegex.exec(s))
                             // Only keep the duplicate suffix number
-                            .filter((matches: RegExpExecArray) => !isEmpty(matches[2]))
+                            .filter((matches: RegExpExecArray) => matches[2])
                             .map<number>((matches: RegExpExecArray) => parseInt(matches[2].slice(1)))
                             // Minimum number is 1
                             .concat<number>([0])

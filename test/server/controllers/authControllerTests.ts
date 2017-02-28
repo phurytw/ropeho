@@ -81,7 +81,7 @@ describe("Auth controller", () => {
         }));
         searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
             if (filters) {
-                forEach<boolean>(config.database.users.indexes, (isUnique: boolean, index: string) => {
+                forEach<{ [key: string]: Ropeho.Models.IIndexOptions }>(config.database.users.indexes, (isUnique: boolean, index: string) => {
                     if (filters[index]) {
                         resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
                     }
