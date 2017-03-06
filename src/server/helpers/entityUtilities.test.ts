@@ -3,7 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { spy } from "sinon";
@@ -24,14 +24,14 @@ import {
     getSourceFromMedia,
     isUser,
     filterProduction
-} from "../../../src/server/helpers/entityUtilities";
-import * as entityUtilities from "../../../src/server/helpers/entityUtilities";
-import { EntityType, MediaPermissions } from "../../../src/enum";
+} from "../helpers/entityUtilities";
+import * as entityUtilities from "../helpers/entityUtilities";
+import { EntityType, MediaPermissions } from "../../enum";
 import { categories, productions, presentations, users } from "../dal/testDb";
 import { flatMap, cloneDeep, forEach } from "lodash";
 import * as deepFreeze from "deep-freeze";
 import { isUUID } from "validator";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 should();
 use(sinonChai);
 

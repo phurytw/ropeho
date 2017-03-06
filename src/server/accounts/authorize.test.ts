@@ -3,25 +3,25 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import * as supertest from "supertest";
-import app from "../../../src/server/app";
+import app from "../app";
 import { Server } from "http";
 import { Express, Request, Response, NextFunction } from "express-serve-static-core";
 import * as express from "express";
 import { stub } from "sinon";
 import { head, filter, isArray, includes, forEach } from "lodash";
 import * as _ from "lodash";
-import { v4 } from "node-uuid";
-import { computeHashSync } from "../../../src/server/accounts/password";
-import { computeToken } from "../../../src/server/accounts/token";
-import { Roles } from "../../../src/enum";
-import config from "../../../src/config";
-import GenericRepository from "../../../src/server/dal/genericRepository";
-import { isAdmin, isAuthenticated, deserializeCookie } from "../../../src/server/accounts/authorize";
-import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
+import { v4 } from "uuid";
+import { computeHashSync } from "../accounts/password";
+import { computeToken } from "../accounts/token";
+import { Roles } from "../../enum";
+import config from "../../config";
+import GenericRepository from "../dal/genericRepository";
+import { isAdmin, isAuthenticated, deserializeCookie } from "../accounts/authorize";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 should();
 use(chaiAsPromised);
 

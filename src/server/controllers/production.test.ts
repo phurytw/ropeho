@@ -3,25 +3,25 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 import { isArray, filter, head, map, includes, uniq } from "lodash";
 import * as _ from "lodash";
-import GenericRepository from "../../../src/server/dal/genericRepository";
+import GenericRepository from "../dal/genericRepository";
 import { Server } from "http";
 import * as express from "express";
 import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import * as supertest from "supertest";
-import app from "../../../src/server/app";
-import { computeHashSync } from "../../../src/server/accounts/password";
-import { computeToken } from "../../../src/server/accounts/token";
-import { Roles } from "../../../src/enum";
+import app from "../app";
+import { computeHashSync } from "../accounts/password";
+import { computeToken } from "../accounts/token";
+import { Roles } from "../../enum";
 import { productions } from "../dal/testDb";
-import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
-import * as socket from "../../../src/server/socket";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import * as socket from "../socket";
 should();
 use(sinonChai);
 

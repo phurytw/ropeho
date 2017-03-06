@@ -3,9 +3,9 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should } from "chai";
-import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 should();
 
 describe("URI friendly format function", () => {

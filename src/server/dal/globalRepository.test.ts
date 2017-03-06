@@ -3,15 +3,15 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import * as sinonChai from "sinon-chai";
 import { spy } from "sinon";
-import { v4 } from "node-uuid";
-import RedisGenericRepository from "../../../src/server/dal/genericRepository";
-import RedisGlobalRepository from "../../../src/server/dal/globalRepository";
-import config from "../../../src/config";
+import { v4 } from "uuid";
+import RedisGenericRepository from "../dal/genericRepository";
+import RedisGlobalRepository from "../dal/globalRepository";
+import config from "../../config";
 import { createClient, RedisClient } from "redis";
 import { categories, users } from "./testDb";
 import { map } from "lodash";

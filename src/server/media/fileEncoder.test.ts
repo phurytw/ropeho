@@ -3,10 +3,10 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
-import { createWebp, createWebm } from "../../../src/server/media/fileEncoder";
-import * as fileEncoder from "../../../src/server/media/fileEncoder";
-import { getBufferFromFile, bufferToStream } from "../../../src/server/media/buffer";
+/// <reference path="../../test.d.ts" />
+import { createWebp, createWebm } from "../media/fileEncoder";
+import * as fileEncoder from "../media/fileEncoder";
+import { getBufferFromFile, bufferToStream } from "../media/buffer";
 import { image, video } from "./testMedias";
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";

@@ -3,10 +3,10 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should } from "chai";
-import { computeToken, isTokenValid } from "../../../src/server/accounts/token";
-import config from "../../../src/config";
+import { computeToken, isTokenValid } from "../accounts/token";
+import config from "../../config";
 import * as moment from "moment";
 import { randomBytes } from "crypto";
 const { users: { daysTokenValid, tokenLength } }: Ropeho.Configuration.Configuration = config;

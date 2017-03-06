@@ -73,8 +73,8 @@
             "passwordIteration": 1000,
             "passwordAlgorithm": "sha256",
             "facebook": {
-                "appId": "",
-                "appSecret": ""
+                "appId": "198235737300131",
+                "appSecret": "0cf26d1552d3a52be5ebae5299aedb8c"
             }
         },
         "hosts": {

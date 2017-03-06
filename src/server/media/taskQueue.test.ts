@@ -3,11 +3,11 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
-import { queue, createProcessImageTask, createProcessVideoTask, createFileUploadTask, cancelTask, getTasks, startTask, processVideoTask, processUploadTask, processImageTask } from "../../../src/server/media/taskQueue";
-import * as taskQueue from "../../../src/server/media/taskQueue";
-import mediaManager from "../../../src/server/media/mediaManager";
-import * as fileEncoder from "../../../src/server/media/fileEncoder";
+/// <reference path="../../test.d.ts" />
+import { queue, createProcessImageTask, createProcessVideoTask, createFileUploadTask, cancelTask, getTasks, startTask, processVideoTask, processUploadTask, processImageTask } from "../media/taskQueue";
+import * as taskQueue from "../media/taskQueue";
+import mediaManager from "../media/mediaManager";
+import * as fileEncoder from "../media/fileEncoder";
 import { should } from "chai";
 import { stub, spy } from "sinon";
 import * as kue from "kue";

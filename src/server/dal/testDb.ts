@@ -3,11 +3,11 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
-import { v4 } from "node-uuid";
-import { MediaTypes, Roles, PresentationTypes, MediaPermissions } from "../../../src/enum";
-import { computeHashSync } from "../../../src/server/accounts/password";
-import { computeToken } from "../../../src/server/accounts/token";
+/// <reference path="../../test.d.ts" />
+import { v4 } from "uuid";
+import { MediaTypes, Roles, PresentationTypes, MediaPermissions } from "../../enum";
+import { computeHashSync } from "../accounts/password";
+import { computeToken } from "../accounts/token";
 import { map } from "lodash";
 import * as deepFreeze from "deep-freeze";
 

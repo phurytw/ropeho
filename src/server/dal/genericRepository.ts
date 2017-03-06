@@ -4,7 +4,7 @@
  */
 
 /// <reference path="../typings.d.ts" />
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 import { map, isArray, forEach, includes, pickBy, values, keys, without, tap, filter, join, uniq, startsWith } from "lodash";
 import * as _ from "lodash";
 import { createClient, RedisClient, Multi } from "redis";

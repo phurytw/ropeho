@@ -3,17 +3,17 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { stub } from "sinon";
-import app from "../../../src/server/app";
+import app from "../app";
 import * as supertest from "supertest";
 import { categories, productions, users } from "../dal/testDb";
 import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import { Server } from "http";
 import * as express from "express";
-import GlobalRepository from "../../../src/server/dal/globalRepository";
-import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
+import GlobalRepository from "../dal/globalRepository";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 import { cloneDeep, filter, every, includes } from "lodash";
 should();
 

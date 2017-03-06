@@ -15,7 +15,7 @@ import { MediaPermissions, MediaTypes, ErrorCodes, Roles } from "../../enum";
 import { isCategory, filterProduction } from "../helpers/entityUtilities";
 import ErrorResponse from "../helpers/errorResponse";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 import { isUUID } from "validator";
 import { getLocked } from "../socket";
 

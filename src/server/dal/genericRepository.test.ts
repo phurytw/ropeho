@@ -3,17 +3,17 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
-import RedisGenericRepository from "../../../src/server/dal/genericRepository";
-import uriFriendlyFormat from "../../../src/server/helpers/uriFriendlyFormat";
-import config from "../../../src/config";
+import RedisGenericRepository from "../dal/genericRepository";
+import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import config from "../../config";
 import { createClient, RedisClient, Multi } from "redis";
-import { MediaTypes } from "../../../src/enum";
+import { MediaTypes } from "../../enum";
 import { categories as entities, users } from "./testDb";
 import { map, assign, forEach, includes } from "lodash";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 import { normalizeEmail } from "validator";
 should();
 use(chaiAsPromised);

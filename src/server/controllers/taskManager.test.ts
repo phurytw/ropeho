@@ -3,7 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
@@ -11,12 +11,12 @@ import { Server } from "http";
 import * as express from "express";
 import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import { users } from "../dal/testDb";
-import app from "../../../src/server/app";
-import * as taskQueue from "../../../src/server/media/taskQueue";
-import * as socket from "../../../src/server/socket";
+import app from "../app";
+import * as taskQueue from "../media/taskQueue";
+import * as socket from "../socket";
 import * as supertest from "supertest";
 import { Job } from "kue";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 should();
 use(sinonChai);
 

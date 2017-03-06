@@ -3,8 +3,8 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
-import { getBufferFromFile, bufferToStream } from "../../../src/server/media/buffer";
+/// <reference path="../../test.d.ts" />
+import { getBufferFromFile, bufferToStream } from "../media/buffer";
 import { image } from "./testMedias";
 import { should } from "chai";
 import { stub } from "sinon";

@@ -3,9 +3,9 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
-import MediaManager from "../../../src/server/media/localMediaManager";
-import config from "../../../src/config";
+/// <reference path="../../test.d.ts" />
+import MediaManager from "../media/localMediaManager";
+import config from "../../config";
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import { accessSync, statSync, stat } from "fs";

@@ -7,7 +7,7 @@
 import { Router, Request, Response, NextFunction } from "express-serve-static-core";
 import * as express from "express";
 import GenericRepository from "../dal/genericRepository";
-import { v4 } from "node-uuid";
+import { v4 } from "uuid";
 import { isEmail, normalizeEmail } from "validator";
 import { isEmpty, keys, map, pickBy, includes, trim } from "lodash";
 import { computeHash } from "../accounts/password";

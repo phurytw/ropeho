@@ -1,4 +1,5 @@
 require("ts-node").register({
     project: "tsconfig.server.json",
-    lazy: true
+    lazy: true,
+    fast: true
 });

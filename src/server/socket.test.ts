@@ -3,28 +3,28 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../typings.d.ts" />
+/// <reference path="../test.d.ts" />
 import * as socketIo from "socket.io";
 import * as socketIoClient from "socket.io-client";
 import { stub, spy } from "sinon";
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
-import GenericRepository from "../../src/server/dal/genericRepository";
-import GlobalRepository from "../../src/server/dal/globalRepository";
-import mediaManager from "../../src/server/media/mediaManager";
+import GenericRepository from "./dal/genericRepository";
+import GlobalRepository from "./dal/globalRepository";
+import mediaManager from "./media/mediaManager";
 import { filter, isArray, includes, map, range, head, last, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
-import { attach, socketEvents, getClients, getLocked, kickClient, getUploading, getDownloading } from "../../src/server/socket";
-import { v4 } from "node-uuid";
+import { attach, socketEvents, getClients, getLocked, kickClient, getUploading, getDownloading } from "./socket";
+import { v4 } from "uuid";
 import { Roles, EntityType, MediaTypes } from "../../src/enum";
 import config from "../../src/config";
 import { productions, categories as cats, presentations } from "./dal/testDb";
-import * as authorize from "../../src/server/accounts/authorize";
+import * as authorize from "./accounts/authorize";
 import { basename, join } from "path";
-import * as task from "../../src/server/media/taskQueue";
+import * as task from "./media/taskQueue";
 import { createHash } from "crypto";
-import { getAllSourceTargetOptionsFromEntity } from "../../src/server/helpers/entityUtilities";
-import { uriFriendlyFormat } from "../../src/server/helpers/uriFriendlyFormat";
+import { getAllSourceTargetOptionsFromEntity } from "./helpers/entityUtilities";
+import { uriFriendlyFormat } from "./helpers/uriFriendlyFormat";
 should();
 use(sinonChai);
 

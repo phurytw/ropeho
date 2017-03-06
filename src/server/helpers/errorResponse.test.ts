@@ -3,12 +3,12 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { spy } from "sinon";
-import ErrorResponse from "../../../src/server/helpers/errorResponse";
-import { defaultErrorMessage } from "../../../src/server/helpers/errorResponse";
+import ErrorResponse from "../helpers/errorResponse";
+import { defaultErrorMessage } from "../helpers/errorResponse";
 should();
 use(sinonChai);
 

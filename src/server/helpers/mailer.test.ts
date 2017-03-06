@@ -3,11 +3,11 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
-import mailer from "../../../src/server/helpers/mailer";
+import mailer from "../helpers/mailer";
 import * as nodemailer from "nodemailer";
 should();
 use(sinonChai);

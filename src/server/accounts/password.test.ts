@@ -3,11 +3,11 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../typings.d.ts" />
+/// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
-import { computeHash, computeHashSync, verifyPassword } from "../../../src/server/accounts/password";
-import config from "../../../src/config";
+import { computeHash, computeHashSync, verifyPassword } from "../accounts/password";
+import config from "../../config";
 const { users: { passwordHashBytes, passwordSaltBytes } }: Ropeho.Configuration.Configuration = config;
 const password: string = "MyPassword1";
 should();
