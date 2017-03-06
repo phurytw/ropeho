@@ -6,10 +6,10 @@
     "precommit": "run-s lint test",
     "start": "node src/client/server.js",
     "start:dev": "ts-node src/server/index.ts",
-    "test": "cross-env NODE_ENV=test && mocha test/server/**/*.ts --compilers ts:./ts-node-server",
+    "test": "cross-env NODE_ENV=test mocha src/server/**/*.test.ts --compilers ts:./ts-node-server",
     "test:server": "cross-env NODE_ENV=test mocha src/server/**/*.test.ts --compilers ts:./ts-node-server",
     "coverage:server": "nyc --reporter=html --reporter=lcov --reporter=text npm run test:server",
-    "lint": "tslint -p tsconfig.admin.json",
+    "lint": "tslint src/server/**/*.ts",
     "clean": "rimraf ./src/**/*.js.map && rimraf ./src/**/*.js"
   },
   "repository": {

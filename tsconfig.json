@@ -1,14 +1,17 @@
 {
     "compilerOptions": {
         "lib": [
-            "es6"
+            "es6",
+            "dom"
         ],
+        "target": "es5",
+        "jsx": "react",
+        "noUnusedLocals": true,
         "noImplicitAny": true,
         "sourceMap": true,
-        "jsx": "preserve",
         "pretty": true
     },
     "exclude": [
-        "node_modules"  
+        "node_modules"
     ]
 }
