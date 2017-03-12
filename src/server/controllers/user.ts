@@ -39,7 +39,7 @@ router.get("/",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            const { query, user }: Request = req;
+            const { query }: Request = req;
             const fields: string[] = typeof query.fields === "string" ? map<string, string>(query.fields.split(","), trim) : [];
             let found: User[];
             delete query.fields;
@@ -77,7 +77,7 @@ router.get("/:id",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            const { query, user }: Request = req;
+            const { query }: Request = req;
             const fields: string[] = typeof query.fields === "string" ? map<string, string>(query.fields.split(","), trim) : [];
             let found: User = await userRepository.getById(req.params.id);
             // Removing unwanted fields
@@ -142,8 +142,8 @@ router.post("/",
             await mailer.sendMail({
                 ...config.mailer.mailOptions,
                 to: user.email,
-                text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.hosts.client}/register/${user.token}`,
-                html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.hosts.client })
+                text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.endPoints.client}/register/${user.token}`,
+                html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.endPoints.client })
             });
             res.status(200).send(user);
         } catch (error) {
@@ -162,7 +162,7 @@ router.post("/",
             }
             // Check if facebookId is in use
             const [fbFound]: User[] = await userRepository.search({ facebookId });
-            if (emailFound) {
+            if (fbFound) {
                 new ErrorResponse({
                     status: 400,
                     developerMessage: `Facebook account ${facebookId} is already used`,
@@ -240,17 +240,17 @@ router.post("/register/:token", async (req: Request, res: Response) => {
             ...config.mailer.mailOptions,
             to: user.email,
             subject: "Invitation sur Ropeho Productions",
-            text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.hosts.client}/register/${user.token}`,
-            html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.hosts.client })
+            text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.endPoints.client}/register/${user.token}`,
+            html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.endPoints.client })
         });
-        res.status(200).send();
+        res.status(200).send({});
     } catch (error) {
         new ErrorResponse({ developerMessage: error }).send(res);
     }
 });
 
 router.get("/register/:token/facebook", (req: Request, res: Response, next: NextFunction) =>
-    authenticate("facebook", { callbackURL: `${config.hosts.api}/api/users/register/${req.params.token}/facebook` } as AuthenticateOptions)(req, res, next),
+    authenticate("facebook", { callbackURL: `${config.endPoints.api}/api/users/register/${req.params.token}/facebook` } as AuthenticateOptions)(req, res, next),
     async (req: Request, res: Response) => {
         try {
             let [user]: User[] = await userRepository.search({ token: req.params.token });
@@ -293,10 +293,10 @@ router.get("/register/:token/facebook", (req: Request, res: Response, next: Next
                 ...config.mailer.mailOptions,
                 to: user.email,
                 subject: "Confirmation de votre inscription sur Ropeho Productions",
-                text: `${user.name}, vous avez confirmé votre inscription sur Ropeho Productions. Vous pouvez dorénavant aller sur votre espace client et télécharger vos photos sur le lien suivant: ${config.hosts.client}/dashboard`,
-                html: await renderAsString("confirmation.html", { name: user.name, host: config.hosts.client })
+                text: `${user.name}, vous avez confirmé votre inscription sur Ropeho Productions. Vous pouvez dorénavant aller sur votre espace client et télécharger vos photos sur le lien suivant: ${config.endPoints.client}/dashboard`,
+                html: await renderAsString("confirmation.html", { name: user.name, host: config.endPoints.client })
             });
-            res.status(200).send();
+            res.status(200).send({});
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);
         }
@@ -329,7 +329,7 @@ router.put("/:id",
                 }).send(res);
                 return;
             }
-            const nUpdated: number = await userRepository.update(user);
+            await userRepository.update(user);
             res.status(200).send(req.body);
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);
@@ -349,7 +349,7 @@ router.delete("/:id",
                     errorCode: ErrorCodes.NotFound
                 }).send(res);
             } else {
-                res.status(200).send();
+                res.status(200).send({ deleted: nDeleted });
             }
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);

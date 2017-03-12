@@ -10,13 +10,15 @@ import * as sinonChai from "sinon-chai";
 import { Server } from "http";
 import * as express from "express";
 import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
-import { users } from "../dal/testDb";
+import { users } from "../../sampleData/testDb";
 import app from "../app";
 import * as taskQueue from "../media/taskQueue";
 import * as socket from "../socket";
 import * as supertest from "supertest";
 import { Job } from "kue";
 import { v4 } from "uuid";
+import * as detect from "detect-port";
+import config from "../../config";
 should();
 use(sinonChai);
 
@@ -24,9 +26,9 @@ import User = Ropeho.Models.User;
 
 describe("Task manager controller", () => {
     const testApp: Express = express(),
-        port: number = process.env.PORT || 3010,
         [admin, user]: User[] = users;
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         middleware: RequestHandler,
         reqUser: User = admin,
@@ -47,6 +49,7 @@ describe("Task manager controller", () => {
         kickClientStub = stub(socket, "kickClient");
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

@@ -22,6 +22,7 @@ import config from "../../config";
 import GenericRepository from "../dal/genericRepository";
 import * as passport from "passport";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import * as detect from "detect-port";
 
 should();
 use(chaiAsPromised);
@@ -30,7 +31,6 @@ import User = Ropeho.Models.User;
 
 describe("Auth controller", () => {
     const testApp: Express = express(),
-        port: number = process.env.PORT || 3010,
         testPassword: string = "123456",
         users: User[] = [{
             _id: v4(),
@@ -57,8 +57,10 @@ describe("Auth controller", () => {
             productionIds: [],
             role: Roles.Administrator
         }],
-        [user, admin, newUser]: User[] = users;
+        user: User = users[0],
+        newUser: User = users[2];
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         getStub: sinon.SinonStub,
         getByIdStub: sinon.SinonStub,
@@ -92,6 +94,7 @@ describe("Auth controller", () => {
         }));
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             testApp.use(app);
             server = testApp.listen(port, (err: Error) => err ? reject(err) : resolve());
@@ -151,7 +154,7 @@ describe("Auth controller", () => {
         });
         const response: supertest.Response = await agent.get("/api/auth/facebook?admin=1");
         response.should.have.property("status", 302);
-        response.should.have.property("header").with.property("location").that.contains(config.hosts.admin);
+        response.should.have.property("header").with.property("location").that.contains(config.endPoints.admin.host);
         authenticateStub.restore();
     });
     it("Should redirect to client homepage when Facebook Authentication is successful", async () => {
@@ -161,7 +164,7 @@ describe("Auth controller", () => {
         });
         const response: supertest.Response = await agent.get("/api/auth/facebook");
         response.should.have.property("status", 302);
-        response.should.have.property("header").with.property("location").that.contains(config.hosts.client);
+        response.should.have.property("header").with.property("location").that.contains(config.endPoints.client.host);
         authenticateStub.restore();
     });
 });

@@ -9,7 +9,7 @@ import { computeToken, isTokenValid } from "../accounts/token";
 import config from "../../config";
 import * as moment from "moment";
 import { randomBytes } from "crypto";
-const { users: { daysTokenValid, tokenLength } }: Ropeho.Configuration.Configuration = config;
+const { users: { daysTokenValid, tokenLength } }: Ropeho.Configuration.ConfigurationObject = config;
 should();
 
 describe("Token tools", () => {
@@ -36,7 +36,7 @@ describe("Token tools", () => {
     describe("Validating token", () => {
         it("Should be a valid token", () => isTokenValid(computeToken()).should.be.true);
         it("Should not be a valid token if it does not have a timestamp", () => {
-            const [token, timestamp]: string[] = computeToken().split("-");
+            const [token]: string[] = computeToken().split("-");
             isTokenValid(token).should.be.false;
         });
         it("Should not be a valid token if it does a correct length", () =>

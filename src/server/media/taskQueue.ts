@@ -5,6 +5,7 @@
 
 /// <reference path="../typings.d.ts" />
 import * as kue from "kue";
+import { Job } from "kue";
 import mediaManager from "./mediaManager";
 import config from "../../config";
 import { createWebp, createWebm } from "./fileEncoder";
@@ -21,7 +22,7 @@ export const queue: kue.Queue = kue.createQueue({
         host: config.redis.host
     }
 });
-const { taskQueue: { retriesOnFailure, imageProcessingConcurrency, videoProcessingConcurrency, fileUploadConcurrency } }: Ropeho.Configuration.Configuration = config;
+const { taskQueue: { retriesOnFailure, imageProcessingConcurrency, videoProcessingConcurrency, fileUploadConcurrency } }: Ropeho.Configuration.ConfigurationObject = config;
 
 // Export the tasks for unit testing
 export const processImageTask: (jobData: JobData<ProcessImageOptions>, cb: Function) => Promise<void> =
@@ -54,36 +55,36 @@ queue.process("image", imageProcessingConcurrency, processImageTask);
 queue.process("video", videoProcessingConcurrency, processVideoTask);
 queue.process("upload", fileUploadConcurrency, processUploadTask);
 
-export const createProcessImageTask: (options: ProcessImageOptions) => kue.Job =
-    (options: ProcessImageOptions): kue.Job => {
-        const task: kue.Job = queue.create("image", options);
+export const createProcessImageTask: (options: ProcessImageOptions) => Job =
+    (options: ProcessImageOptions): Job => {
+        const task: Job = queue.create("image", options);
         task.removeOnComplete(true);
         task.attempts(retriesOnFailure);
         task.save();
         return task;
     };
 
-export const createProcessVideoTask: (options: ProcessVideoOptions) => kue.Job =
-    (options: ProcessVideoOptions): kue.Job => {
-        const task: kue.Job = queue.create("video", options);
+export const createProcessVideoTask: (options: ProcessVideoOptions) => Job =
+    (options: ProcessVideoOptions): Job => {
+        const task: Job = queue.create("video", options);
         task.removeOnComplete(true);
         task.attempts(retriesOnFailure);
         task.save();
         return task;
     };
 
-export const createFileUploadTask: (options: FileUploadOptions) => kue.Job =
-    (options: ProcessVideoOptions): kue.Job => {
-        const task: kue.Job = queue.create("upload", options);
+export const createFileUploadTask: (options: FileUploadOptions) => Job =
+    (options: ProcessVideoOptions): Job => {
+        const task: Job = queue.create("upload", options);
         task.removeOnComplete(true);
         task.attempts(retriesOnFailure);
         task.save();
         return task;
     };
 
-export const getTasks: (filter?: string) => Promise<kue.Job[]> =
-    async (filter?: string): Promise<kue.Job[]> => {
-        let jobs: kue.Job[] = [];
+export const getTasks: (filter?: string) => Promise<Job[]> =
+    async (filter?: string): Promise<Job[]> => {
+        let jobs: Job[] = [];
         switch (filter) {
             case "active":
             case "inactive":
@@ -92,7 +93,7 @@ export const getTasks: (filter?: string) => Promise<kue.Job[]> =
             case "delayed":
                 queue[filter]((err: any, ids: number[]) => {
                     ids.forEach((id: number) => {
-                        kue.Job.get(id, (err: any, job: kue.Job) => {
+                        Job.get(id, (err: any, job: Job) => {
                             jobs = [...jobs, job];
                         });
                     });
@@ -109,11 +110,11 @@ export const getTasks: (filter?: string) => Promise<kue.Job[]> =
         return jobs;
     };
 
-export const cancelTask: (task: kue.Job | number) => Promise<void> =
-    (task: kue.Job | number): Promise<void> =>
+export const cancelTask: (task: Job | number) => Promise<void> =
+    (task: Job | number): Promise<void> =>
         new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             if (typeof task === "number") {
-                kue.Job.get(task, (err: any, job: kue.Job) => {
+                Job.get(task, (err: any, job: Job) => {
                     job.remove();
                     resolve();
                 });
@@ -123,20 +124,20 @@ export const cancelTask: (task: kue.Job | number) => Promise<void> =
             }
         });
 
-export const startTask: (task: kue.Job | number) => Promise<void> =
-    (task: kue.Job | number): Promise<void> =>
-        new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
+export const startTask: (task: Job | number) => Promise<Job> =
+    (task: Job | number): Promise<Job> =>
+        new Promise<Job>((resolve: (value?: Job | PromiseLike<Job>) => void, reject: (reason?: any) => void) => {
             if (typeof task === "number") {
-                getTasks("active").then((activeTasks: kue.Job[]) => {
-                    if (indexOf<number>(map<kue.Job, number>(activeTasks, (t: kue.Job) => t.id), task) >= 0) {
+                getTasks("active").then((activeTasks: Job[]) => {
+                    if (indexOf<number>(map<Job, number>(activeTasks, (t: Job) => t.id), task) >= 0) {
                         reject(new Error(`Task ${task} is currently active`));
                     }
-                    kue.Job.get(task, (err: any, job: kue.Job) => {
+                    Job.get(task, (err: any, job: Job) => {
                         if (err) {
                             throw err;
                         }
                         job.save();
-                        resolve();
+                        resolve(job);
                     });
                 });
             } else {

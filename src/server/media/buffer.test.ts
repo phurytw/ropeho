@@ -5,7 +5,7 @@
 
 /// <reference path="../../test.d.ts" />
 import { getBufferFromFile, bufferToStream } from "../media/buffer";
-import { image } from "./testMedias";
+import { image } from "../../sampleData/testMedias";
 import { should } from "chai";
 import { stub } from "sinon";
 import { createReadStream } from "fs";

@@ -13,7 +13,7 @@ import RedisGenericRepository from "../dal/genericRepository";
 import RedisGlobalRepository from "../dal/globalRepository";
 import config from "../../config";
 import { createClient, RedisClient } from "redis";
-import { categories, users } from "./testDb";
+import { categories, users } from "../../sampleData/testDb";
 import { map } from "lodash";
 should();
 use(chaiAsPromised);
@@ -152,7 +152,7 @@ describe("Redis global repository", () => {
                 ...itemA,
                 name: "The New Category"
             };
-            const result: number = await repository.update(modified).should.eventually.equal(1);
+            await repository.update(modified).should.eventually.equal(1);
             (await repository.getById(itemA._id)).should.deep.equal(modified);
             updateSpy.should.have.been.calledOnce;
         });

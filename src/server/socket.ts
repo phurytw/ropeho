@@ -10,7 +10,7 @@ import { SocketState, Roles, MediaTypes, EntityType } from "../enum";
 import mediaManager from "./media/mediaManager";
 import GenericRepository from "./dal/genericRepository";
 import GlobalRepository from "./dal/globalRepository";
-import { map, filter, without, sumBy, isArray, isEmpty, head, cloneDeep, identity, includes } from "lodash";
+import { map, filter, without, sumBy, isArray, isEmpty, cloneDeep, identity, includes } from "lodash";
 import * as _ from "lodash";
 import config from "../config";
 import { deserializeCookie } from "./accounts/authorize";
@@ -41,7 +41,6 @@ const userRepository: Ropeho.Models.IGenericRepository<User> = new GenericReposi
     ...config.database.users
 });
 const chunkSize: number = config.media.chunkSize;
-const authPath: string = `https://localhost:${process.env.PORT || 8000}/auth`;
 let io: SocketIO.Server;
 const clients: { [key: string]: SocketClient } = {};
 

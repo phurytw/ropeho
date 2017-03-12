@@ -4,7 +4,7 @@
  */
 
 /// <reference path="../typings.d.ts" />
-import { map, isArray, keys, filter, head, pickBy, mapValues, last, flattenDeep } from "lodash";
+import { map, isArray, keys, filter, head, last, flattenDeep } from "lodash";
 import * as _ from "lodash";
 import { RedisClient } from "redis";
 import * as redis from "redis";
@@ -138,7 +138,6 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      */
     update(entity: Entity | Entity[]): Promise<number> {
         return new Promise<number>(async (resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => {
-            const { database }: Ropeho.Configuration.Configuration = config;
             const sorted: { [key: string]: Entity[] } = {};
             if (!isArray<Entity>(entity)) {
                 entity = [entity];
@@ -177,7 +176,6 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      */
     delete(entity: any | any[] | string | string[]): Promise<number> {
         return new Promise<number>(async (resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => {
-            const { database }: Ropeho.Configuration.Configuration = config;
             const sorted: { [key: string]: string[] } = {};
             if (!isArray<Entity>(entity)) {
                 entity = [entity];

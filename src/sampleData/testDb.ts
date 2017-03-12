@@ -3,11 +3,11 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 
-/// <reference path="../../test.d.ts" />
+/// <reference path="../test.d.ts" />
 import { v4 } from "uuid";
-import { MediaTypes, Roles, PresentationTypes, MediaPermissions } from "../../enum";
-import { computeHashSync } from "../accounts/password";
-import { computeToken } from "../accounts/token";
+import { MediaTypes, Roles, PresentationTypes, MediaPermissions } from "../enum";
+import { computeHashSync } from "../server/accounts/password";
+import { computeToken } from "../server/accounts/token";
 import { map } from "lodash";
 import * as deepFreeze from "deep-freeze";
 
@@ -33,7 +33,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             delay: 0,
@@ -50,7 +50,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             delay: 0,
@@ -68,7 +68,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -85,7 +85,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }, {
                     _id: v4(),
@@ -94,7 +94,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }, {
                     _id: v4(),
@@ -103,7 +103,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -120,7 +120,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }, {
                     _id: v4(),
@@ -129,7 +129,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }, {
                     _id: v4(),
@@ -138,7 +138,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -162,7 +162,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -179,7 +179,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -197,7 +197,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -214,7 +214,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -238,7 +238,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -255,7 +255,7 @@ const [productionA, productionB, productionC]: Production[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -273,7 +273,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -290,7 +290,7 @@ const [productionA, productionB, productionC]: Production[] = [
                     posX: 0,
                     posY: 0,
                     preview: "",
-                    size: 0,
+                    fileSize: 0,
                     zoom: 0
                 }],
                 state: MediaPermissions.Public,
@@ -316,7 +316,7 @@ const [categoryA, categoryB]: Category[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -338,7 +338,7 @@ const [categoryA, categoryB]: Category[] = [
                 posX: 0,
                 posY: 0,
                 preview: "",
-                size: 0,
+                fileSize: 0,
                 zoom: 0
             }],
             state: MediaPermissions.Public,
@@ -390,7 +390,7 @@ export const presentations: Container[] = [
                         posX: 0,
                         posY: 0,
                         preview: "",
-                        size: 0,
+                        fileSize: 0,
                         zoom: 0
                     }],
                     delay: 0,
@@ -408,7 +408,7 @@ export const presentations: Container[] = [
                         posX: 0,
                         posY: 0,
                         preview: "",
-                        size: 0,
+                        fileSize: 0,
                         zoom: 0
                     }],
                     delay: 0,

@@ -8,7 +8,7 @@ import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import { computeHash, computeHashSync, verifyPassword } from "../accounts/password";
 import config from "../../config";
-const { users: { passwordHashBytes, passwordSaltBytes } }: Ropeho.Configuration.Configuration = config;
+const { users: { passwordHashBytes, passwordSaltBytes } }: Ropeho.Configuration.ConfigurationObject = config;
 const password: string = "MyPassword1";
 should();
 use(chaiAsPromised);

@@ -34,3 +34,4 @@
 /// <reference types="pluralize" />
 /// <reference types="cookie-signature" />
 /// <reference path="../../definitions/tmp.d.ts" />
+/// <reference path="../../definitions/detect-port.d.ts" />

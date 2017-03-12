@@ -92,7 +92,10 @@
         "chai-prefer-contains-to-index-of": true,
         "chai-vague-errors": true,
         "function-name": [
-            true
+            true,
+            {
+                "static-method-regex": "^[A-Z][\\w\\d]+$"
+            }
         ],
         "insecure-random": true,
         "missing-jsdoc": true,

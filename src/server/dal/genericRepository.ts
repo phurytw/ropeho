@@ -5,7 +5,7 @@
 
 /// <reference path="../typings.d.ts" />
 import { v4 } from "uuid";
-import { map, isArray, forEach, includes, pickBy, values, keys, without, tap, filter, join, uniq, startsWith } from "lodash";
+import { map, isArray, forEach, includes, pickBy, filter, join, startsWith } from "lodash";
 import * as _ from "lodash";
 import { createClient, RedisClient, Multi } from "redis";
 import * as redis from "redis";
@@ -139,7 +139,7 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.Mod
      * @returns {Promise<T>|Promise<T[]>} A promise that fulfills with the newly created elements
      */
     create(entity: T | T[]): Promise<T> | Promise<T[]> {
-        const { idProperty, pluralizedIdProperty, redis, indexes  }: RedisGenericRepository<T> = this;
+        const { idProperty, pluralizedIdProperty, redis, indexes }: RedisGenericRepository<T> = this;
         // Different implementations for array and non array because of the return type
         if (isArray<T>(entity)) {
             return new Promise<T | T[]>((resolve: (value?: T | T[] | PromiseLike<T | T[]>) => void, reject: (reason?: any) => void) => {

@@ -71,7 +71,7 @@ declare namespace Ropeho {
             /** Fallback image for videos */
             fallback?: string;
             /** Size of the source content */
-            size?: number;
+            fileSize?: number;
             /** Zoom 1 = 100% */
             zoom?: number;
             /** X-Axis Placement */
@@ -160,15 +160,15 @@ declare namespace Ropeho {
         /** Configuration object that has for each environment a different Configuration */
         interface ConfigurationFile {
             /** Configuration to use in development */
-            development: Configuration;
+            development: ConfigurationObject;
             /** Configuration to use for tests */
-            test: Configuration;
+            test: ConfigurationObject;
             /** Configuration to use in production */
-            production: Configuration;
+            production: ConfigurationObject;
         }
 
         /** Configuration object with all the necessary configuration for the application */
-        interface Configuration {
+        interface ConfigurationObject {
             /** Database related configuration */
             database?: DatabaseConfiguration;
             /** Configuration related to user accounts */
@@ -178,7 +178,7 @@ declare namespace Ropeho {
             /** Redis connection */
             redis?: RedisConfiguration;
             /** Hosts URLs */
-            hosts?: HostsConfiguration;
+            endPoints?: EndPointsConfiguration;
             /** Mailer configuration */
             mailer?: MailerConfiguration;
             /** Media configuration */
@@ -227,6 +227,13 @@ declare namespace Ropeho {
             passwordAlgorithm: string;
             /** Facebook app credentials */
             facebook: FacebookConfiguration;
+            /** Administrator account to be created */
+            administrator: {
+                email: string;
+                name: string;
+                password: string;
+                facebookId: string;
+            };
         }
 
         /** Session options interface copied from express-session */
@@ -250,15 +257,31 @@ declare namespace Ropeho {
         }
 
         /** Hosts URLs */
-        interface HostsConfiguration {
+        interface EndPointsConfiguration {
             /** Web API server */
-            api: string;
-            /** Client server */
-            client: string;
-            /** Admin server */
-            admin: string;
+            api: EndPointConfiguration;
             /** Media storage */
-            media: string;
+            media: EndPointConfiguration;
+            /** Client server */
+            client: EndPointConfiguration;
+            /** Client webpack dev server */
+            clientDevServer: EndPointConfiguration;
+            /** Admin server */
+            admin: EndPointConfiguration;
+            /** Admin webpack dev server */
+            adminDevServer: EndPointConfiguration;
+            /** Customer server */
+            customer: EndPointConfiguration;
+            /** Customer webpack dev server */
+            customerDevServer: EndPointConfiguration;
+        }
+
+        /** Config for a single end point */
+        interface EndPointConfiguration {
+            /** host base URL */
+            host: string;
+            /** port */
+            port: number;
         }
 
         /** Nodemailer configuration */
@@ -425,6 +448,11 @@ declare namespace Ropeho {
             filename?: string;
             hash?: string;
             downloading?: string[];
+        }
+        interface SourceData {
+            isUpload: boolean;
+            target: SourceTargetOptions;
+            data: ArrayBuffer;
         }
     }
 

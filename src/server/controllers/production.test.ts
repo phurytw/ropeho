@@ -19,9 +19,11 @@ import app from "../app";
 import { computeHashSync } from "../accounts/password";
 import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
-import { productions } from "../dal/testDb";
+import { productions } from "../../sampleData/testDb";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 import * as socket from "../socket";
+import * as detect from "detect-port";
+import config from "../../config";
 should();
 use(sinonChai);
 
@@ -30,7 +32,6 @@ import Production = Ropeho.Models.Production;
 
 describe("Production controller", () => {
     const testApp: Express = express(),
-        port: number = process.env.PORT || 3010,
         testPassword: string = "123456",
         [productionA, productionB, productionC]: Production[] = productions,
         users: User[] = [{
@@ -52,6 +53,7 @@ describe("Production controller", () => {
         }],
         [user, admin]: User[] = users;
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         createStub: sinon.SinonStub,
         updateStub: sinon.SinonStub,
@@ -104,6 +106,7 @@ describe("Production controller", () => {
         }));
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

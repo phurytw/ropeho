@@ -27,7 +27,7 @@ import {
 } from "../helpers/entityUtilities";
 import * as entityUtilities from "../helpers/entityUtilities";
 import { EntityType, MediaPermissions } from "../../enum";
-import { categories, productions, presentations, users } from "../dal/testDb";
+import { categories, productions, presentations, users } from "../../sampleData/testDb";
 import { flatMap, cloneDeep, forEach } from "lodash";
 import * as deepFreeze from "deep-freeze";
 import { isUUID } from "validator";
@@ -45,13 +45,13 @@ import User = Ropeho.Models.User;
 import SourceTargetOptions = Ropeho.Socket.SourceTargetOptions;
 
 describe("Entity utilities", () => {
-    const [productionA, productionB]: Production[] = productions,
-        [containerA, containerB]: PresentationContainer[] = presentations,
-        [presentationA, presentationB]: Presentation[] = containerA.presentations,
-        [categoryA, categoryB]: Category[] = categories,
+    const [productionA]: Production[] = productions,
+        [containerA]: PresentationContainer[] = presentations,
+        [presentationA]: Presentation[] = containerA.presentations,
+        [categoryA]: Category[] = categories,
         [mediaA, mediaB, mediaC]: Media[] = productionA.medias,
-        [sourceA, sourceB, sourceC]: Source[] = mediaC.sources,
-        [userA, userB]: User[] = users;
+        [sourceA]: Source[] = mediaC.sources,
+        [userA]: User[] = users;
     describe("Type checking functions", () => {
         describe("isSource", () => {
             it("Should return false if parameter is not a source", () => {

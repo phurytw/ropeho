@@ -134,7 +134,7 @@ router.post("/",
     async (req: Request, res: Response) => {
         try {
             let category: Category = req.body;
-            const { name, productionIds, banner }: Category = category;
+            const { productionIds, banner }: Category = category;
             // Check if valid
             category.productionIds = productionIds || [];
             category._id = v4();
@@ -271,7 +271,7 @@ router.delete("/:id",
                     errorCode: ErrorCodes.NotFound
                 }).send(res);
             } else {
-                res.status(200).send();
+                res.status(200).send({ deleted: nDeleted });
             }
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);

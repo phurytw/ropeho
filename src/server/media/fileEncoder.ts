@@ -13,7 +13,7 @@ import { fileSync, TmpFile } from "tmp";
 
 import CreateWebMOptions = Ropeho.Media.CreateWebMOptions;
 
-const { media: { imageEncoding: { quality }, videoEncoding: { fps, bitrate, resolution } } }: Ropeho.Configuration.Configuration = config;
+const { media: { imageEncoding: { quality }, videoEncoding: { fps, bitrate, resolution } } }: Ropeho.Configuration.ConfigurationObject = config;
 
 /**
  * Create a lower quality webp image from another image

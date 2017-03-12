@@ -12,13 +12,13 @@ import * as sinonChai from "sinon-chai";
 import GenericRepository from "./dal/genericRepository";
 import GlobalRepository from "./dal/globalRepository";
 import mediaManager from "./media/mediaManager";
-import { filter, isArray, includes, map, range, head, last, keys, cloneDeep } from "lodash";
+import { filter, isArray, includes, range, head, last, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import { attach, socketEvents, getClients, getLocked, kickClient, getUploading, getDownloading } from "./socket";
 import { v4 } from "uuid";
 import { Roles, EntityType, MediaTypes } from "../../src/enum";
 import config from "../../src/config";
-import { productions, categories as cats, presentations } from "./dal/testDb";
+import { productions, categories as cats, presentations } from "../sampleData/testDb";
 import * as authorize from "./accounts/authorize";
 import { basename, join } from "path";
 import * as task from "./media/taskQueue";
@@ -41,7 +41,6 @@ type Entity = Production | Category | PresentationContainer;
 
 describe("Socket IO Server", () => {
     const testPort: number = 5000,
-        authPath: string = `https://localhost:${process.env.PORT || 8000}/auth`,
         chunkSize: number = config.media.chunkSize,
         socketIoUrl: string = `http://localhost:${testPort}`,
         socketIoOptions: SocketIOClient.ConnectOpts = {
@@ -68,8 +67,7 @@ describe("Socket IO Server", () => {
             email: "user@test.com",
             role: Roles.User
         }],
-        [admin, client, user]: User[] = users,
-        filename: string = "filename.txt";
+        [admin, client, user]: User[] = users;
     let serverIo: SocketIO.Server,
         clientIo: SocketIOClient.Socket,
         throttleTime: number,
@@ -91,7 +89,7 @@ describe("Socket IO Server", () => {
         globalGetByIdStub = stub(GlobalRepository.prototype, "getById", (ids: string | string[]) => new Promise<Entity | Entity[]>((resolve: (value?: Entity | Entity[] | PromiseLike<Entity | Entity[]>) => void) => {
             let collection: Entity[];
             let results: Entity[] = [];
-            const { database }: Ropeho.Configuration.Configuration = config;
+            const { database }: Ropeho.Configuration.ConfigurationObject = config;
             const _ids: string[] = isArray<string>(ids) ? ids : [ids];
             for (const id of _ids) {
                 let [ns, _id]: string[] = id.split(":");

@@ -8,7 +8,7 @@ import { should, use } from "chai";
 import { stub } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "uuid";
-import { isArray, filter, head, map, includes, forEach, cloneDeep } from "lodash";
+import { isArray, head, map, includes, forEach, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import GenericRepository from "../dal/genericRepository";
 import { Server } from "http";
@@ -23,6 +23,7 @@ import { Roles } from "../../enum";
 import * as passport from "passport";
 import mailer from "../helpers/mailer";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import * as detect from "detect-port";
 should();
 use(sinonChai);
 
@@ -31,7 +32,6 @@ import Production = Ropeho.Models.Production;
 
 describe("User controller", () => {
     const testApp: Express = express(),
-        port: number = process.env.PORT || 3010,
         testPassword: string = "123456",
         production: Production = {
             _id: v4(),
@@ -104,6 +104,7 @@ describe("User controller", () => {
         }],
         [user, admin, outdated, pending, facebook]: User[] = users;
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         createStub: sinon.SinonStub,
         updateStub: sinon.SinonStub,
@@ -170,6 +171,7 @@ describe("User controller", () => {
         })();
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;
@@ -240,7 +242,7 @@ describe("User controller", () => {
             user.token.should.not.be.empty;
             const tokenData: string[] = user.token.split("-");
             tokenData.should.have.lengthOf(2);
-            const [token, timestamp]: string[] = tokenData;
+            const timestamp: string = tokenData[1];
             isNaN(parseInt(timestamp)).should.be.false;
             sendMailStub.should.have.been.calledOnce;
         });

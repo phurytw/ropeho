@@ -8,13 +8,15 @@ import { should } from "chai";
 import { stub } from "sinon";
 import app from "../app";
 import * as supertest from "supertest";
-import { categories, productions, users } from "../dal/testDb";
+import { categories, productions, users } from "../../sampleData/testDb";
 import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import { Server } from "http";
 import * as express from "express";
 import GlobalRepository from "../dal/globalRepository";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 import { cloneDeep, filter, every, includes } from "lodash";
+import * as detect from "detect-port";
+import config from "../../config";
 should();
 
 import Category = Ropeho.Models.Category;
@@ -24,11 +26,11 @@ type Entity = Category | Production | User;
 
 describe("Search controller", () => {
     const testApp: Express = express(),
-        port: number = process.env.PORT || 3010,
         [admin, user]: User[] = users,
         [categoryA, categoryB]: Category[] = categories,
-        [productionA, productionB, productionC]: Production[] = productions;
+        [productionA, productionB]: Production[] = productions;
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         searchStub: sinon.SinonStub,
         middleware: RequestHandler,
@@ -39,6 +41,7 @@ describe("Search controller", () => {
                 includes(uriFriendlyFormat((e as any)[key]), uriFriendlyFormat(val)))))));
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

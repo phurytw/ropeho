@@ -8,9 +8,7 @@ import MediaManager from "../media/localMediaManager";
 import config from "../../config";
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
-import { accessSync, statSync, stat } from "fs";
-import { access, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync } from "fs"; // fs functions used in MediaManager
-import { mkdirSync, mkdir } from "fs"; // fs functions used in mkdirp
+import { statSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { stub } from "sinon";
 import * as mockFs from "mock-fs";

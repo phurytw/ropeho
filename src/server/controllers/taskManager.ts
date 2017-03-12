@@ -59,7 +59,7 @@ router.delete("/task/:taskId",
     async (req: Request, res: Response) => {
         try {
             await cancelTask(parseInt(req.params.taskId));
-            res.status(200).send();
+            res.status(200).send({});
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);
         }
@@ -69,8 +69,7 @@ router.post("/task/:taskId",
     isAdmin,
     async (req: Request, res: Response) => {
         try {
-            await startTask(parseInt(req.params.taskId));
-            res.status(200).send();
+            res.status(200).send(await startTask(parseInt(req.params.taskId)));
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);
         }
@@ -81,7 +80,7 @@ router.delete("/socket/:clientId",
     (req: Request, res: Response) => {
         try {
             kickClient(req.params.clientId);
-            res.status(200).send();
+            res.status(200).send({});
         } catch (error) {
             new ErrorResponse({ status: 400, developerMessage: error, userMessage: "Client introuvable" }).send(res);
         }

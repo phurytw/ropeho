@@ -88,7 +88,7 @@ router.post("/",
     async (req: Request, res: Response) => {
         try {
             let production: Production = req.body;
-            const { name, banner, background, description, medias, state }: Production = production;
+            const { banner, background, description, medias, state }: Production = production;
             // Check if valid
             production.medias = medias || [];
             production._id = v4();
@@ -235,7 +235,7 @@ router.delete("/:id",
                     errorCode: ErrorCodes.NotFound
                 }).send(res);
             } else {
-                res.status(200).send();
+                res.status(200).send({ deleted: nDeleted });
             }
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);

@@ -4,32 +4,23 @@
  */
 
 /// <reference path="../typings.d.ts" />
-import GlobalRepository from "../dal/globalRepository";
-import config from "../../config";
 import { EntityType, MediaPermissions } from "../../enum";
 import { isFinite, keys, isArray, flatMap, map, every, includes, filter } from "lodash";
 import * as _ from "lodash";
 import { isUUID } from "validator";
 
-import IGenericRepository = Ropeho.Models.IGenericRepository;
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
 import Production = Ropeho.Models.Production;
 import Category = Ropeho.Models.Category;
 import Presentation = Ropeho.Models.Presentation;
 import PresentationContainer = Ropeho.Models.PresentationContainer;
-import User = Ropeho.Models.User;
 import SourceTargetOptions = Ropeho.Socket.SourceTargetOptions;
 
 interface Entity {
     [key: string]: any;
     _id?: string;
 }
-
-const repository: IGenericRepository<any> = new GlobalRepository({
-    ...config.redis,
-    idProperty: config.database.defaultIdProperty
-});
 
 /**
  * Retrieves a media in an entity and replaces it with a new media
@@ -207,8 +198,7 @@ export const isSource: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -226,7 +216,7 @@ export const isSource: (entity: Entity) => boolean =
                     }
                     propCount++;
                     break;
-                case "size":
+                case "fileSize":
                 case "zoom":
                 case "posX":
                 case "posY":
@@ -257,8 +247,7 @@ export const isMedia: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -312,8 +301,7 @@ export const isProduction: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -373,8 +361,7 @@ export const isCategory: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -426,8 +413,7 @@ export const isPresentation: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -479,8 +465,7 @@ export const isPresentationContainer: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {
@@ -526,8 +511,7 @@ export const isUser: (entity: Entity) => boolean =
             return false;
         }
         let propCount: number = 0;
-        const properties: string[] = keys(entity),
-            length: number = properties.length;
+        const properties: string[] = keys(entity);
         for (const key of properties) {
             const val: any = entity[key];
             switch (key) {

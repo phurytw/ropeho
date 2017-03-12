@@ -19,7 +19,7 @@ import config from "../../config";
 export const computeHash: (password: string, saltSize?: number, hashSize?: number, iterations?: number, algorithm?: string) => Promise<Buffer> =
     (password: string, saltSize?: number, hashSize?: number, iterations?: number, algorithm?: string): Promise<Buffer> => {
         return new Promise<Buffer>((resolve: (value?: Buffer | PromiseLike<Buffer>) => void, reject: (reason?: any) => void) => {
-            const { users: { passwordHashBytes, passwordIteration, passwordSaltBytes, passwordAlgorithm } }: Ropeho.Configuration.Configuration = config;
+            const { users: { passwordHashBytes, passwordIteration, passwordSaltBytes, passwordAlgorithm } }: Ropeho.Configuration.ConfigurationObject = config;
             saltSize = saltSize || passwordSaltBytes;
             hashSize = hashSize || passwordHashBytes;
             iterations = iterations || passwordIteration;
@@ -58,7 +58,7 @@ export const computeHash: (password: string, saltSize?: number, hashSize?: numbe
  */
 export const computeHashSync: (password: string, saltSize?: number, hashSize?: number, iterations?: number, algorithm?: string) => Buffer =
     (password: string, saltSize?: number, hashSize?: number, iterations?: number, algorithm?: string): Buffer => {
-        const { users: { passwordHashBytes, passwordIteration, passwordSaltBytes, passwordAlgorithm } }: Ropeho.Configuration.Configuration = config;
+        const { users: { passwordHashBytes, passwordIteration, passwordSaltBytes, passwordAlgorithm } }: Ropeho.Configuration.ConfigurationObject = config;
         saltSize = saltSize || passwordSaltBytes;
         hashSize = hashSize || passwordHashBytes;
         iterations = iterations || passwordIteration;
@@ -95,7 +95,7 @@ export const verifyPassword: (password: string, combined: Buffer | string, algor
             if (combined instanceof Buffer === false) {
                 throw new TypeError("Source password must be a Buffer or a string");
             }
-            const { users: { passwordAlgorithm } }: Ropeho.Configuration.Configuration = config,
+            const { users: { passwordAlgorithm } }: Ropeho.Configuration.ConfigurationObject = config,
                 saltBytes: number = combined.readUInt32BE(0),
                 hashBytes: number = combined.length - saltBytes - 8,
                 iterations: number = combined.readUInt32BE(4),

@@ -175,7 +175,7 @@ router.delete("/:id",
                     errorCode: ErrorCodes.NotFound
                 }).send(res);
             } else {
-                res.status(200).send();
+                res.status(200).send({ deleted: nDeleted });
             }
         } catch (error) {
             new ErrorResponse({ developerMessage: error }).send(res);

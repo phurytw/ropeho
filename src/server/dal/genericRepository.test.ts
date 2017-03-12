@@ -11,7 +11,7 @@ import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
 import config from "../../config";
 import { createClient, RedisClient, Multi } from "redis";
 import { MediaTypes } from "../../enum";
-import { categories as entities, users } from "./testDb";
+import { categories as entities, users } from "../../sampleData/testDb";
 import { map, assign, forEach, includes } from "lodash";
 import { v4 } from "uuid";
 import { normalizeEmail } from "validator";
@@ -191,8 +191,7 @@ describe("Redis generic repository", () => {
                 { _id: v4(), name: "Entity Test B" },
                 ...entities
             ];
-            const newOrder: string[] = [newItemA._id, entityB._id, newItemB._id, entityA._id],
-                order: string[] = await repository.order([newItemA._id, entityB._id, newItemB._id, entityA._id]);
+            const order: string[] = await repository.order([newItemA._id, entityB._id, newItemB._id, entityA._id]);
             order.should.deep.equal([entityB._id, entityA._id]);
         });
     });

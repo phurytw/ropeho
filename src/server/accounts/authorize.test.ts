@@ -22,13 +22,15 @@ import config from "../../config";
 import GenericRepository from "../dal/genericRepository";
 import { isAdmin, isAuthenticated, deserializeCookie } from "../accounts/authorize";
 import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import * as detect from "detect-port";
 should();
 use(chaiAsPromised);
 
 import User = Ropeho.Models.User;
 
 describe("Authorize middlewares", () => {
-    const testApp: Express = express(), port: number = process.env.PORT || 3010, testPassword: string = "123456",
+    const testApp: Express = express(),
+        testPassword: string = "123456",
         users: User[] = [{
             _id: v4(),
             name: "User",
@@ -62,8 +64,9 @@ describe("Authorize middlewares", () => {
             productionIds: [],
             role: Roles.User
         }],
-        [user, admin, outdated, pending]: User[] = users;
+        [user, admin]: User[] = users;
     let server: Server,
+        port: number,
         agent: supertest.SuperTest<supertest.Test>,
         getStub: sinon.SinonStub,
         getByIdStub: sinon.SinonStub,
@@ -99,6 +102,7 @@ describe("Authorize middlewares", () => {
         }));
 
         // Setting up the server
+        port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             testApp.use(app);
 

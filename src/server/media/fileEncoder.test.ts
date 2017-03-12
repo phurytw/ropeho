@@ -7,7 +7,7 @@
 import { createWebp, createWebm } from "../media/fileEncoder";
 import * as fileEncoder from "../media/fileEncoder";
 import { getBufferFromFile, bufferToStream } from "../media/buffer";
-import { image, video } from "./testMedias";
+import { image, video } from "../../sampleData/testMedias";
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { stub, spy } from "sinon";
@@ -15,8 +15,7 @@ import { join } from "path";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
 import { accessSync, createWriteStream, constants } from "fs";
-import { createReadStream, access } from "fs"; // fs functions used by toBuffer
-import { statSync, openSync, closeSync, unlinkSync } from "fs"; // fs functions used by tmp
+import { createReadStream } from "fs"; // fs functions used by toBuffer
 import * as sharp from "sharp";
 import ffmpeg = require("fluent-ffmpeg");
 should();

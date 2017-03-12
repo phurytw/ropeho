@@ -1,9 +1,10 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "removeComments": true
+        "removeComments": true,
+        "outDir": "dist/server"
     },
     "files": [
-        "./src/server/app.ts"
+        "./src/server/index.ts"
     ]
 }

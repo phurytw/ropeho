@@ -4,7 +4,9 @@
  */
 
 /// <reference types="node" />
-import { join } from "path";
-export const env: string = process.env.NODE_ENV || "development";
-export const config: Ropeho.Configuration.Configuration = require(join(__dirname, "..", "config.json"))[env];
+import development from "./configurations/config.development";
+import production from "./configurations/config.production";
+import test from "./configurations/config.test";
+
+export const config: Ropeho.Configuration.ConfigurationObject = process.env.NODE_ENV === "production" ? production : (process.env.NODE_ENV === "test" ? test : development)
 export default config;

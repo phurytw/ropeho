@@ -11,7 +11,6 @@ import * as rimraf from "rimraf";
 import * as mkdirp from "mkdirp";
 import * as _ from "lodash";
 import { includes } from "lodash";
-
 /**
  * Uploads and downloads files to a local directory
  */
@@ -90,7 +89,7 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
                     reject(new Error("File not found"));
                 } else {
                     let data: Buffer = new Buffer(0);
-                    const stream: NodeJS.ReadableStream = createReadStream(path)
+                    createReadStream(path)
                         .on("data", (chunk: Buffer) => data = Buffer.concat([data, chunk]))
                         .on("error", (err: Error) => reject(err))
                         .on("end", () => resolve(data));

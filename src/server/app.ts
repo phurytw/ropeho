@@ -102,7 +102,11 @@ app.set("views", "src/server/views");
 app.set("view engine", "ejs");
 app.engine("html", renderFile);
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: /localhost/,
+    credentials: true,
+    maxAge: 31536000
+}));
 app.use(expressSession({
     ...config.session,
     store: new RedisStore({

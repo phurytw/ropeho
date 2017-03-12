@@ -5,13 +5,44 @@
 
 /* tslint:disable:no-console */
 import app from "./app";
+import * as detect from "detect-port";
+import config from "../config";
+import GenericRepository from "./dal/genericRepository";
+import { computeHashSync } from "./accounts/password";
+import { computeToken } from "./accounts/token";
+import { Roles } from "../enum";
 
-const host: string = "localhost";
-const port: number = process.env.PORT || 8000;
+/**
+ * Starts the application
+ */
+const startApp: () => void =
+    (): void => {
+        detect(config.endPoints.api.port, (err: Error, port: number) => {
+            if (err) {
+                throw err;
+            }
+            app.listen(port, (err: Error) => {
+                if (err) {
+                    console.error(err);
+                }
+                console.info(`API Server listening on ${port}`);
+            });
+        });
+    };
 
-app.listen(port, host, (err: Error) => {
-    if (err) {
-        console.error(err);
-    }
-    console.log(`API Server listening on ${port}`);
+// create admin account
+import User = Ropeho.Models.User;
+const userRepository: Ropeho.Models.IGenericRepository<User> = new GenericRepository<User>({
+    ...config.redis,
+    ...config.database.users
 });
+const admin: User = {
+    productionIds: [],
+    role: Roles.Administrator,
+    token: computeToken(),
+    email: config.users.administrator.email,
+    name: config.users.administrator.name,
+    password: computeHashSync(config.users.administrator.password).toString("hex"),
+    facebookId: config.users.administrator.facebookId
+};
+userRepository.create(admin).then(startApp, startApp);
