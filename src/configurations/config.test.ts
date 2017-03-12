@@ -78,8 +78,8 @@ const config: Ropeho.Configuration.ConfigurationObject = {
         passwordIteration: 1000,
         passwordAlgorithm: "sha256",
         facebook: {
-            appId: "",
-            appSecret: ""
+            appId: "appId",
+            appSecret: "appSecret"
         },
         administrator: {
             email: "test@test.com",

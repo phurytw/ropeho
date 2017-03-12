@@ -1,0 +1,10 @@
+.iconMenu {
+    display: none;
+}
+
+@media only screen and (max-width: 720px) {
+    .iconMenu {
+        display: inline-block;
+        flex-shrink: 0;
+    }
+}

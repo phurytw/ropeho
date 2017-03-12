@@ -1,0 +1,25 @@
+:root {
+    --container-width: 480px;
+}
+
+.container {
+    lost-center: var(--container-width);
+}
+
+.element {
+    lost-row: 1/3;
+}
+
+.element:nth-child(2) {
+    text-align: center;
+    padding: 1em;
+}
+
+.errorBox {
+    background-color: #FF6666;
+}
+
+.logo {
+    max-width: var(--container-width);
+    width: 100vw;
+}

@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "removeComments": true
+    },
+    "files": [
+        "./src/admin/index.tsx"
+    ]
+}

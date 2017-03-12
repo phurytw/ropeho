@@ -42,14 +42,7 @@ jspm_packages
 
 # Compiled files
 dist
-
 *.ppk
-src/admin/**/*
 src/client/**/*
 src/common/**/*
-.babelrc
-.bootstraprc
-wallaby*
-webpack*
-*admin*
 *client*
