@@ -1,6 +1,6 @@
 {
   "name": "ropeho",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "ropeho.com website",
   "scripts": {
     "precommit": "run-s lint test",
@@ -13,16 +13,20 @@
     "test:admin:app": "cross-env NODE_ENV=test mocha \"./src/admin/**/!(server).test.ts*\" --compilers ts:./ts-node-register,tsx:./ts-node-register --require jsdom.setup.js",
     "test:admin:server": "cross-env NODE_ENV=test mocha src/admin/server.test.tsx --compilers ts:./ts-node-register,tsx:./ts-node-register --require jsdom.setup.js",
     "test:api": "cross-env NODE_ENV=test mocha src/server/**/*.test.ts --compilers ts:./ts-node-register",
-    "coverage:server": "nyc --reporter=html --reporter=lcov --reporter=text npm run test:server",
+    "coverage:server": "nyc --reporter=html --reporter=lcov --reporter=text npm run test:api",
     "lint": "tslint src/server/**/*.ts",
     "clean": "rimraf ./src/**/*.js.map && rimraf ./src/**/*.js"
   },
   "repository": {
     "type": "git",
-    "url": "./"
+    "url": "git+https://github.com/lith-light-g/ropeho.git"
   },
   "author": "François Nguyen (https://github.com/lith-light-g)",
-  "license": "ISC",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/lith-light-g/ropeho/issues"
+  },
+  "homepage": "https://github.com/lith-light-g/ropeho#readme",
   "dependencies": {
     "autoprefixer": "^6.7.6",
     "awesome-typescript-loader": "^3.1.2",
