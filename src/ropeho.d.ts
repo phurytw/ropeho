@@ -309,8 +309,8 @@ declare namespace Ropeho {
                 fps: number;
                 /** WebM Quality */
                 bitrate: number;
-                /** WebM Resolution */
-                resolution: string;
+                /** WebM Screensho timestamp */
+                timestamp: string;
             };
             /** Chunk size when transferring files */
             chunkSize: number;
@@ -391,7 +391,6 @@ declare namespace Ropeho {
 
         interface CreateWebMOptions {
             dest?: string;
-            thumbnail?: string;
             offset?: number;
             duration?: number;
         }

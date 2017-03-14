@@ -6,7 +6,8 @@
 /// <reference path="../../test.d.ts" />
 import { getBufferFromFile, bufferToStream } from "../media/buffer";
 import { image } from "../../sampleData/testMedias";
-import { should } from "chai";
+import { should, use } from "chai";
+import * as chaiAsPromised from "chai-as-promised";
 import { stub } from "sinon";
 import { createReadStream } from "fs";
 import { join } from "path";
@@ -15,6 +16,7 @@ import * as https from "https";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
 should();
+use(chaiAsPromised);
 
 describe("Buffer tools", () => {
     const testImage: Buffer = new Buffer(image, "base64"),

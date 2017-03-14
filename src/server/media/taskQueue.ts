@@ -8,7 +8,7 @@ import * as kue from "kue";
 import { Job } from "kue";
 import mediaManager from "./mediaManager";
 import config from "../../config";
-import { createWebp, createWebm } from "./fileEncoder";
+import { createWebp, createWebm, createScreenshot } from "./fileEncoder";
 import { indexOf, map } from "lodash";
 
 import ProcessImageOptions = Ropeho.Tasks.ProcessImageOptions;
@@ -36,9 +36,12 @@ export const processImageTask: (jobData: JobData<ProcessImageOptions>, cb: Funct
 export const processVideoTask: (jobData: JobData<ProcessVideoOptions>, cb: Function) => Promise<void> =
     (jobData: JobData<ProcessVideoOptions>, cb: Function): Promise<void> => new Promise<void>(async (resolve: () => void, reject: (reason?: any) => void) => {
         const { data, dest, fallbackDest }: ProcessVideoOptions = jobData.data;
-        const [webm, thumb]: Buffer[] = await createWebm(data);
+        // create the video
+        const webm: Buffer = await createWebm(data);
         await mediaManager.upload(dest, webm);
-        await mediaManager.upload(fallbackDest, thumb);
+        // create the screenshot
+        const screenshot: Buffer = await createScreenshot(data);
+        await mediaManager.upload(fallbackDest, screenshot);
         cb();
         resolve();
     });

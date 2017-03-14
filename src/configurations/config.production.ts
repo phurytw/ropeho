@@ -145,7 +145,7 @@ const config: Ropeho.Configuration.ConfigurationObject = {
         videoEncoding: {
             fps: 30,
             bitrate: 500,
-            resolution: "?x720"
+            timestamp: "00:00:05"
         },
         chunkSize: 8192,
         overwrite: false

@@ -72,21 +72,25 @@ describe("Task queue", () => {
     describe("Executing tasks", () => {
         let mediaUploadStub: sinon.SinonStub,
             createWebpStub: sinon.SinonStub,
-            createWebmStub: sinon.SinonStub;
+            createWebmStub: sinon.SinonStub,
+            createScreenshotStub: sinon.SinonStub;
         before(() => {
             mediaUploadStub = stub(mediaManager, "upload");
             createWebmStub = stub(fileEncoder, "createWebm").returns([new Buffer(0), new Buffer(0)]);
             createWebpStub = stub(fileEncoder, "createWebp");
+            createScreenshotStub = stub(fileEncoder, "createScreenshot");
         });
         afterEach(() => {
             mediaUploadStub.reset();
             createWebmStub.reset();
             createWebpStub.reset();
+            createScreenshotStub.reset();
         });
         after(() => {
             mediaUploadStub.restore();
             createWebmStub.restore();
             createWebpStub.restore();
+            createScreenshotStub.restore();
         });
         it("Should create a WebP file and upload it", async () => {
             const callback: sinon.SinonSpy = spy();
@@ -101,18 +105,21 @@ describe("Task queue", () => {
             createWebpStub.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
-        it("Should create a WebM file and upload it", async () => {
+        it("Should create a WebM file, and a screenshot then upload them", async () => {
             const callback: sinon.SinonSpy = spy();
             await processVideoTask({
                 id: "",
                 data: {
                     data: new Buffer(0),
-                    dest: "",
-                    fallbackDest: ""
+                    dest: "dest",
+                    fallbackDest: "fallback"
                 }
             }, callback);
             mediaUploadStub.should.have.been.calledTwice;
+            mediaUploadStub.should.have.been.calledWithMatch("dest");
+            mediaUploadStub.should.have.been.calledWithMatch("fallback");
             createWebmStub.should.have.been.calledOnce;
+            createScreenshotStub.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
         it("Should upload a file", async () => {
