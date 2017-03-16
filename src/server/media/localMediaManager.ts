@@ -250,7 +250,7 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
             while (dir !== ".") {
                 const absoluteDir: string = join(this.baseDirectory, dir);
                 try {
-                    accessSync(absoluteDir, constants.S_IFDIR);
+                    accessSync(absoluteDir, constants.F_OK);
                     const contents: string[] = readdirSync(absoluteDir);
                     if (contents.length === 0) {
                         rmdirSync(absoluteDir);
