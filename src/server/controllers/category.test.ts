@@ -5,10 +5,10 @@
 
 /// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
-import { stub } from "sinon";
+import { stub, sandbox as sinonSandbox } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "uuid";
-import { isArray, filter, head, map, includes, uniq, cloneDeep, forEach } from "lodash";
+import { isArray, filter, head, map, includes, uniq, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import GenericRepository from "../dal/genericRepository";
 import { Server } from "http";
@@ -56,57 +56,10 @@ describe("Category controller", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        createStub: sinon.SinonStub,
-        updateStub: sinon.SinonStub,
-        deleteStub: sinon.SinonStub,
-        getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub,
-        searchStub: sinon.SinonStub,
-        orderStub: sinon.SinonStub,
+        sandbox: sinon.SinonSandbox,
         middleware: RequestHandler,
         reqUser: User;
     before(async () => {
-        // Stub the repository class methods
-        createStub = stub(GenericRepository.prototype, "create", (cat: Category) => new Promise<Category>((resolve: (value?: Category | PromiseLike<Category>) => void, reject: (reason?: any) => void) => {
-            if (_(categories).map<string>((c: Category) => uriFriendlyFormat(c.name)).includes(uriFriendlyFormat(cat.name))) {
-                reject(new Error("Name already in use"));
-            } else {
-                resolve(cat);
-            }
-        }));
-        updateStub = stub(GenericRepository.prototype, "update", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        deleteStub = stub(GenericRepository.prototype, "delete", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        getStub = stub(GenericRepository.prototype, "get", (entities: Category | Category[]) => new Promise<Category | Category[]>((resolve: (value?: Category | Category[] | PromiseLike<Category | Category[]>) => void) => resolve(cloneDeep<Category>(categories))));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<Category | Category[]>((resolve: (value?: Category | Category[] | PromiseLike<Category | Category[]>) => void) => {
-            if (isArray<string>(id)) {
-                // Need to add productions because we use both with getById
-                resolve(_([...categories, ...productions]).filter((c: User) => includes<string>(id, c._id)).cloneDeep());
-            } else {
-                resolve(_(categories).filter((c: User) => c._id === id).thru((categories: Category[]) => head(categories)).cloneDeep());
-            }
-        }));
-        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<Category[]>((resolve: (value?: Category[] | PromiseLike<Category[]>) => void) => {
-            const properties: string[] = ["_id", "name"];
-            if (filters) {
-                forEach(properties, (p: string) => {
-                    if (filters[p]) {
-                        resolve(_(categories).filter((c: Category) => includes(uriFriendlyFormat((c as any)[p]), uriFriendlyFormat(filters[p]))).cloneDeep());
-                    }
-                });
-                resolve([]);
-            } else {
-                resolve([]);
-            }
-        }));
-        orderStub = stub(GenericRepository.prototype, "order", (order?: string[]) => new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void) => {
-            if (isArray<string>(order)) {
-                const currentOrder: string[] = map<Category, string>(categories, (c: Category) => c._id);
-                resolve(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
-            } else {
-                resolve(map<Category, string>(categories, (c: Category) => c._id));
-            }
-        }));
-
         // Setting up the server
         port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
@@ -122,27 +75,59 @@ describe("Category controller", () => {
         });
 
         // Setup supertest
+        sandbox = sinonSandbox.create();
         agent = supertest(testApp);
     });
     beforeEach(() => {
-        createStub.reset();
-        updateStub.reset();
-        deleteStub.reset();
-        getStub.reset();
-        getByIdStub.reset();
-        searchStub.reset();
-        orderStub.reset();
+        sandbox.stub(GenericRepository.prototype, "create")
+            .callsFake((cat: Category) => {
+                if (_(categories).map<string>((c: Category) => uriFriendlyFormat(c.name)).includes(uriFriendlyFormat(cat.name))) {
+                    return Promise.reject<Error>(new Error("Name already in use"));
+                } else {
+                    return Promise.resolve<Category>(cat);
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "update")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "delete")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "get")
+            .callsFake((entities: Category | Category[]) => Promise.resolve<Category[]>(cloneDeep<Category[]>(categories)));
+        sandbox.stub(GenericRepository.prototype, "getById")
+            .callsFake((id: string | string[]) => {
+                if (isArray<string>(id)) {
+                    // Need to add productions because we use both with getById
+                    return Promise.resolve<Category[]>(_([...categories, ...productions]).filter((c: User) => includes<string>(id, c._id)).cloneDeep());
+                } else {
+                    return Promise.resolve<Category>(_(categories).filter((c: User) => c._id === id).thru((categories: Category[]) => head(categories)).cloneDeep());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                const properties: string[] = ["_id", "name"];
+                if (filters) {
+                    for (const p of properties) {
+                        if (filters[p]) {
+                            return Promise.resolve<Category[]>(_(categories).filter((c: Category) => includes(uriFriendlyFormat((c as any)[p]), uriFriendlyFormat(filters[p]))).cloneDeep());
+                        }
+                    }
+                    return Promise.resolve<Category[]>([]);
+                } else {
+                    return Promise.resolve<Category[]>([]);
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "order")
+            .callsFake((order?: string[]) => {
+                if (isArray<string>(order)) {
+                    const currentOrder: string[] = map<Category, string>(categories, (c: Category) => c._id);
+                    return Promise.resolve<string[]>(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
+                } else {
+                    return Promise.resolve<string[]>(map<Category, string>(categories, (c: Category) => c._id));
+                }
+            });
     });
-    after(() => {
-        server.close();
-        createStub.restore();
-        updateStub.restore();
-        deleteStub.restore();
-        getStub.restore();
-        getByIdStub.restore();
-        searchStub.restore();
-        orderStub.restore();
-    });
+    afterEach(() => sandbox.restore());
+    after(() => server.close());
     describe("Creating a category", () => {
         it("Should reject if it does not have a name", async () => {
             reqUser = admin;
@@ -168,8 +153,8 @@ describe("Category controller", () => {
                 response: supertest.Response = await agent.post("/api/categories")
                     .send(testCategory);
             response.should.have.property("status", 200);
-            createStub.should.have.been.calledOnce;
-            createStub.should.have.been.calledWithMatch({ ...testCategory });
+            GenericRepository.prototype.create.should.have.been.calledOnce;
+            GenericRepository.prototype.create.should.have.been.calledWithMatch({ ...testCategory });
         });
     });
     describe("Getting one or multiple categories", () => {
@@ -303,16 +288,17 @@ describe("Category controller", () => {
                 response: supertest.Response = await agent.put(`/api/categories/${categoryA._id}`)
                     .send(cat);
             response.should.have.property("status", 200);
-            updateStub.should.have.been.calledWith(cat);
-            updateStub.should.have.been.calledOnce;
+            GenericRepository.prototype.update.should.have.been.calledWith(cat);
+            GenericRepository.prototype.update.should.have.been.calledOnce;
         });
         it("Should not update if the category is being uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [categoryA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked")
+                .callsFake(() => [categoryA._id]),
                 response: supertest.Response = await agent.put(`/api/categories/${categoryA._id}`)
                     .send({ ...categoryA, name: "New Name" });
             response.should.have.property("status", 400);
-            updateStub.should.have.not.been.called;
+            GenericRepository.prototype.update.should.have.not.been.called;
             getLockedStub.restore();
         });
     });
@@ -326,15 +312,16 @@ describe("Category controller", () => {
             reqUser = admin;
             const response: supertest.Response = await agent.delete(`/api/categories/${categoryA._id}`);
             response.should.have.property("status", 200);
-            deleteStub.should.have.been.calledWith(categoryA._id);
-            deleteStub.should.have.been.calledOnce;
+            GenericRepository.prototype.delete.should.have.been.calledWith(categoryA._id);
+            GenericRepository.prototype.delete.should.have.been.calledOnce;
         });
         it("Should not delete if the category is being uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [categoryA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked")
+                .callsFake(() => [categoryA._id]),
                 response: supertest.Response = await agent.delete(`/api/categories/${categoryA._id}`);
             response.should.have.property("status", 400);
-            deleteStub.should.have.not.been.called;
+            GenericRepository.prototype.delete.should.have.not.been.called;
             getLockedStub.restore();
         });
     });

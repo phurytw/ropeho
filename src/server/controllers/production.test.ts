@@ -5,7 +5,7 @@
 
 /// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
-import { stub } from "sinon";
+import { stub, sandbox as sinonSandbox } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "uuid";
 import { isArray, filter, head, map, includes, uniq } from "lodash";
@@ -55,56 +55,10 @@ describe("Production controller", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        createStub: sinon.SinonStub,
-        updateStub: sinon.SinonStub,
-        deleteStub: sinon.SinonStub,
-        getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub,
-        searchStub: sinon.SinonStub,
-        orderStub: sinon.SinonStub,
+        sandbox: sinon.SinonSandbox,
         middleware: RequestHandler,
         reqUser: User;
     before(async () => {
-        // Stub the repository class methods
-        createStub = stub(GenericRepository.prototype, "create", (prod: Production) => new Promise<Production>((resolve: (value?: Production | PromiseLike<Production>) => void, reject: (reason?: any) => void) => {
-            if (_(productions).map<string>((p: Production) => uriFriendlyFormat(p.name)).includes(uriFriendlyFormat(prod.name))) {
-                reject(new Error("Name already in use"));
-            } else {
-                resolve(prod);
-            }
-        }));
-        updateStub = stub(GenericRepository.prototype, "update", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        deleteStub = stub(GenericRepository.prototype, "delete", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        getStub = stub(GenericRepository.prototype, "get", (entities: Production | Production[]) => new Promise<Production | Production[]>((resolve: (value?: Production | Production[] | PromiseLike<Production | Production[]>) => void) => {
-            if (!entities || (entities as Production[]).length === 0) {
-                resolve(productions);
-            } else {
-                resolve(_(productions).filter((p: Production) => _(entities).map((e: Production) => e._id).includes(p._id)).thru((prods: Production[]) => (entities as Production[]).length === 1 ? head(prods) : prods).value());
-            }
-        }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<Production | Production[]>((resolve: (value?: Production | Production[] | PromiseLike<Production | Production[]>) => void) => {
-            if (isArray<string>(id)) {
-                resolve(filter(productions, (p: User) => includes<string>(id, p._id)));
-            } else {
-                resolve(_(productions).filter((p: User) => p._id === id).head());
-            }
-        }));
-        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<Production[]>((resolve: (value?: Production[] | PromiseLike<Production[]>) => void) => {
-            if (filters && filters["name"]) {
-                resolve(filter<Production>(productions, (p: Production) => includes(uriFriendlyFormat(p.name), uriFriendlyFormat(filters["name"]))));
-            } else {
-                resolve([]);
-            }
-        }));
-        orderStub = stub(GenericRepository.prototype, "order", (order?: string[]) => new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void) => {
-            if (isArray<string>(order)) {
-                const currentOrder: string[] = map<Production, string>(productions, (p: Production) => p._id);
-                resolve(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
-            } else {
-                resolve(map<Production, string>(productions, (p: Production) => p._id));
-            }
-        }));
-
         // Setting up the server
         port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
@@ -120,27 +74,58 @@ describe("Production controller", () => {
         });
 
         // Setup supertest
+        sandbox = sinonSandbox.create();
         agent = supertest(testApp);
     });
     beforeEach(() => {
-        createStub.reset();
-        updateStub.reset();
-        deleteStub.reset();
-        getStub.reset();
-        getByIdStub.reset();
-        searchStub.reset();
-        orderStub.reset();
+        sandbox.stub(GenericRepository.prototype, "create")
+            .callsFake((prod: Production) => {
+                if (_(productions).map<string>((p: Production) => uriFriendlyFormat(p.name)).includes(uriFriendlyFormat(prod.name))) {
+                    return Promise.reject<Error>(new Error("Name already in use"));
+                } else {
+                    return Promise.resolve<Production>(prod);
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "update")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "delete")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "get")
+            .callsFake((entities: Production | Production[]) => {
+                if (!entities || (entities as Production[]).length === 0) {
+                    return Promise.resolve<Production[]>(productions);
+                } else {
+                    return Promise.resolve<Production | Production[]>(_(productions).filter((p: Production) => _(entities).map((e: Production) => e._id).includes(p._id)).thru((prods: Production[]) => (entities as Production[]).length === 1 ? head(prods) : prods).value());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "getById")
+            .callsFake((id: string | string[]) => {
+                if (isArray<string>(id)) {
+                    return Promise.resolve<Production[]>(filter(productions, (p: User) => includes<string>(id, p._id)));
+                } else {
+                    return Promise.resolve<Production>(_(productions).filter((p: User) => p._id === id).head());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                if (filters && filters["name"]) {
+                    return Promise.resolve<Production[]>(filter<Production>(productions, (p: Production) => includes(uriFriendlyFormat(p.name), uriFriendlyFormat(filters["name"]))));
+                } else {
+                    return Promise.resolve<Production[]>([]);
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "order")
+            .callsFake((order?: string[]) => {
+                if (isArray<string>(order)) {
+                    const currentOrder: string[] = map<Production, string>(productions, (p: Production) => p._id);
+                    return Promise.resolve<string[]>(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
+                } else {
+                    return Promise.resolve<string[]>(map<Production, string>(productions, (p: Production) => p._id));
+                }
+            });
     });
-    after(() => {
-        server.close();
-        createStub.restore();
-        updateStub.restore();
-        deleteStub.restore();
-        getStub.restore();
-        getByIdStub.restore();
-        searchStub.restore();
-        orderStub.restore();
-    });
+    afterEach(() => sandbox.restore());
+    after(() => server.close());
     describe("Creating a production", () => {
         it("Should reject if it does not have a name", async () => {
             reqUser = admin;
@@ -166,8 +151,8 @@ describe("Production controller", () => {
                 response: supertest.Response = await agent.post("/api/productions")
                     .send(testProduction);
             response.should.have.property("status", 200);
-            createStub.should.have.been.calledOnce;
-            createStub.should.have.been.calledWithMatch({ ...testProduction });
+            GenericRepository.prototype.create.should.have.been.calledOnce;
+            GenericRepository.prototype.create.should.have.been.calledWithMatch({ ...testProduction });
         });
     });
     describe("Getting one or multiple productions", () => {
@@ -246,16 +231,16 @@ describe("Production controller", () => {
                 response: supertest.Response = await agent.put(`/api/productions/${productionA._id}`)
                     .send(prod);
             response.should.have.property("status", 200);
-            updateStub.should.have.been.calledWith(prod);
-            updateStub.should.have.been.calledOnce;
+            GenericRepository.prototype.update.should.have.been.calledWith(prod);
+            GenericRepository.prototype.update.should.have.been.calledOnce;
         });
         it("Should not update if the production is being downloaded/uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [productionA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked").callsFake(() => [productionA._id]),
                 response: supertest.Response = await agent.put(`/api/productions/${productionA._id}`)
                     .send({ ...productionA, name: "New Name" });
             response.should.have.property("status", 400);
-            updateStub.should.have.not.been.called;
+            GenericRepository.prototype.update.should.have.not.been.called;
             getLockedStub.restore();
         });
     });
@@ -269,15 +254,15 @@ describe("Production controller", () => {
             reqUser = admin;
             const response: supertest.Response = await agent.delete(`/api/productions/${productionA._id}`);
             response.should.have.property("status", 200);
-            deleteStub.should.have.been.calledWith(productionA._id);
-            deleteStub.should.have.been.calledOnce;
+            GenericRepository.prototype.delete.should.have.been.calledWith(productionA._id);
+            GenericRepository.prototype.delete.should.have.been.calledOnce;
         });
         it("Should not delete if the production is being downloaded/uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [productionA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked").callsFake(() => [productionA._id]),
                 response: supertest.Response = await agent.delete(`/api/productions/${productionA._id}`);
             response.should.have.property("status", 400);
-            deleteStub.should.have.not.been.called;
+            GenericRepository.prototype.delete.should.have.not.been.called;
             getLockedStub.restore();
         });
     });

@@ -9,43 +9,30 @@ import * as taskQueue from "../media/taskQueue";
 import mediaManager from "../media/mediaManager";
 import * as fileEncoder from "../media/fileEncoder";
 import { should } from "chai";
-import { stub, spy } from "sinon";
+import { stub, spy, sandbox as sinonSandbox } from "sinon";
 import * as kue from "kue";
 should();
 
 describe("Task queue", () => {
-    let queueCreateSpy: sinon.SinonSpy,
-        saveStub: sinon.SinonStub,
-        removeStub: sinon.SinonStub,
-        attemptsSpy: sinon.SinonSpy;
-    before(() => {
-        queueCreateSpy = spy(queue, "create");
-        saveStub = stub(kue.Job.prototype, "save");
-        removeStub = stub(kue.Job.prototype, "remove");
-        attemptsSpy = spy(kue.Job.prototype, "attempts");
+    let sandbox: sinon.SinonSandbox;
+    before(() => sandbox = sinonSandbox.create());
+    beforeEach(() => {
+        sandbox.spy(queue, "create");
+        sandbox.stub(kue.Job.prototype, "save");
+        sandbox.stub(kue.Job.prototype, "remove");
+        sandbox.spy(kue.Job.prototype, "attempts");
     });
-    afterEach(() => {
-        queueCreateSpy.reset();
-        saveStub.reset();
-        removeStub.reset();
-        attemptsSpy.reset();
-    });
-    after(() => {
-        queueCreateSpy.restore();
-        saveStub.restore();
-        removeStub.restore();
-        attemptsSpy.restore();
-    });
+    afterEach(() => sandbox.restore());
     describe("Adding tasks", () => {
         it("Should add a image encoding task, execute it, and retry if it fails", async () => {
             await createProcessImageTask({
                 data: new Buffer(0),
                 dest: ""
             });
-            queueCreateSpy.should.have.been.calledOnce;
-            queueCreateSpy.should.have.been.calledWith("image");
-            saveStub.should.have.been.calledOnce;
-            attemptsSpy.should.have.been.calledOnce;
+            queue.create.should.have.been.calledOnce;
+            queue.create.should.have.been.calledWith("image");
+            kue.Job.prototype.save.should.have.been.calledOnce;
+            kue.Job.prototype.attempts.should.have.been.calledOnce;
         });
         it("Should add a video encoding task, execute it, and retry if it fails", async () => {
             await createProcessVideoTask({
@@ -53,44 +40,28 @@ describe("Task queue", () => {
                 dest: "",
                 fallbackDest: ""
             });
-            queueCreateSpy.should.have.been.calledOnce;
-            queueCreateSpy.should.have.been.calledWith("video");
-            saveStub.should.have.been.calledOnce;
-            attemptsSpy.should.have.been.calledOnce;
+            queue.create.should.have.been.calledOnce;
+            queue.create.should.have.been.calledWith("video");
+            kue.Job.prototype.save.should.have.been.calledOnce;
+            kue.Job.prototype.attempts.should.have.been.calledOnce;
         });
         it("Should add a file upload task, execute it, and retry if it fails", async () => {
             await createFileUploadTask({
                 data: new Buffer(0),
                 dest: ""
             });
-            queueCreateSpy.should.have.been.calledOnce;
-            queueCreateSpy.should.have.been.calledWith("upload");
-            saveStub.should.have.been.calledOnce;
-            attemptsSpy.should.have.been.calledOnce;
+            queue.create.should.have.been.calledOnce;
+            queue.create.should.have.been.calledWith("upload");
+            kue.Job.prototype.save.should.have.been.calledOnce;
+            kue.Job.prototype.attempts.should.have.been.calledOnce;
         });
     });
     describe("Executing tasks", () => {
-        let mediaUploadStub: sinon.SinonStub,
-            createWebpStub: sinon.SinonStub,
-            createWebmStub: sinon.SinonStub,
-            createScreenshotStub: sinon.SinonStub;
-        before(() => {
-            mediaUploadStub = stub(mediaManager, "upload");
-            createWebmStub = stub(fileEncoder, "createWebm").returns([new Buffer(0), new Buffer(0)]);
-            createWebpStub = stub(fileEncoder, "createWebp");
-            createScreenshotStub = stub(fileEncoder, "createScreenshot");
-        });
-        afterEach(() => {
-            mediaUploadStub.reset();
-            createWebmStub.reset();
-            createWebpStub.reset();
-            createScreenshotStub.reset();
-        });
-        after(() => {
-            mediaUploadStub.restore();
-            createWebmStub.restore();
-            createWebpStub.restore();
-            createScreenshotStub.restore();
+        beforeEach(() => {
+            sandbox.stub(mediaManager, "upload");
+            sandbox.stub(fileEncoder, "createWebm").returns([new Buffer(0), new Buffer(0)]);
+            sandbox.stub(fileEncoder, "createWebp");
+            sandbox.stub(fileEncoder, "createScreenshot");
         });
         it("Should create a WebP file and upload it", async () => {
             const callback: sinon.SinonSpy = spy();
@@ -101,8 +72,8 @@ describe("Task queue", () => {
                     dest: ""
                 }
             }, callback);
-            mediaUploadStub.should.have.been.calledOnce;
-            createWebpStub.should.have.been.calledOnce;
+            mediaManager.upload.should.have.been.calledOnce;
+            fileEncoder.createWebp.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
         it("Should create a WebM file, and a screenshot then upload them", async () => {
@@ -115,11 +86,11 @@ describe("Task queue", () => {
                     fallbackDest: "fallback"
                 }
             }, callback);
-            mediaUploadStub.should.have.been.calledTwice;
-            mediaUploadStub.should.have.been.calledWithMatch("dest");
-            mediaUploadStub.should.have.been.calledWithMatch("fallback");
-            createWebmStub.should.have.been.calledOnce;
-            createScreenshotStub.should.have.been.calledOnce;
+            mediaManager.upload.should.have.been.calledTwice;
+            mediaManager.upload.should.have.been.calledWithMatch("dest");
+            mediaManager.upload.should.have.been.calledWithMatch("fallback");
+            fileEncoder.createWebm.should.have.been.calledOnce;
+            fileEncoder.createScreenshot.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
         it("Should upload a file", async () => {
@@ -131,7 +102,7 @@ describe("Task queue", () => {
                     dest: ""
                 }
             }, callback);
-            mediaUploadStub.should.have.been.calledOnce;
+            mediaManager.upload.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
     });
@@ -140,19 +111,21 @@ describe("Task queue", () => {
             getTasks().should.eventually.be.an("array");
         });
         it("Should manually start a task", async () => {
-            const getTasksStub: sinon.SinonStub = stub(taskQueue, "getTasks", (filter?: string) =>
-                new Promise<kue.Job[]>((resolve: (value?: kue.Job[] | PromiseLike<kue.Job[]>) => void, reject: (reason?: any) => void) =>
-                    resolve([]))),
-                getJobStub: sinon.SinonStub = stub(kue.Job, "get", (id: number, callback: (err: Error, job: kue.Job) => void) => callback(undefined, queue.create("image", {})));
+            const getTasksStub: sinon.SinonStub = stub(taskQueue, "getTasks")
+                .callsFake((filter?: string) =>
+                    Promise.resolve<kue.Job[]>([])),
+                getJobStub: sinon.SinonStub = stub(kue.Job, "get")
+                    .callsFake((id: number, callback: (err: Error, job: kue.Job) => void) => callback(undefined, queue.create("image", {})));
             await startTask(0);
-            saveStub.should.have.been.calledOnce;
+            kue.Job.prototype.save.should.have.been.calledOnce;
             getTasksStub.restore();
             getJobStub.restore();
         });
         it("Should cancel and remove a task", async () => {
-            const getJobStub: sinon.SinonStub = stub(kue.Job, "get", (id: number, callback: (err: Error, job: kue.Job) => void) => callback(undefined, queue.create("image", {})));
+            const getJobStub: sinon.SinonStub = stub(kue.Job, "get")
+                .callsFake((id: number, callback: (err: Error, job: kue.Job) => void) => callback(undefined, queue.create("image", {})));
             await cancelTask(0);
-            removeStub.should.have.been.calledOnce;
+            kue.Job.prototype.remove.should.have.been.calledOnce;
             getJobStub.restore();
         });
     });

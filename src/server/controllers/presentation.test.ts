@@ -5,7 +5,7 @@
 
 /// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
-import { stub } from "sinon";
+import { stub, sandbox as sinonSandbox } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "uuid";
 import { isArray, filter, head, map, includes, uniq } from "lodash";
@@ -54,50 +54,10 @@ describe("PresentationContainer controller", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        createStub: sinon.SinonStub,
-        updateStub: sinon.SinonStub,
-        deleteStub: sinon.SinonStub,
-        getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub,
-        searchStub: sinon.SinonStub,
-        orderStub: sinon.SinonStub,
+        sandbox: sinon.SinonSandbox,
         middleware: RequestHandler,
         reqUser: User;
     before(async () => {
-        // Stub the repository class methods
-        createStub = stub(GenericRepository.prototype, "create", (pre: PresentationContainer) => new Promise<PresentationContainer>((resolve: (value?: PresentationContainer | PromiseLike<PresentationContainer>) => void) => resolve(pre)));
-        updateStub = stub(GenericRepository.prototype, "update", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        deleteStub = stub(GenericRepository.prototype, "delete", (params: any) => params ? (isArray(params) ? params.length : 1) : 0);
-        getStub = stub(GenericRepository.prototype, "get", (entities: PresentationContainer | PresentationContainer[]) => new Promise<PresentationContainer | PresentationContainer[]>((resolve: (value?: PresentationContainer | PresentationContainer[] | PromiseLike<PresentationContainer | PresentationContainer[]>) => void) => {
-            if (!entities || (entities as PresentationContainer[]).length === 0) {
-                resolve(presentations);
-            } else {
-                resolve(_(presentations).filter((p: PresentationContainer) => _(entities).map((e: PresentationContainer) => e._id).includes(p._id)).thru((pre: PresentationContainer[]) => (entities as PresentationContainer[]).length === 1 ? head(pre) : pre).value());
-            }
-        }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<PresentationContainer | PresentationContainer[]>((resolve: (value?: PresentationContainer | PresentationContainer[] | PromiseLike<PresentationContainer | PresentationContainer[]>) => void) => {
-            if (isArray<string>(id)) {
-                resolve(filter(presentations, (p: User) => includes<string>(id, p._id)));
-            } else {
-                resolve(_(presentations).filter((p: User) => p._id === id).head());
-            }
-        }));
-        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<PresentationContainer[]>((resolve: (value?: PresentationContainer[] | PromiseLike<PresentationContainer[]>) => void) => {
-            if (filters && filters["_id"]) {
-                resolve(filter<PresentationContainer>(presentations, (p: PresentationContainer) => includes(p._id, filters["_id"])));
-            } else {
-                resolve([]);
-            }
-        }));
-        orderStub = stub(GenericRepository.prototype, "order", (order?: string[]) => new Promise<string[]>((resolve: (value?: string[] | PromiseLike<string[]>) => void) => {
-            if (isArray<string>(order)) {
-                const currentOrder: string[] = map<PresentationContainer, string>(presentations, (p: PresentationContainer) => p._id);
-                resolve(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
-            } else {
-                resolve(map<PresentationContainer, string>(presentations, (p: PresentationContainer) => p._id));
-            }
-        }));
-
         // Setting up the server
         port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
@@ -113,27 +73,52 @@ describe("PresentationContainer controller", () => {
         });
 
         // Setup supertest
+        sandbox = sinonSandbox.create();
         agent = supertest(testApp);
     });
     beforeEach(() => {
-        createStub.reset();
-        updateStub.reset();
-        deleteStub.reset();
-        getStub.reset();
-        getByIdStub.reset();
-        searchStub.reset();
-        orderStub.reset();
+        sandbox.stub(GenericRepository.prototype, "create")
+            .callsFake((pre: PresentationContainer) => Promise.resolve<PresentationContainer>(pre));
+        sandbox.stub(GenericRepository.prototype, "update")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "delete")
+            .callsFake((params: any) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "get")
+            .callsFake((entities: PresentationContainer | PresentationContainer[]) => {
+                if (!entities || (entities as PresentationContainer[]).length === 0) {
+                    return Promise.resolve<PresentationContainer[]>(presentations);
+                } else {
+                    return Promise.resolve<PresentationContainer>(_(presentations).filter((p: PresentationContainer) => _(entities).map((e: PresentationContainer) => e._id).includes(p._id)).thru((pre: PresentationContainer[]) => (entities as PresentationContainer[]).length === 1 ? head(pre) : pre).value());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "getById")
+            .callsFake((id: string | string[]) => {
+                if (isArray<string>(id)) {
+                    return Promise.resolve<PresentationContainer[]>(filter(presentations, (p: User) => includes<string>(id, p._id)));
+                } else {
+                    return Promise.resolve<PresentationContainer>(_(presentations).filter((p: User) => p._id === id).head());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                if (filters && filters["_id"]) {
+                    return Promise.resolve<PresentationContainer[]>(filter<PresentationContainer>(presentations, (p: PresentationContainer) => includes(p._id, filters["_id"])));
+                } else {
+                    return Promise.resolve<PresentationContainer[]>([]);
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "order")
+            .callsFake((order?: string[]) => {
+                if (isArray<string>(order)) {
+                    const currentOrder: string[] = map<PresentationContainer, string>(presentations, (p: PresentationContainer) => p._id);
+                    return Promise.resolve<string[]>(uniq([...filter<string>(order, (o: string) => includes(currentOrder, o)), ...currentOrder]));
+                } else {
+                    return Promise.resolve<string[]>(map<PresentationContainer, string>(presentations, (p: PresentationContainer) => p._id));
+                }
+            });
     });
-    after(() => {
-        server.close();
-        createStub.restore();
-        updateStub.restore();
-        deleteStub.restore();
-        getStub.restore();
-        getByIdStub.restore();
-        searchStub.restore();
-        orderStub.restore();
-    });
+    afterEach(() => sandbox.restore());
+    after(() => server.close());
     describe("Creating a presentation", () => {
         it("Should reject if current user is not an administrator", async () => {
             reqUser = user;
@@ -147,8 +132,8 @@ describe("PresentationContainer controller", () => {
                 response: supertest.Response = await agent.post("/api/presentations")
                     .send(testPresentation);
             response.should.have.property("status", 200);
-            createStub.should.have.been.calledOnce;
-            createStub.should.have.been.calledWithMatch({ ...testPresentation });
+            GenericRepository.prototype.create.should.have.been.calledOnce;
+            GenericRepository.prototype.create.should.have.been.calledWithMatch({ ...testPresentation });
         });
     });
     describe("Getting one or multiple presentations", () => {
@@ -198,16 +183,16 @@ describe("PresentationContainer controller", () => {
                 response: supertest.Response = await agent.put(`/api/presentations/${containerA._id}`)
                     .send(pre);
             response.should.have.property("status", 200);
-            updateStub.should.have.been.calledWith(pre);
-            updateStub.should.have.been.calledOnce;
+            GenericRepository.prototype.update.should.have.been.calledWith(pre);
+            GenericRepository.prototype.update.should.have.been.calledOnce;
         });
         it("Should not update if the presentation is being uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [containerA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked").callsFake(() => [containerA._id]),
                 response: supertest.Response = await agent.put(`/api/presentations/${containerA._id}`)
                     .send({ ...containerA, presentations: [] });
             response.should.have.property("status", 400);
-            updateStub.should.have.not.been.called;
+            GenericRepository.prototype.update.should.have.not.been.called;
             getLockedStub.restore();
         });
     });
@@ -221,15 +206,15 @@ describe("PresentationContainer controller", () => {
             reqUser = admin;
             const response: supertest.Response = await agent.delete(`/api/presentations/${containerA._id}`);
             response.should.have.property("status", 200);
-            deleteStub.should.have.been.calledWith(containerA._id);
-            deleteStub.should.have.been.calledOnce;
+            GenericRepository.prototype.delete.should.have.been.calledWith(containerA._id);
+            GenericRepository.prototype.delete.should.have.been.calledOnce;
         });
         it("Should not delete if the presentation is being uploaded", async () => {
             reqUser = admin;
-            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked", () => [containerA._id]),
+            const getLockedStub: sinon.SinonStub = stub(socket, "getLocked").callsFake(() => [containerA._id]),
                 response: supertest.Response = await agent.delete(`/api/presentations/${containerA._id}`);
             response.should.have.property("status", 400);
-            deleteStub.should.have.not.been.called;
+            GenericRepository.prototype.delete.should.have.not.been.called;
             getLockedStub.restore();
         });
     });

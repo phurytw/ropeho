@@ -256,13 +256,13 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.Mod
                                 if (unique) {
                                     multi.hdel(plural(property), _(indexResults[property]).pickBy((value: string) => value === id).keys().head());
                                     if (value) {
-                                        multi.hset(plural(property), uriFriendlyFormat(value), value);
+                                        multi.hset(plural(property), uriFriendlyFormat(value), id);
                                     }
                                 } else {
                                     if (value) {
-                                        multi.set(`:${plural(property)}:${id}`, uriFriendlyFormat(value));
+                                        multi.set(`${plural(property)}:${id}`, uriFriendlyFormat(value));
                                     } else {
-                                        multi.del(`:${plural(property)}:${id}`, uriFriendlyFormat(value));
+                                        multi.del(`${plural(property)}:${id}`, uriFriendlyFormat(value));
                                     }
                                 }
                             }

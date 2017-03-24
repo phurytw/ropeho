@@ -11,8 +11,8 @@ import app from "../app";
 import { Server } from "http";
 import { Express, Request, Response, NextFunction } from "express-serve-static-core";
 import * as express from "express";
-import { stub } from "sinon";
-import { head, filter, isArray, includes, forEach } from "lodash";
+import { sandbox as sinonSandbox } from "sinon";
+import { head, filter, isArray, includes, keys } from "lodash";
 import * as _ from "lodash";
 import { v4 } from "uuid";
 import { computeHashSync } from "../accounts/password";
@@ -68,38 +68,12 @@ describe("Authorize middlewares", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub,
-        searchStub: sinon.SinonStub,
+        sandbox: sinon.SinonSandbox,
         userCookie: string,
         adminCookie: string;
     before(async () => {
         // Set stubs
-        getStub = stub(GenericRepository.prototype, "get", (entities: User | User[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
-            if (!entities || (entities as User[]).length === 0) {
-                resolve(users);
-            } else {
-                resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
-            }
-        }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
-            if (isArray<string>(id)) {
-                resolve(filter(users, (u: User) => includes<string>(id, u._id)));
-            } else {
-                resolve(_(users).filter((u: User) => u._id === id).head());
-            }
-        }));
-        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
-            if (filters) {
-                forEach<{ [key: string]: Ropeho.Models.IIndexOptions }>(config.database.users.indexes, (isUnique: boolean, index: string) => {
-                    if (filters[index]) {
-                        resolve(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
-                    }
-                });
-            } else {
-                resolve([]);
-            }
-        }));
+        sandbox = sinonSandbox.create();
 
         // Setting up the server
         port = await detect(config.endPoints.api.port);
@@ -117,6 +91,18 @@ describe("Authorize middlewares", () => {
         agent = supertest(testApp);
 
         // Getting cookies
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                if (filters) {
+                    for (const index of keys(config.database.users.indexes)) {
+                        if (filters[index]) {
+                            return Promise.resolve<User[]>(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
+                        }
+                    }
+                } else {
+                    return Promise.resolve<User[]>([]);
+                }
+            });
         let response: supertest.Response = await agent.post("/api/auth")
             .send({ email: user.email, password: testPassword });
         response.status.should.equal(200);
@@ -125,20 +111,40 @@ describe("Authorize middlewares", () => {
             .send({ email: admin.email, password: testPassword });
         response.status.should.equal(200);
         adminCookie = response.header["set-cookie"][0].split(";")[0];
+        sandbox.restore();
     });
     beforeEach(() => {
-        getStub.reset();
-        getByIdStub.reset();
-        searchStub.reset();
+        sandbox.stub(GenericRepository.prototype, "get")
+            .callsFake((entities: User | User[]) => {
+                if (!entities || (entities as User[]).length === 0) {
+                    return Promise.resolve<User[]>(users);
+                } else {
+                    return Promise.resolve<User | User[]>((_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value()));
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "getById")
+            .callsFake((id: string | string[]) => {
+                if (isArray<string>(id)) {
+                    return Promise.resolve<User[]>(filter(users, (u: User) => includes<string>(id, u._id)));
+                } else {
+                    return Promise.resolve<User>(_(users).filter((u: User) => u._id === id).head());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                if (filters) {
+                    for (const index of keys(config.database.users.indexes)) {
+                        if (filters[index]) {
+                            return Promise.resolve<User[]>(filter<User>(users, (u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))));
+                        }
+                    }
+                } else {
+                    return Promise.resolve<User[]>([]);
+                }
+            });
     });
-    after(() => {
-        getStub.restore();
-        getByIdStub.restore();
-        searchStub.restore();
-        server.close();
-        // Gotta do this because somehow functions used in passport after the first run cannot be stubbed
-        delete require.cache[require.resolve("passport")];
-    });
+    afterEach(() => sandbox.restore());
+    after(() => delete require.cache[require.resolve("passport")]);
     describe("Verifying if user is authenticated", () => {
         it("Should reject if no cookie is provided", () =>
             agent.get("/authorizeTests")

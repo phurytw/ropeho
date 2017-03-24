@@ -15,10 +15,11 @@ use(sinonChai);
 describe("Mailer", () => {
     let sendMailStub: sinon.SinonStub;
     before(() => {
-        sendMailStub = stub(mailer, "sendMail", (...args: any[]) =>
-        new Promise<nodemailer.SendMailOptions>((resolve: (value?: nodemailer.SendMailOptions | PromiseLike<nodemailer.SendMailOptions>) => void, reject: (reason?: any) => void) => {
-            resolve(args);
-        }));
+        sendMailStub = stub(mailer, "sendMail")
+            .callsFake((...args: any[]) =>
+                new Promise<nodemailer.SendMailOptions>((resolve: (value?: nodemailer.SendMailOptions | PromiseLike<nodemailer.SendMailOptions>) => void, reject: (reason?: any) => void) => {
+                    resolve(args);
+                }));
     });
     after(() => {
         sendMailStub.restore();

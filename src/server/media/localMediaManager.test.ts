@@ -10,7 +10,7 @@ import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import { statSync, readdirSync } from "fs";
 import { join, dirname } from "path";
-import { stub } from "sinon";
+import { sandbox as sinonSandbox } from "sinon";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
 should();
@@ -23,52 +23,30 @@ describe("Local media manager", () => {
         testFileData: Buffer = new Buffer("This is a text file", "UTF-8");
     let mediaManager: Ropeho.Media.IMediaManager,
         fakeFs: typeof fs,
-        accessSyncStub: sinon.SinonStub,
-        statSyncStub: sinon.SinonStub,
-        statStub: sinon.SinonStub,
-        readdirSyncStub: sinon.SinonStub,
-        accessStub: sinon.SinonStub,
-        createWriteStreamStub: sinon.SinonStub,
-        createReadStreamStub: sinon.SinonStub,
-        unlinkStub: sinon.SinonStub,
-        mkdirSyncStub: sinon.SinonStub,
-        mkdirStub: sinon.SinonStub,
-        renameStub: sinon.SinonStub,
-        rmdirSyncStub: sinon.SinonStub;
+        sandbox: sinon.SinonSandbox;
     before(() => {
         // Type definitions are wrong !!
         const mockedFs: any = mockFs.fs({});
         fakeFs = mockedFs as typeof fs;
 
-        // Stub the fs methods we need
-        accessSyncStub = stub(fs, "accessSync", fakeFs.accessSync);
-        accessStub = stub(fs, "access", fakeFs.access);
-        createReadStreamStub = stub(fs, "createReadStream", fakeFs.createReadStream);
-        statSyncStub = stub(fs, "statSync", fakeFs.statSync);
-        statStub = stub(fs, "stat", fakeFs.stat);
-        readdirSyncStub = stub(fs, "readdirSync", fakeFs.readdirSync);
-        createWriteStreamStub = stub(fs, "createWriteStream", fakeFs.createWriteStream);
-        unlinkStub = stub(fs, "unlink", fakeFs.unlink);
-        mkdirSyncStub = stub(fs, "mkdirSync", fakeFs.mkdirSync);
-        mkdirStub = stub(fs, "mkdir", fakeFs.mkdir);
-        renameStub = stub(fs, "rename", fakeFs.rename);
-        rmdirSyncStub = stub(fs, "rmdirSync", fakeFs.rmdirSync);
+        sandbox = sinonSandbox.create();
+        sandbox.stub(fs, "accessSync").callsFake(fakeFs.accessSync);
+        sandbox.stub(fs, "access").callsFake(fakeFs.access);
+        sandbox.stub(fs, "createReadStream").callsFake(fakeFs.createReadStream);
+        sandbox.stub(fs, "statSync").callsFake(fakeFs.statSync);
+        sandbox.stub(fs, "stat").callsFake(fakeFs.stat);
+        sandbox.stub(fs, "readdirSync").callsFake(fakeFs.readdirSync);
+        sandbox.stub(fs, "createWriteStream").callsFake(fakeFs.createWriteStream);
+        sandbox.stub(fs, "unlink").callsFake(fakeFs.unlink);
+        sandbox.stub(fs, "mkdirSync").callsFake(fakeFs.mkdirSync);
+        sandbox.stub(fs, "mkdir").callsFake(fakeFs.mkdir);
+        sandbox.stub(fs, "rename").callsFake(fakeFs.rename);
+        sandbox.stub(fs, "rmdirSync").callsFake(fakeFs.rmdirSync);
     });
     after(() => {
         // Restore stubs and fs
-        accessSyncStub.restore();
-        statSyncStub.restore();
-        statStub.restore();
-        readdirSyncStub.restore();
-        accessStub.restore();
-        createWriteStreamStub.restore();
-        createReadStreamStub.restore();
-        unlinkStub.restore();
-        mkdirSyncStub.restore();
-        mkdirStub.restore();
+        sandbox.restore();
         mockFs.restore();
-        renameStub.restore();
-        rmdirSyncStub.restore();
     });
     describe("Instantiating", async () => {
         it("Should create an empty media folder", () => {

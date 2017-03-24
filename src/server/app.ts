@@ -13,6 +13,7 @@ import * as passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import config from "../config";
+import { ErrorCodes } from "../enum";
 import GenericRepository from "./dal/genericRepository";
 import { verifyPassword } from "./accounts/password";
 import { normalizeEmail, isEmail } from "validator";
@@ -26,6 +27,7 @@ import apiRoutes from "./controllers/index";
 // User
 import IGenericRepository = Ropeho.Models.IGenericRepository;
 import User = Ropeho.Models.User;
+import IErrorResponse = Ropeho.IErrorResponse;
 
 // Passport
 const userRepository: IGenericRepository<User> = new GenericRepository<User>({
@@ -34,20 +36,31 @@ const userRepository: IGenericRepository<User> = new GenericRepository<User>({
 });
 passport.use(new LocalStrategy({
     usernameField: "email"
-}, async (email: string, password: string, done: (error: any, user?: any, options?: { message: string; }) => void): Promise<void> => {
+}, async (email: string, password: string, done: (error: any, user?: any, info?: IErrorResponse) => void): Promise<void> => {
     if (typeof email !== "string" || !isEmail(email)) {
-        done(null, false, { message: `Email (${email}) is not valid` });
+        done(null, false, {
+            developerMessage: `Email (${email}) is not valid`,
+            userMessage: "L'email n'est pas valide",
+            errorCode: ErrorCodes.InvalidRequest,
+            status: 400
+        });
     } else {
         try {
-            const [user]: User[] = await userRepository.search({ email: normalizeEmail(email) as string });
+            const [user]: User[] = await userRepository.search({ email: normalizeEmail(email) as string }),
+                badCredentials: IErrorResponse = {
+                    developerMessage: "Email or password is incorrect",
+                    userMessage: "L'email et/ou le mot de passe est incorrect",
+                    errorCode: ErrorCodes.NotFound,
+                    status: 400
+                };
             if (!user) {
-                done(null, false, { message: `No user found for ${email}` });
+                done(null, false, badCredentials);
             } else if (!user.password) {
-                done(null, false, { message: `User ${email} is not registered or is a facebook user` });
+                done(null, false, badCredentials);
             } else {
                 const passwordValid: boolean = await verifyPassword(password, user.password);
                 if (!passwordValid) {
-                    done(null, false, { message: `Incorrect password for ${email}` });
+                    done(null, false, badCredentials);
                 } else {
                     done(null, user);
                 }
@@ -64,7 +77,7 @@ passport.use("facebook", new FacebookStrategy({
 }, async (acessToken: string, refreshToken: string, profile: passport.Profile, done: (error: any, user?: any) => void) => {
     try {
         let [user]: User[] = await userRepository.search({ facebookId: profile.id });
-        const name: string = `${profile.name.givenName} ${profile.name.middleName} ${profile.name.familyName}`;
+        const name: string = profile.displayName;
         if (!user) {
             user = await userRepository.create({
                 facebookId: profile.id,

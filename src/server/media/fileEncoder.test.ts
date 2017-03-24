@@ -11,7 +11,7 @@ import { image, video } from "../../sampleData/testMedias";
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import * as sinonChai from "sinon-chai";
-import { stub, spy } from "sinon";
+import { stub, spy, sandbox as sinonSandbox } from "sinon";
 import { join } from "path";
 import * as mockFs from "mock-fs";
 import * as fs from "fs";
@@ -29,19 +29,7 @@ describe("Media encoder", () => {
     let testImageSrc: string,
         testImageDest: string,
         fakeFs: typeof fs,
-        accessStub: sinon.SinonStub,
-        accessSyncStub: sinon.SinonStub,
-        openSyncStub: sinon.SinonStub,
-        statSyncStub: sinon.SinonStub,
-        closeSyncStub: sinon.SinonStub,
-        unlinkSyncStub: sinon.SinonStub,
-        createReadStreamStub: sinon.SinonStub,
-        createWriteStreamStub: sinon.SinonStub,
-        sharpToFileStub: sinon.SinonStub,
-        sharpToBufferStub: sinon.SinonStub,
-        createWebmStub: sinon.SinonStub,
-        ffmpegSaveStub: sinon.SinonStub,
-        ffmpegPipeStub: sinon.SinonStub;
+        sandbox: sinon.SinonSandbox;
     before(async () => {
         // Fake fs
         // Type definitions are wrong !!
@@ -53,22 +41,23 @@ describe("Media encoder", () => {
         testImageDest = join(process.cwd(), "logo.webp");
 
         // Stub the fs methods we need
-        accessStub = stub(fs, "access", fakeFs.access);
-        accessSyncStub = stub(fs, "accessSync", fakeFs.accessSync);
-        createReadStreamStub = stub(fs, "createReadStream", fakeFs.createReadStream);
-        createWriteStreamStub = stub(fs, "createWriteStream", fakeFs.createWriteStream);
-        statSyncStub = stub(fs, "statSync", fakeFs.statSync);
-        openSyncStub = stub(fs, "openSync", fakeFs.openSync);
-        closeSyncStub = stub(fs, "closeSync", fakeFs.closeSync);
-        unlinkSyncStub = stub(fs, "unlinkSync", fakeFs.unlinkSync);
+        sandbox = sinonSandbox.create();
+        sandbox.stub(fs, "access").callsFake(fakeFs.access);
+        sandbox.stub(fs, "accessSync").callsFake(fakeFs.accessSync);
+        sandbox.stub(fs, "createReadStream").callsFake(fakeFs.createReadStream);
+        sandbox.stub(fs, "createWriteStream").callsFake(fakeFs.createWriteStream);
+        sandbox.stub(fs, "statSync").callsFake(fakeFs.statSync);
+        sandbox.stub(fs, "openSync").callsFake(fakeFs.openSync);
+        sandbox.stub(fs, "closeSync").callsFake(fakeFs.closeSync);
+        sandbox.stub(fs, "unlinkSync").callsFake(fakeFs.unlinkSync);
 
         // ffmpeg stubs
-        ffmpegSaveStub = stub(ffmpeg.prototype, "save", (path: string) => fakeFs.writeFileSync(path, video));
-        ffmpegPipeStub = stub(ffmpeg.prototype, "pipe", () => createReadStream("video.mp4"));
+        sandbox.stub(ffmpeg.prototype, "save").callsFake((path: string) => fakeFs.writeFileSync(path, video));
+        sandbox.stub(ffmpeg.prototype, "pipe").callsFake(() => createReadStream("video.mp4"));
 
         // Stub these so we write in mock fs instead
-        sharpToBufferStub = stub(sharp.prototype, "toBuffer", async (): Promise<Buffer> => testImage);
-        sharpToFileStub = stub(sharp.prototype, "toFile", async (dest: string): Promise<sharp.OutputInfo> => {
+        sandbox.stub(sharp.prototype, "toBuffer").callsFake(async (): Promise<Buffer> => testImage);
+        sandbox.stub(sharp.prototype, "toFile").callsFake(async (dest: string): Promise<sharp.OutputInfo> => {
             if (dest && dest.length > 0) {
                 const stream: NodeJS.WritableStream = createWriteStream(dest);
                 stream.write(testImage);
@@ -84,42 +73,27 @@ describe("Media encoder", () => {
                 throw new Error("Invalid destination path");
             }
         });
-        createWebmStub = (() => {
+        (() => {
             const original: typeof createWebm = createWebm.bind(fileEncoder);
-            return stub(fileEncoder, "createWebm", async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.Media.CreateWebMOptions): Promise<Buffer> => {
-                if (typeof src === "string") {
-                    src = await getBufferFromFile(src);
-                }
-                if (options && options.dest) {
-                    const data: Buffer = await original(src, { ...options, dest: undefined }),
-                        stream: NodeJS.WritableStream = createWriteStream(options.dest);
-                    stream.on("error", (err: NodeJS.ErrnoException) => { throw err; });
-                    stream.write(data);
-                    stream.end();
-                    return null;
-                } else {
-                    return original(src, options);
-                }
-            });
+            sandbox.stub(fileEncoder, "createWebm")
+                .callsFake(async (src: string | Buffer | NodeJS.ReadableStream, options?: Ropeho.Media.CreateWebMOptions): Promise<Buffer> => {
+                    if (typeof src === "string") {
+                        src = await getBufferFromFile(src);
+                    }
+                    if (options && options.dest) {
+                        const data: Buffer = await original(src, { ...options, dest: undefined }),
+                            stream: NodeJS.WritableStream = createWriteStream(options.dest);
+                        stream.on("error", (err: NodeJS.ErrnoException) => { throw err; });
+                        stream.write(data);
+                        stream.end();
+                        return null;
+                    } else {
+                        return original(src, options);
+                    }
+                });
         })();
     });
-    after(() => {
-        // Restore stubs and fs
-        accessStub.restore();
-        accessSyncStub.restore();
-        createReadStreamStub.restore();
-        createWriteStreamStub.restore();
-        sharpToBufferStub.restore();
-        sharpToFileStub.restore();
-        createWebmStub.restore();
-        ffmpegSaveStub.restore();
-        ffmpegPipeStub.restore();
-        openSyncStub.restore();
-        statSyncStub.restore();
-        closeSyncStub.restore();
-        unlinkSyncStub.restore();
-        mockFs.restore();
-    });
+    after(() => sandbox.restore());
     describe("Encoding images to webp", () => {
         it("Should reject if the input is neither a file nor a buffer", () =>
             createWebp(undefined).should.be.rejected);
@@ -187,19 +161,19 @@ describe("Media encoder", () => {
         let createWebpStub: sinon.SinonStub;
         before(() => {
             // tslint:disable-next-line:only-arrow-functions
-            ffmpegScreenshotStub = stub(ffmpeg.prototype, "screenshot", function (): void {
+            ffmpegScreenshotStub = stub(ffmpeg.prototype, "screenshot").callsFake(function (): void {
                 this.emit("end");
             });
-            createWebpStub = stub(fileEncoder, "createWebp", (src: string, dest: string): Promise<Buffer> => new Promise<Buffer>((resolve: (value?: Buffer | PromiseLike<Buffer>) => void) => {
+            createWebpStub = stub(fileEncoder, "createWebp").callsFake((src: string, dest: string): Promise<Buffer> => {
                 if (dest) {
                     const stream: NodeJS.WritableStream = fs.createWriteStream(dest);
                     stream.write(testImage);
                     stream.end();
-                    resolve();
+                    return Promise.resolve<Buffer>(undefined);
                 } else {
-                    resolve(testImage);
+                    return Promise.resolve<Buffer>(testImage);
                 }
-            }));
+            });
         });
         after(() => {
             ffmpegScreenshotStub.restore();

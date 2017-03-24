@@ -19,7 +19,9 @@ import JobData = Ropeho.Tasks.JobData;
 export const queue: kue.Queue = kue.createQueue({
     redis: {
         port: config.redis.port,
-        host: config.redis.host
+        host: config.redis.host,
+        db: parseInt(config.redis.db),
+        auth: config.redis.password
     }
 });
 const { taskQueue: { retriesOnFailure, imageProcessingConcurrency, videoProcessingConcurrency, fileUploadConcurrency } }: Ropeho.Configuration.ConfigurationObject = config;

@@ -20,7 +20,7 @@ use(chaiAsPromised);
 
 describe("Buffer tools", () => {
     const testImage: Buffer = new Buffer(image, "base64"),
-        getHandler: Function = async (path: string, callback?: (res: http.IncomingMessage) => void) => {
+        getHandler: (path: string, callback?: (res: http.IncomingMessage) => void) => Promise<void> = async (path: string, callback?: (res: http.IncomingMessage) => void) => {
             const stream: NodeJS.ReadableStream = createReadStream(testImageSrc);
             (stream as http.IncomingMessage).statusCode = 200;
             callback(stream as http.IncomingMessage);
@@ -37,17 +37,17 @@ describe("Buffer tools", () => {
 
         // Determine path from the fake fs
         testImageSrc = join(process.cwd(), "logo.jpg");
-
-        // Stub the fs methods we need
-        createReadStreamStub = stub(fs, "createReadStream", fakeFs.createReadStream);
-        accessStub = stub(fs, "access", fakeFs.access);
     });
-    after(() => {
-        // Restore stubs and fs
+    beforeEach(() => {
+        createReadStreamStub = stub(fs, "createReadStream").callsFake(fakeFs.createReadStream);
+        accessStub = stub(fs, "access").callsFake(fakeFs.access);
+    });
+    afterEach(() => {
         createReadStreamStub.restore();
         accessStub.restore();
-        mockFs.restore();
     });
+    // restore fs
+    after(() => mockFs.restore());
     describe("Converting resources to Buffer", () => {
         it("Should reject if a file does not exist", () =>
             getBufferFromFile(join(process.cwd(), "logo.jpeg")).should.be.rejected);
@@ -56,14 +56,14 @@ describe("Buffer tools", () => {
             testImage.should.not.be.empty;
         });
         it("Should get a Buffer from an image located in the worldwide web (HTTP)", async () => {
-            const httpGetStub: sinon.SinonStub = stub(http, "get", getHandler),
+            const httpGetStub: sinon.SinonStub = stub(http, "get").callsFake(getHandler),
                 // tslint:disable-next-line:no-http-string
                 testImage: Buffer = await getBufferFromFile("http://test.com/logo.png");
             testImage.should.not.be.empty;
             httpGetStub.restore();
         });
         it("Should get a Buffer from an image located in the worldwide web (HTTPS)", async () => {
-            const httpsGetStub: sinon.SinonStub = stub(https, "get", getHandler),
+            const httpsGetStub: sinon.SinonStub = stub(https, "get").callsFake(getHandler),
                 testImage: Buffer = await getBufferFromFile("https://test.com/logo.png");
             testImage.should.not.be.empty;
             httpsGetStub.restore();

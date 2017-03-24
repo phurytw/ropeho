@@ -36,9 +36,10 @@ describe("Search controller", () => {
         middleware: RequestHandler,
         reqUser: User;
     before(async () => {
-        searchStub = stub(GlobalRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<Entity>((resolve: (value?: Entity | PromiseLike<Entity>) => void) =>
-            resolve(filter<Entity>([...categories, ...productions, ...users], (e: Entity) => every<string>(filters, (val: string, key: string) =>
-                includes(uriFriendlyFormat((e as any)[key]), uriFriendlyFormat(val)))))));
+        searchStub = stub(GlobalRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) =>
+                Promise.resolve<Entity>(filter<Entity>([...categories, ...productions, ...users], (e: Entity) => every<string>(filters, (val: string, key: string) =>
+                    includes(uriFriendlyFormat((e as any)[key]), uriFriendlyFormat(val))))));
 
         // Setting up the server
         port = await detect(config.endPoints.api.port);
@@ -61,7 +62,6 @@ describe("Search controller", () => {
         searchStub.restore();
         server.close();
     });
-    afterEach(() => searchStub.reset());
     it("Should be able to search by name", async () => {
         reqUser = admin;
         const response: supertest.Response = await agent.get(`/api/search/a`);

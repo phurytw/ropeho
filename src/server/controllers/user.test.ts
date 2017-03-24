@@ -5,10 +5,10 @@
 
 /// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
-import { stub } from "sinon";
+import { stub, sandbox as sinonSandbox } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { v4 } from "uuid";
-import { isArray, head, map, includes, forEach, cloneDeep } from "lodash";
+import { isArray, head, map, includes, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import GenericRepository from "../dal/genericRepository";
 import { Server } from "http";
@@ -106,70 +106,11 @@ describe("User controller", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        createStub: sinon.SinonStub,
-        updateStub: sinon.SinonStub,
-        deleteStub: sinon.SinonStub,
-        getStub: sinon.SinonStub,
-        getByIdStub: sinon.SinonStub,
-        searchStub: sinon.SinonStub,
-        sendMailStub: sinon.SinonStub,
+        sandbox: sinon.SinonSandbox,
         actuallySendMail: boolean = false,
         middleware: RequestHandler,
         reqUser: User;
     before(async () => {
-        // Stub the repository class methods
-        createStub = stub(GenericRepository.prototype, "create", (usr: User) => new Promise<User>((resolve: (value?: User | PromiseLike<User>) => void, reject: (reason?: any) => void) => {
-            const unique: string[] = ["facebookId", "email", "token"];
-            forEach<string>(unique, (i: string) => {
-                if (((usr as any)[i]) && _(users).map<string>((u: User) => uriFriendlyFormat((u as any)[i])).includes(uriFriendlyFormat((usr as any)[i]))) {
-                    reject(`${i} ${(usr as any)[i]} already in use`);
-                }
-            });
-            resolve(usr);
-        }));
-        updateStub = stub(GenericRepository.prototype, "update", (params: User | User[]) => params ? (isArray(params) ? params.length : 1) : 0);
-        deleteStub = stub(GenericRepository.prototype, "delete", (params: User | User[] | string | string[]) => params ? (isArray(params) ? params.length : 1) : 0);
-        getStub = stub(GenericRepository.prototype, "get", (entities: User | User[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
-            if (!entities || (entities as User[]).length === 0) {
-                resolve(cloneDeep<User>(users));
-            } else {
-                resolve(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
-            }
-        }));
-        getByIdStub = stub(GenericRepository.prototype, "getById", (id: string | string[]) => new Promise<User | User[]>((resolve: (value?: User | User[] | PromiseLike<User | User[]>) => void) => {
-            if (isArray<string>(id)) {
-                // Need to add productions because we use both with getById
-                resolve(_([...users, production]).filter((u: User) => includes<string>(id, u._id)).cloneDeep());
-            } else {
-                resolve(cloneDeep<User>(_(users).filter((u: User) => u._id === id).head()));
-            }
-        }));
-        searchStub = stub(GenericRepository.prototype, "search", (filters: { [key: string]: string }) => new Promise<User[]>((resolve: (value?: User[] | PromiseLike<User[]>) => void) => {
-            if (filters) {
-                forEach<{ [key: string]: Ropeho.Models.IIndexOptions }>(config.database.users.indexes, (isUnique: boolean, index: string) => {
-                    if (filters[index]) {
-                        resolve(_(users).filter((u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))).cloneDeep());
-                    }
-                });
-            } else {
-                resolve([]);
-            }
-        }));
-        sendMailStub = (() => {
-            const original: Function = mailer.sendMail.bind(mailer),
-                mailStub: sinon.SinonStub = stub(mailer, "sendMail", (...args: any[]) => {
-                    if (actuallySendMail) {
-                        actuallySendMail = false;
-                        return original(...args);
-                    } else {
-                        return new Promise<nodemailer.SendMailOptions>((resolve: (value?: nodemailer.SendMailOptions | PromiseLike<nodemailer.SendMailOptions>) => void, reject: (reason?: any) => void) => {
-                            resolve(mailStub.args);
-                        });
-                    }
-                });
-            return mailStub;
-        })();
-
         // Setting up the server
         port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
@@ -185,27 +126,66 @@ describe("User controller", () => {
         });
 
         // Setup supertest
+        sandbox = sinonSandbox.create();
         agent = supertest(testApp);
     });
     beforeEach(() => {
-        createStub.reset();
-        updateStub.reset();
-        deleteStub.reset();
-        getStub.reset();
-        getByIdStub.reset();
-        sendMailStub.reset();
-        searchStub.reset();
+        sandbox.stub(GenericRepository.prototype, "create")
+            .callsFake((usr: User) => {
+                const unique: string[] = ["facebookId", "email", "token"];
+                for (const i of unique) {
+                    if (((usr as any)[i]) && _(users).map<string>((u: User) => uriFriendlyFormat((u as any)[i])).includes(uriFriendlyFormat((usr as any)[i]))) {
+                        return Promise.reject<string>(`${i} ${(usr as any)[i]} already in use`);
+                    }
+                }
+                return Promise.resolve<User>(usr);
+            });
+        sandbox.stub(GenericRepository.prototype, "update")
+            .callsFake((params: User | User[]) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "delete")
+            .callsFake((params: User | User[] | string | string[]) => params ? (isArray(params) ? params.length : 1) : 0);
+        sandbox.stub(GenericRepository.prototype, "get")
+            .callsFake((entities: User | User[]) => {
+                if (!entities || (entities as User[]).length === 0) {
+                    return Promise.resolve<User[]>(cloneDeep<User[]>(users));
+                } else {
+                    return Promise.resolve<User | User[]>(_(users).filter((u: User) => _(entities).map((e: User) => e._id).includes(u._id)).thru((usrs: User[]) => (entities as User[]).length === 1 ? head(usrs) : usrs).value());
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "getById")
+            .callsFake((id: string | string[]) => {
+                if (isArray<string>(id)) {
+                    // Need to add productions because we use both with getById
+                    return Promise.resolve<User[]>(_([...users, production]).filter((u: User) => includes<string>(id, u._id)).cloneDeep());
+                } else {
+                    return Promise.resolve<User>(cloneDeep<User>(_(users).filter((u: User) => u._id === id).head()));
+                }
+            });
+        sandbox.stub(GenericRepository.prototype, "search")
+            .callsFake((filters: { [key: string]: string }) => {
+                if (filters) {
+                    for (const index of keys(config.database.users.indexes)) {
+                        if (filters[index]) {
+                            return Promise.resolve<User[]>(_(users).filter((u: User) => includes(uriFriendlyFormat((u as any)[index]), uriFriendlyFormat(filters[index]))).cloneDeep());
+                        }
+                    }
+                } else {
+                    return Promise.resolve<User[]>([]);
+                }
+            });
+        const originalSendMail: Function = mailer.sendMail.bind(mailer);
+        sandbox.stub(mailer, "sendMail")
+            .callsFake((...args: any[]) => {
+                if (actuallySendMail) {
+                    actuallySendMail = false;
+                    return originalSendMail(...args);
+                } else {
+                    return Promise.resolve<nodemailer.SendMailOptions>((mailer.sendMail as sinon.SinonStub).args);
+                }
+            });
     });
-    after(() => {
-        server.close();
-        createStub.restore();
-        updateStub.restore();
-        deleteStub.restore();
-        getStub.restore();
-        getByIdStub.restore();
-        sendMailStub.restore();
-        searchStub.restore();
-    });
+    afterEach(() => sandbox.restore());
+    after(() => server.close());
     describe("Creating an user", () => {
         it("Should reject if no email is specified", async () => {
             // Execute as administrator
@@ -213,7 +193,7 @@ describe("User controller", () => {
             const response: supertest.Response = await agent.post("/api/users")
                 .send({});
             response.should.have.property("status", 400);
-            createStub.should.have.not.been.called;
+            GenericRepository.prototype.create.should.have.not.been.called;
         });
         it("Should reject if email is not a valid email", async () => {
             // Execute as administrator
@@ -221,7 +201,7 @@ describe("User controller", () => {
             const response: supertest.Response = await agent.post("/api/users")
                 .send({ email: "test@test" });
             response.should.have.property("status", 400);
-            createStub.should.have.not.been.called;
+            GenericRepository.prototype.create.should.have.not.been.called;
         });
         it("Should reject if email is already used", async () => {
             // Execute as administrator
@@ -236,7 +216,7 @@ describe("User controller", () => {
             const response: supertest.Response = await agent.post("/api/users")
                 .send({ email: "test@test.com" });
             response.should.have.property("status", 200);
-            createStub.should.have.been.calledOnce;
+            GenericRepository.prototype.create.should.have.been.calledOnce;
             const user: User = response.body;
             user._id.should.not.be.empty;
             user.token.should.not.be.empty;
@@ -244,7 +224,7 @@ describe("User controller", () => {
             tokenData.should.have.lengthOf(2);
             const timestamp: string = tokenData[1];
             isNaN(parseInt(timestamp)).should.be.false;
-            sendMailStub.should.have.been.calledOnce;
+            mailer.sendMail.should.have.been.calledOnce;
         });
         it("Should reject if current user is not an administrator", async () => {
             // Execute as user
@@ -288,7 +268,7 @@ describe("User controller", () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${pending.token}`)
                     .send({ name: "test", password: testPassword });
                 response.should.have.property("status", 200);
-                sendMailStub.should.have.been.calledOnce;
+                mailer.sendMail.should.have.been.calledOnce;
             });
         });
         describe("Form", () => {
@@ -314,8 +294,8 @@ describe("User controller", () => {
                 const response: supertest.Response = await agent.post(`/api/users/register/${pending.token}`)
                     .send({ name: "test", password: testPassword });
                 response.should.have.property("status", 200);
-                updateStub.should.have.been.calledOnce.and.returned(1);
-                sendMailStub.should.have.been.calledOnce;
+                GenericRepository.prototype.update.should.have.been.calledOnce.and.returned(1);
+                mailer.sendMail.should.have.been.calledOnce;
             });
         });
         describe("Using facebook", () => {
@@ -323,15 +303,14 @@ describe("User controller", () => {
             before(() => {
                 authenticateStub = (() => {
                     const original: Function = passport.authenticate.bind(passport),
-                        authStub: sinon.SinonStub = stub(passport, "authenticate", (...args: any[]) => {
-                            if (authStub.callCount === 1) {
-                                return original(...args);
-                            } else {
-                                return (req: Request, res: Response, next: NextFunction) => {
-                                    next();
-                                };
-                            }
-                        });
+                        authStub: sinon.SinonStub = stub(passport, "authenticate")
+                            .callsFake((...args: any[]) => {
+                                if (authStub.callCount === 1) {
+                                    return original(...args);
+                                } else {
+                                    return (req: Request, res: Response, next: NextFunction) => next();
+                                }
+                            });
                     return authStub;
                 })();
             });
@@ -354,11 +333,11 @@ describe("User controller", () => {
                 const response: supertest.Response = await agent.get(`/api/users/register/${pending.token}/facebook`);
                 // Should have called update
                 response.should.have.property("status", 200);
-                updateStub.should.have.been.calledOnce;
-                deleteStub.should.have.been.calledOnce;
-                sendMailStub.should.have.been.calledOnce;
+                GenericRepository.prototype.update.should.have.been.calledOnce;
+                GenericRepository.prototype.delete.should.have.been.calledOnce;
+                mailer.sendMail.should.have.been.calledOnce;
                 // Update should have been called with the current Facebook name
-                updateStub.should.have.been.calledWithMatch({ name: facebook.name });
+                GenericRepository.prototype.update.should.have.been.calledWithMatch({ name: facebook.name });
             });
         });
     });
@@ -436,8 +415,8 @@ describe("User controller", () => {
                 response: supertest.Response = await agent.put(`/api/users/${user._id}`)
                     .send(usr);
             response.should.have.property("status", 200);
-            updateStub.should.have.been.calledWith(usr);
-            updateStub.should.have.been.calledOnce;
+            GenericRepository.prototype.update.should.have.been.calledWith(usr);
+            GenericRepository.prototype.update.should.have.been.calledOnce;
         });
     });
     describe("Deleting a user", () => {
@@ -450,8 +429,8 @@ describe("User controller", () => {
             reqUser = admin;
             const response: supertest.Response = await agent.delete(`/api/users/${user._id}`);
             response.should.have.property("status", 200);
-            deleteStub.should.have.been.calledWith(user._id);
-            deleteStub.should.have.been.calledOnce;
+            GenericRepository.prototype.delete.should.have.been.calledWith(user._id);
+            GenericRepository.prototype.delete.should.have.been.calledOnce;
         });
     });
 });
