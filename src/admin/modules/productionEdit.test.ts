@@ -9,7 +9,7 @@ import { ProductionEditState, fetchProductionById, updateProduction, deleteProdu
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -22,7 +22,12 @@ describe("Production edit module", () => {
     let store: IStore<ProductionEditState>;
     const [production]: Models.Production[] = productions;
     before(() => {
-        store = mockStore<ProductionEditState>(middlewares)(new ProductionEditState());
+        store = mockStore<ProductionEditState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new ProductionEditState());
     });
     afterEach(() => {
         store.clearActions();
@@ -30,7 +35,7 @@ describe("Production edit module", () => {
     });
     describe("Fetch action", () => {
         it("Should fetch a production from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/productions/${production._id}`)
                 .reply(200, production);
             await store.dispatch(fetchProductionById(production._id));
@@ -47,7 +52,7 @@ describe("Production edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/productions/${production._id}`)
                 .reply(500, error);
             await store.dispatch(fetchProductionById(production._id));
@@ -60,7 +65,7 @@ describe("Production edit module", () => {
     });
     describe("Update action", () => {
         it("Should update a production to the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/productions/${production._id}`, production)
                 .reply(200, production);
             await store.dispatch(updateProduction(production));
@@ -77,7 +82,7 @@ describe("Production edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/productions/${production._id}`, production)
                 .reply(500, error);
             await store.dispatch(updateProduction(production));
@@ -90,7 +95,7 @@ describe("Production edit module", () => {
     });
     describe("Delete action", () => {
         it("Should delete a production from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/productions/${production._id}`)
                 .reply(200, {});
             await store.dispatch(deleteProduction(production._id));
@@ -107,7 +112,7 @@ describe("Production edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/productions/${production._id}`)
                 .reply(500, error);
             await store.dispatch(deleteProduction(production._id));

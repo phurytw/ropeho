@@ -8,7 +8,6 @@ import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 
 import Models = Ropeho.Models;
 
@@ -39,11 +38,10 @@ export namespace ActionTypes {
 // action creators
 export const login: (email: string, password: string) => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (email: string, password: string): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`${API_END_POINT}/api/auth`,
+        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth`,
             {
                 body: JSON.stringify({ email, password }),
                 method: "POST",
-                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 }
@@ -55,10 +53,9 @@ export const login: (email: string, password: string) => ThunkAction<Promise<Act
     };
 export const logout: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`${API_END_POINT}/api/auth/logout`,
+        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth/logout`,
             {
                 method: "POST",
-                credentials: "include"
             },
             (dispatch: Dispatch<SessionState>, user: Models.User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
@@ -67,7 +64,7 @@ export const logout: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionS
     };
 export const fetchCurrentUser: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`${API_END_POINT}/api/auth`, { credentials: "include" },
+        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth`, { credentials: "include" },
             (dispatch: Dispatch<SessionState>, user: Models.User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
                 user

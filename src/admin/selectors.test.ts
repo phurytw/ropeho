@@ -8,13 +8,15 @@ import {
     getCurrentUser,
     getError,
     getHasRendered,
-    getProductions
+    getProductions,
+    getProduction
 } from "./selectors";
 import { users, productions } from "../sampleData/testDb";
 import { SessionState } from "./modules/session";
 import { RenderingState } from "./modules/rendering";
 import { ErrorState } from "./modules/error";
 import { ProductionIndexState } from "./modules/productionIndex";
+import { ProductionEditState } from "./modules/productionEdit";
 should();
 
 import Models = Ropeho.Models;
@@ -58,5 +60,10 @@ describe("Redux selectors", () => {
         getProductions({
             productionIndex: new ProductionIndexState({ productions })
         }).should.deep.equal(productions);
+    });
+    it("Should get the production being edited", () => {
+        getProduction({
+            productionEdit: new ProductionEditState({ production: productions[0] })
+        }).should.deep.equal(productions[0]);
     });
 });

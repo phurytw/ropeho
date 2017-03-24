@@ -12,7 +12,7 @@ should();
 
 describe("Rendering module", () => {
     let store: IStore<RenderingState>;
-    before(() => store = mockStore<RenderingState>(middlewares)(new RenderingState()));
+    before(() => store = mockStore<RenderingState>(middlewares())(new RenderingState()));
     afterEach(() => store.clearActions());
     it("Should dispatch an action with boolean", () => {
         store.dispatch(setRendered(true));

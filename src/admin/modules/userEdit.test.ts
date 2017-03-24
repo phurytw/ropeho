@@ -9,7 +9,7 @@ import { UserEditState, fetchUserById, updateUser, deleteUser, ActionTypes, defa
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -28,7 +28,12 @@ describe("User edit module", () => {
         userMessage: "A nice error"
     };
     before(() => {
-        store = mockStore<UserEditState>(middlewares)(new UserEditState());
+        store = mockStore<UserEditState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new UserEditState());
     });
     afterEach(() => {
         store.clearActions();
@@ -36,7 +41,7 @@ describe("User edit module", () => {
     });
     describe("Fetch action", () => {
         it("Should fetch a user from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/users/${user._id}`)
                 .reply(200, () => user);
             await store.dispatch(fetchUserById(user._id));
@@ -47,7 +52,7 @@ describe("User edit module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/users/${user._id}`)
                 .reply(500, error);
             await store.dispatch(fetchUserById(user._id));
@@ -60,7 +65,7 @@ describe("User edit module", () => {
     });
     describe("Update action", () => {
         it("Should update a user to the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/users/${user._id}`, user)
                 .reply(200, user);
             await store.dispatch(updateUser(user));
@@ -71,7 +76,7 @@ describe("User edit module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/users/${user._id}`, user)
                 .reply(500, error);
             await store.dispatch(updateUser(user));
@@ -84,7 +89,7 @@ describe("User edit module", () => {
     });
     describe("Update action", () => {
         it("Should update a user to the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/users/${user._id}`)
                 .reply(200, {});
             await store.dispatch(deleteUser(user._id));
@@ -95,7 +100,7 @@ describe("User edit module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/users/${user._id}`)
                 .reply(500, error);
             await store.dispatch(deleteUser(user._id));

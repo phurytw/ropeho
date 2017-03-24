@@ -9,7 +9,7 @@ import { ProductionIndexState, fetchProductions, createProduction, ActionTypes, 
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { productions } from "../../sampleData/testDb";
 import { map, head } from "lodash";
 import "isomorphic-fetch";
@@ -21,7 +21,12 @@ import Models = Ropeho.Models;
 describe("Production index module", () => {
     let store: IStore<ProductionIndexState>;
     before(() => {
-        store = mockStore<ProductionIndexState>(middlewares)(new ProductionIndexState());
+        store = mockStore<ProductionIndexState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new ProductionIndexState());
     });
     afterEach(() => {
         store.clearActions();
@@ -30,7 +35,7 @@ describe("Production index module", () => {
     describe("Fetching productions", () => {
         it("Should fetch productions from the API server", async () => {
             const expected: Models.Production[] = map<Models.Production, Models.Production>(productions, (p: Models.Production) => ({ banner: p.banner, name: p.name }));
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/productions")
                 .query({
                     fields: "name,banner"
@@ -50,7 +55,7 @@ describe("Production index module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/productions")
                 .reply(500, error);
             await store.dispatch(fetchProductions());
@@ -64,7 +69,7 @@ describe("Production index module", () => {
     describe("Creating productions", () => {
         it("Should create a production to the API server", async () => {
             const newProd: Models.Production = {};
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/productions", newProd)
                 .reply(200, newProd);
             await store.dispatch(createProduction(newProd));
@@ -82,7 +87,7 @@ describe("Production index module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/productions", newProd)
                 .reply(500, error);
             await store.dispatch(createProduction(newProd));

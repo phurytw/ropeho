@@ -9,7 +9,7 @@ import { PresentationContainerEditState, fetchContainerByid, updateContainer, de
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { presentations } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -22,7 +22,12 @@ describe("Presentation container edit module", () => {
     let store: IStore<PresentationContainerEditState>;
     const [container]: Models.Presentation[] = presentations;
     before(() => {
-        store = mockStore<PresentationContainerEditState>(middlewares)(new PresentationContainerEditState());
+        store = mockStore<PresentationContainerEditState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new PresentationContainerEditState());
     });
     afterEach(() => {
         store.clearActions();
@@ -30,7 +35,7 @@ describe("Presentation container edit module", () => {
     });
     describe("Fetch action", () => {
         it("Should fetch a presentation container from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/presentations/${container._id}`)
                 .reply(200, container);
             await store.dispatch(fetchContainerByid(container._id));
@@ -47,7 +52,7 @@ describe("Presentation container edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/presentations/${container._id}`)
                 .reply(500, error);
             await store.dispatch(fetchContainerByid(container._id));
@@ -60,7 +65,7 @@ describe("Presentation container edit module", () => {
     });
     describe("Delete action", () => {
         it("Should update a presentation container to the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/presentations/${container._id}`, container)
                 .reply(200, container);
             await store.dispatch(updateContainer(container));
@@ -77,7 +82,7 @@ describe("Presentation container edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/presentations/${container._id}`, container)
                 .reply(500, error);
             await store.dispatch(updateContainer(container));
@@ -90,7 +95,7 @@ describe("Presentation container edit module", () => {
     });
     describe("Update action", () => {
         it("Should delete a presentation container from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/presentations/${container._id}`)
                 .reply(200, {});
             await store.dispatch(deleteContainer(container._id));
@@ -107,7 +112,7 @@ describe("Presentation container edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/presentations/${container._id}`)
                 .reply(500, error);
             await store.dispatch(deleteContainer(container._id));

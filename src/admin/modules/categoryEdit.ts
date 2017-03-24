@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { Category } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchCategoryById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
-        return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(`${API_END_POINT}/api/categories/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
+        return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(`/api/categories/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
             type: ActionTypes.SET_CATEGORY,
             category
         }));
@@ -48,7 +47,7 @@ export const fetchCategoryById: (id: string, fields?: string[]) => ThunkAction<P
 export const updateCategory: (category: Models.Category) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
     (category: Models.Category): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
         return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(
-            `${API_END_POINT}/api/categories/${category._id}`,
+            `/api/categories/${category._id}`,
             {
                 body: JSON.stringify(category),
                 method: "PUT",
@@ -64,7 +63,7 @@ export const updateCategory: (category: Models.Category) => ThunkAction<Promise<
 export const deleteCategory: (categoryId: string) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
     (categoryId: string): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
         return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(
-            `${API_END_POINT}/api/categories/${categoryId}`, { method: "DELETE" },
+            `/api/categories/${categoryId}`, { method: "DELETE" },
             (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
                 type: ActionTypes.SET_CATEGORY,
                 category: undefined

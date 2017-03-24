@@ -9,7 +9,7 @@ import { CategoryEditState, fetchCategoryById, updateCategory, deleteCategory, A
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { categories } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -22,7 +22,12 @@ describe("Category edit module", () => {
     let store: IStore<CategoryEditState>;
     const [category]: Models.Category[] = categories;
     before(() => {
-        store = mockStore<CategoryEditState>(middlewares)(new CategoryEditState());
+        store = mockStore<CategoryEditState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new CategoryEditState());
     });
     afterEach(() => {
         store.clearActions();
@@ -30,7 +35,7 @@ describe("Category edit module", () => {
     });
     describe("Fetch action", () => {
         it("Should fetch a category from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/categories/${category._id}`)
                 .reply(200, category);
             await store.dispatch(fetchCategoryById(category._id));
@@ -47,7 +52,7 @@ describe("Category edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get(`/api/categories/${category._id}`)
                 .reply(500, error);
             await store.dispatch(fetchCategoryById(category._id));
@@ -60,7 +65,7 @@ describe("Category edit module", () => {
     });
     describe("Update action", () => {
         it("Should update a category to the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/categories/${category._id}`, category)
                 .reply(200, category);
             await store.dispatch(updateCategory(category));
@@ -77,7 +82,7 @@ describe("Category edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .put(`/api/categories/${category._id}`, category)
                 .reply(500, error);
             await store.dispatch(updateCategory(category));
@@ -90,7 +95,7 @@ describe("Category edit module", () => {
     });
     describe("Delete action", () => {
         it("Should delete a category from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/categories/${category._id}`)
                 .reply(200, {});
             await store.dispatch(deleteCategory(category._id));
@@ -107,7 +112,7 @@ describe("Category edit module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/categories/${category._id}`)
                 .reply(500, error);
             await store.dispatch(deleteCategory(category._id));

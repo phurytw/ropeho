@@ -474,18 +474,11 @@ declare namespace Ropeho {
         downloading?: string[];
         uploading?: string[];
     }
-}
 
-declare namespace NeDB {
-    interface DataStoreOptions {
-        filename?: string;
-        inMemoryOnly?: boolean;
-        nodeWebkitAppName?: boolean;
-        autoload?: boolean;
-        onload?: (error: Error) => any;
-        afterSerialization?: (line: string) => string;
-        beforeDeserialization?: (line: string) => string;
-        corruptAlertThreshold?: number;
+    interface FetchThunkExtras {
+        host?: string;
+        init?: RequestInit;
+        error?: { type: string; error?: IErrorResponse; }
     }
 }
 
@@ -518,5 +511,11 @@ declare namespace nodemailer {
         encoding?: string;
         contentType?: string;
         contentDisposition?: string;
+    }
+}
+
+declare namespace NodeJS {
+    interface Global {
+        window: Window;
     }
 }

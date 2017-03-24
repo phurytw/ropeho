@@ -9,24 +9,32 @@ import { AppContainer } from "react-hot-loader";
 import { Provider } from "react-redux";
 import createStore from "./store";
 import { RopehoAdminState } from "./reducer";
-import Routes from "./routes";
 import { Store } from "redux";
+import { BrowserRouter } from "react-router-dom";
+import { renderRoutes, RouteConfig } from "react-router-config";
+import App from "./routes";
+import { setRendered } from "./modules/rendering";
 import "normalize.css";
 import "./styles/global.css";
 
-const store: Store<RopehoAdminState> = createStore();
+const store: Store<RopehoAdminState> = createStore(window.__REDUX_STATE__);
 
-const render: (component: () => JSX.Element) => void = (Component: () => JSX.Element) => {
+const render: (routes: RouteConfig[]) => void = (routes: RouteConfig[]) => {
     ReactDOM.render(
         <AppContainer>
             <Provider store={store}>
-                <Component />
+                <BrowserRouter>
+                    {renderRoutes(routes)}
+                </BrowserRouter>
             </Provider>
         </AppContainer>,
         document.getElementById("root")
     );
 };
-render(Routes);
+render(App);
+
+// enable client side loading
+setRendered(false);
 
 // hot reloading
 if (module.hot) {

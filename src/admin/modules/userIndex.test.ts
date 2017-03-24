@@ -9,7 +9,7 @@ import { UserIndexState, fetchUsers, ActionTypes, default as reducer } from "./u
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { map, head } from "lodash";
 import "isomorphic-fetch";
@@ -21,7 +21,12 @@ import Models = Ropeho.Models;
 describe("User index module", () => {
     let store: IStore<UserIndexState>;
     before(() => {
-        store = mockStore<UserIndexState>(middlewares)(new UserIndexState());
+        store = mockStore<UserIndexState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new UserIndexState());
     });
     afterEach(() => {
         store.clearActions();
@@ -30,7 +35,7 @@ describe("User index module", () => {
     describe("Actions", () => {
         it("Should fetch users from the API server", async () => {
             const expected: Models.User[] = map<Models.User, Models.User>(users, (u: Models.User) => ({ email: u.email, name: u.name }));
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/users")
                 .query({
                     fields: "name,email"
@@ -50,7 +55,7 @@ describe("User index module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/users")
                 .reply(500, error);
             await store.dispatch(fetchUsers());

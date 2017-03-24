@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { Production } from "../models";
@@ -40,18 +39,17 @@ export namespace ActionTypes {
 // action creators
 export const fetchProductions: (fields?: string[]) => ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> => {
-        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`${API_END_POINT}/api/productions${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionIndexState>, productions: Models.Production[]) => dispatch<Actions.SetProductions>({
+        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`/api/productions${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionIndexState>, productions: Models.Production[]) => dispatch<Actions.SetProductions>({
             type: ActionTypes.SET_PRODUCTIONS,
             productions
         }));
     };
 export const createProduction: (production: Models.Production) => ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> =
     (production: Models.Production): ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> => {
-        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`${API_END_POINT}/api/productions`,
+        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`/api/productions`,
             {
                 body: JSON.stringify(production),
                 method: "POST",
-                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 }

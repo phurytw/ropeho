@@ -18,7 +18,7 @@ import Models = Ropeho.Models;
 describe("Source edit module", () => {
     let store: IStore<SourceEditState>;
     const source: Models.Source = productions[0].banner.sources[0];
-    before(() => store = mockStore<SourceEditState>(middlewares)(new SourceEditState()));
+    before(() => store = mockStore<SourceEditState>(middlewares())(new SourceEditState()));
     afterEach(() => store.clearActions());
     describe("Actions", () => {
         it("Should fetch a production from the API server", () => {

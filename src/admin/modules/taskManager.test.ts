@@ -6,13 +6,14 @@
 import { should } from "chai";
 import { is } from "immutable";
 import { ActionTypes, ITaskManagerState, TaskManagerState, cancelTask, fetchRunning, kickClient, setTransferQueue, startTask, default as reducer } from "./taskManager";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { head, filter } from "lodash";
 import { default as mockStore, IStore } from "redux-mock-store";
 import "isomorphic-fetch";
 import { middlewares } from "../store";
 import * as nock from "nock";
 import { Job } from "kue";
+import { ActionTypes as ErrorTypes } from "./error";
 should();
 
 import SocketClient = Ropeho.Socket.SocketClient;
@@ -25,7 +26,12 @@ describe("Task manager module", () => {
         clients: [{ socket: { id: "client1" } as SocketIO.Socket, state: 0 }, { socket: { id: "client2" } as SocketIO.Socket, state: 0 }]
     };
     before(() => {
-        store = mockStore<TaskManagerState>(middlewares)(new TaskManagerState(initialState));
+        store = mockStore<TaskManagerState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new TaskManagerState(initialState));
     });
     afterEach(() => {
         store.clearActions();
@@ -35,7 +41,7 @@ describe("Task manager module", () => {
         it("Should fetch and dispatch tasks and clients from the API server", async () => {
             const tasks: Job[] = [{ id: 30 } as Job];
             const clients: SocketClient[] = [{ socket: { id: "client1" } as SocketIO.Socket, state: 0 }];
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/taskmanager")
                 .reply(200, { tasks, clients });
             await store.dispatch(fetchRunning());
@@ -50,7 +56,7 @@ describe("Task manager module", () => {
     describe("Kue task management", () => {
         it("Should fetch and dispatch tasks from the API server", async () => {
             const tasks: Job[] = [{ id: 30 } as Job];
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/taskmanager")
                 .query({
                     fields: "tasks"
@@ -66,7 +72,7 @@ describe("Task manager module", () => {
         it("Should start a task and dispatch the updated task list", async () => {
             const tasks: Job[] = store.getState().tasks;
             const [task]: Job[] = tasks;
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post(`/api/taskmanager/task/${task.id}`)
                 .reply(200, task);
             await store.dispatch(startTask(task.id));
@@ -79,7 +85,7 @@ describe("Task manager module", () => {
         it("Should cancel a task and dispatch the updated task list", async () => {
             const tasks: Job[] = store.getState().tasks;
             const [task]: Job[] = tasks;
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/taskmanager/task/${task.id}`)
                 .reply(200, {});
             await store.dispatch(cancelTask(task.id));
@@ -93,7 +99,7 @@ describe("Task manager module", () => {
     describe("Socket.IO clients management", () => {
         it("Should fetch and dispatch clients from the API server", async () => {
             const clients: SocketClient[] = [{ socket: { id: "client1" } as SocketIO.Socket, state: 0 }];
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/taskmanager")
                 .query({
                     fields: "clients"
@@ -109,7 +115,7 @@ describe("Task manager module", () => {
         it("Should disconnect a client and dispatch the updated client list", async () => {
             const clients: SocketClient[] = store.getState().clients;
             const [client]: SocketClient[] = clients;
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/taskmanager/socket/${client.socket.id}`)
                 .reply(200, {});
             await store.dispatch(kickClient(client.socket.id));

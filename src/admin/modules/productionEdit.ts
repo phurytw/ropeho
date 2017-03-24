@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { Production } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchProductionById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
-        return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(`${API_END_POINT}/api/productions/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
+        return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(`/api/productions/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
             type: ActionTypes.SET_PRODUCTION,
             production
         }));
@@ -48,7 +47,7 @@ export const fetchProductionById: (id: string, fields?: string[]) => ThunkAction
 export const updateProduction: (production: Models.Production) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (production: Models.Production): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
         return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(
-            `${API_END_POINT}/api/productions/${production._id}`,
+            `/api/productions/${production._id}`,
             {
                 body: JSON.stringify(production),
                 method: "PUT",
@@ -64,7 +63,7 @@ export const updateProduction: (production: Models.Production) => ThunkAction<Pr
 export const deleteProduction: (productionId: string) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (productionId: string): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
         return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(
-            `${API_END_POINT}/api/productions/${productionId}`, { method: "DELETE", },
+            `/api/productions/${productionId}`, { method: "DELETE", },
             (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
                 type: ActionTypes.SET_PRODUCTION,
                 production: undefined

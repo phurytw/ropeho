@@ -3,8 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 /// <reference path="typings.d.ts" />
-import * as React from "react";
-import { Router, Route, IndexRoute, browserHistory } from "react-router";
+import { RouteConfig } from "react-router-config";
 import Layout from "./components/Layout";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
@@ -19,19 +18,57 @@ import UserEdit from "./components/UserEdit";
 import TaskManager from "./components/TaskManager";
 import NotFound from "./components/NotFound";
 
-export default (): JSX.Element => <Router history={browserHistory}>
-    <Route path="/login" component={Login} />
-    <Route path="/" component={Layout}>
-        <IndexRoute component={Dashboard} />
-        <Route path="/productions" component={ProductionIndex} />
-        <Route path="/productions/:productionId(/:mediaId)(/:sourceId)" component={ProductionEdit} />
-        <Route path="/categories" component={CategoryIndex} />
-        <Route path="/categories/:categoryId(/banner)(/:sourceId)" component={CategoryEdit} />
-        <Route path="/presentations" component={PresentationContainerIndex} />
-        <Route path="/presentations/:containerId(/:presentationId)(/:media)(/:sourceId)" component={PresentationContainerEdit} />
-        <Route path="/users" component={UserIndex} />
-        <Route path="/users/:userId" component={UserEdit} />
-        <Route path="/taskmanager" component={TaskManager} />
-        <Route path="*" component={NotFound} />
-    </Route>
-</Router>;
+const routeConfig: RouteConfig[] = [
+    // login
+    {
+        component: Login,
+        path: "/login",
+        exact: true
+    },
+    // main app
+    {
+        component: Layout,
+        path: "/",
+        routes: [{
+            component: Dashboard,
+            path: "/",
+            exact: true
+        }, {
+            component: ProductionIndex,
+            path: "/productions",
+            exact: true
+        }, {
+            component: ProductionEdit,
+            path: "/productions/:productionId",
+        }, {
+            component: CategoryIndex,
+            path: "/categories",
+            exact: true
+        }, {
+            component: CategoryEdit,
+            path: "/categories/:categoryId",
+        }, {
+            component: PresentationContainerIndex,
+            path: "/presentations",
+            exact: true
+        }, {
+            component: PresentationContainerEdit,
+            path: "/presentations/:containerId",
+        }, {
+            component: UserIndex,
+            path: "/users",
+            exact: true
+        }, {
+            component: UserEdit,
+            path: "/users/:userId",
+        }, {
+            component: TaskManager,
+            path: "/taskmanager",
+        }, {
+            component: NotFound,
+            path: "*"
+        }]
+    }
+];
+
+export default routeConfig;

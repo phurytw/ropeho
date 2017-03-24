@@ -18,7 +18,7 @@ import Models = Ropeho.Models;
 describe("Presentation edit module", () => {
     let store: IStore<PresentationEditState>;
     const presentation: Models.Media = productions[0].banner;
-    before(() => store = mockStore<PresentationEditState>(middlewares)(new PresentationEditState()));
+    before(() => store = mockStore<PresentationEditState>(middlewares())(new PresentationEditState()));
     afterEach(() => store.clearActions());
     describe("Actions", () => {
         it("Should dispatch a presentation", () => {

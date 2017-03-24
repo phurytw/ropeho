@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { PresentationContainer } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchContainers: (fields?: string[]) => ThunkAction<Promise<Actions.SetContainers>, PresentationContainerIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetContainers>, PresentationContainerIndexState, {}> => {
-        return fetchThunk<Actions.SetContainers, Models.PresentationContainer[], PresentationContainerIndexState>(`${API_END_POINT}/api/presentations${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<PresentationContainerIndexState>, containers: Models.PresentationContainer[]) => dispatch<Actions.SetContainers>({
+        return fetchThunk<Actions.SetContainers, Models.PresentationContainer[], PresentationContainerIndexState>(`/api/presentations${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<PresentationContainerIndexState>, containers: Models.PresentationContainer[]) => dispatch<Actions.SetContainers>({
             type: ActionTypes.SET_CONTAINERS,
             containers
         }));

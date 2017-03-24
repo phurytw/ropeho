@@ -20,7 +20,6 @@
 /// <reference types="express-session" />
 /// <reference types="cors" />
 /// <reference types="body-parser" />
-/// <reference types="nedb" />
 /// <reference types="supertest" />
 /// <reference types="superagent" />
 /// <reference types="mock-fs" />
@@ -29,5 +28,4 @@
 /// <reference types="redis" />
 /// <reference types="deep-freeze" />
 /// <reference types="cookie-signature" />
-/// <reference path="../definitions/detect-port.d.ts" />
-
+/// <reference path="../definitions/detect-port/index.d.ts" />

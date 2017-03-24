@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { User } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchUserById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
-        return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(`${API_END_POINT}/api/users/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserEditState>, user: Models.User) => dispatch<Actions.SetUser>({
+        return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(`/api/users/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserEditState>, user: Models.User) => dispatch<Actions.SetUser>({
             type: ActionTypes.SET_USER,
             user
         }));
@@ -48,7 +47,7 @@ export const fetchUserById: (id: string, fields?: string[]) => ThunkAction<Promi
 export const updateUser: (user: Models.User) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
     (user: Models.User): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
         return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(
-            `${API_END_POINT}/api/users/${user._id}`,
+            `/api/users/${user._id}`,
             {
                 body: JSON.stringify(user),
                 method: "PUT",
@@ -64,7 +63,7 @@ export const updateUser: (user: Models.User) => ThunkAction<Promise<Actions.SetU
 export const deleteUser: (userId: string) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
     (userId: string): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
         return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(
-            `${API_END_POINT}/api/users/${userId}`, { method: "DELETE", },
+            `/api/users/${userId}`, { method: "DELETE", },
             (dispatch: Dispatch<UserEditState>, production: Models.User) => dispatch<Actions.SetUser>({
                 type: ActionTypes.SET_USER,
                 user: undefined

@@ -4,9 +4,8 @@
  */
 /// <reference path="../../typings.d.ts" />
 import * as React from "react";
-import { RouteComponentProps } from "react-router";
 
-export interface DashboardProps extends RouteComponentProps<{}, {}> {
+export interface DashboardProps {
 }
 
 export class Dashboard extends React.Component<DashboardProps, {}> {

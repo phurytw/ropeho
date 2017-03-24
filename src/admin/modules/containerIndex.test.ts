@@ -9,7 +9,7 @@ import { PresentationContainerIndexState, fetchContainers, ActionTypes, default 
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { presentations } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -19,7 +19,12 @@ should();
 describe("Presentation index module", () => {
     let store: IStore<PresentationContainerIndexState>;
     before(() => {
-        store = mockStore<PresentationContainerIndexState>(middlewares)(new PresentationContainerIndexState());
+        store = mockStore<PresentationContainerIndexState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new PresentationContainerIndexState());
     });
     afterEach(() => {
         store.clearActions();
@@ -27,7 +32,7 @@ describe("Presentation index module", () => {
     });
     describe("Actions", () => {
         it("Should fetch presentation containers from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/presentations")
                 .reply(200, presentations);
             await store.dispatch(fetchContainers());
@@ -44,7 +49,7 @@ describe("Presentation index module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/presentations")
                 .reply(500, error);
             await store.dispatch(fetchContainers());

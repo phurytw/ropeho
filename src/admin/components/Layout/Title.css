@@ -3,3 +3,6 @@
     flex-grow: 1;
     font-size: 18px;
 }
+.title > a {
+    text-decoration: none;
+}

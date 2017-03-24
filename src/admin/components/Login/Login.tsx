@@ -2,9 +2,8 @@
  * @file Tests for the Layout component
  */
 /// <reference path="../../../test.d.ts" />
-// tslint:disable:react-this-binding-issue
 import * as React from "react";
-import * as Helmet from "react-helmet";
+import Helmet from "react-helmet";
 import { fetchCurrentUser, Actions, logout, login } from "../../modules/session";
 import { setError, Actions as ErrorActions } from "../../modules/error";
 import { connect } from "react-redux";
@@ -16,6 +15,8 @@ import { container, errorBox, element, logo as logoStyles } from "./container.cs
 import { isEmail } from "validator";
 import { logo } from "../../assets";
 import { Roles, ErrorCodes } from "../../../enum";
+import { ADMIN_END_POINT } from "../../helpers/resolveEndPoint";
+import * as facebookButtonStyles from "./facebook.css";
 
 export const mapStateToProps: (state: RopehoAdminState, ownProps?: LoginProps) => LoginProps =
     (state: RopehoAdminState, ownProps?: LoginProps): LoginProps => ({
@@ -58,7 +59,7 @@ export class Login extends React.Component<LoginProps, LoginState> {
         };
     }
     dismissError: () => void = (): void => this.props.setError(undefined);
-    login(event?: React.FormEvent<HTMLFormElement>): void {
+    login: (event?: React.FormEvent<HTMLFormElement>) => void = (event?: React.FormEvent<HTMLFormElement>): void => {
         // monkey patching for the tests
         if (event) {
             event.preventDefault();
@@ -74,54 +75,60 @@ export class Login extends React.Component<LoginProps, LoginState> {
                 passwordErrorMessage: "Le mot de passe est vide"
             });
         }
+        this.setState({
+            emailErrorMessage: "",
+            passwordErrorMessage: ""
+        });
         if (isEmail(email) && password) {
-            this.props.login(email, password).then(this.continueToDashboard);
+            this.props.login(email, password)
+                .then(this.handleLogin);
         }
     }
     logout: () => Promise<Actions.SetCurrentUser> = (): Promise<Actions.SetCurrentUser> => this.props.logout();
     continueToDashboard: () => void = (): void => window.location.replace("/");
-    setEmail(email: string): void {
+    setEmail: (email: string) => void = (email: string): void => {
         this.email = email;
     }
-    setPassword(password: string): void {
+    setPassword: (password: string) => void = (password: string): void => {
         this.password = password;
     }
-    componentWillMount(): void {
-        const { hasRendered, getCurrentUser, setError }: LoginProps = this.props;
-        if (!hasRendered) {
-            getCurrentUser()
-                .then((userAction: Actions.SetCurrentUser) => {
-                    if (userAction.user && userAction.user._id && userAction.user.role !== Roles.Administrator) {
-                        setError({
-                            developerMessage: "User is not administrator",
-                            errorCode: ErrorCodes.Restricted,
-                            status: 400,
-                            userMessage: "Cet utilisateur n'est pas autorisé à accéder à cette interface"
-                        });
-                    }
+    handleLogin: (userAction: Actions.SetCurrentUser) => void = (userAction: Actions.SetCurrentUser): void => {
+        if (userAction.user && userAction.user._id) {
+            if (userAction.user.role === Roles.Administrator) {
+                this.continueToDashboard();
+            } else {
+                this.props.setError({
+                    developerMessage: "User is not administrator",
+                    errorCode: ErrorCodes.Restricted,
+                    status: 400,
+                    userMessage: "Cet utilisateur n'est pas autorisé à accéder à cette interface"
                 });
+            }
         }
     }
-    static FetchData(dispatch: Dispatch<RopehoAdminState>): Promise<Actions.SetCurrentUser> {
+    facebookLogin: () => void = (): void => window.location.replace(`${ADMIN_END_POINT}/api/auth/facebook?admin=1`);
+    componentWillMount(): void {
+        const { hasRendered, getCurrentUser }: LoginProps = this.props;
+        if (!hasRendered) {
+            getCurrentUser();
+        }
+    }
+    static fetchData(dispatch: Dispatch<RopehoAdminState>): Promise<Actions.SetCurrentUser> {
         return dispatch(fetchCurrentUser());
     }
     render(): JSX.Element {
         const { error, currentUser }: LoginProps = this.props;
         const { emailErrorMessage, passwordErrorMessage }: LoginState = this.state;
         return <div className={container}>
-            <Helmet
-                htmlAttributes={{ lang: "fr" }}
-                meta={[
-                    { name: "viewport", content: "width=device-width, initial-scale=1" }
-                ]}
-                title="Admin Ropeho"
-                link={[
-                    { rel: "stylesheet", href: "https://fonts.googleapis.com/css?family=Roboto" },
-                    { rel: "stylesheet", href: "https://fonts.googleapis.com/icon?family=Material+Icons" },
-                    // tslint:disable-next-line:no-http-string
-                    { rel: "stylesheet", href: "http://localhost:3011/styles.css" }
-                ]}
-            />
+            <Helmet>
+                <html lang="fr" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Ropeho Administration</title>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" />
+                <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+                {/* tslint:disable-next-line:no-http-string */}
+                <link rel="stylesheet" href="http://localhost:3011/styles.css" />
+            </Helmet>
             <div className={element}>
                 <img className={logoStyles} src={`data:image/jpeg;base64,${logo}`} alt="Ropeho Productions logo" />
             </div>
@@ -133,16 +140,17 @@ export class Login extends React.Component<LoginProps, LoginState> {
                         <Button accent={true} onClick={this.logout}>Déconnexion</Button>
                     </div>
                     :
-                    <form className={element} onSubmit={this.login.bind(this)}>
-                        <Input label="Email" required={true} type="email" error={emailErrorMessage} onChange={this.setEmail.bind(this)} />
-                        <Input label="Mot de passe" required={true} type="password" error={passwordErrorMessage} onChange={this.setPassword.bind(this)} />
+                    <form className={element} onSubmit={this.login}>
+                        <Input label="Email" required={true} type="email" error={emailErrorMessage} onChange={this.setEmail} />
+                        <Input label="Mot de passe" required={true} type="password" error={passwordErrorMessage} onChange={this.setPassword} />
                         <Button type="submit" label="Connexion" primary={true} />
+                        <Button type="button" label="Connexion avec Facebook" onClick={this.facebookLogin} theme={facebookButtonStyles} />
                     </form>
             }
             {error ? <Card className={`${errorBox} ${element}`}>
                 <CardTitle title="Erreur" />
                 <CardText>{error.userMessage}</CardText>
-            </Card> : ""}
+            </Card > : ""}
         </div>;
     }
 }

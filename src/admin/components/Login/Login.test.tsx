@@ -9,7 +9,6 @@ import * as sinonChai from "sinon-chai";
 import * as chaiEnzyme from "chai-enzyme";
 import { stub, spy } from "sinon";
 import { shallow, mount, ReactWrapper, ShallowWrapper } from "enzyme";
-import hook from "../../helpers/cssModulesHook";
 import { RopehoAdminState, initialState } from "../../reducer";
 import * as selectors from "../../selectors";
 import * as sessionModule from "../../modules/session";
@@ -18,6 +17,8 @@ import { middlewares } from "../../store";
 import { Roles } from "../../../enum";
 import { includes } from "lodash";
 import { v4 } from "uuid";
+import { ADMIN_END_POINT } from "../../helpers/resolveEndPoint";
+import hook from "../../helpers/cssModulesHook";
 hook();
 import { LoginProps, mapDispatchToProps, mapStateToProps, Login } from "./Login";
 should();
@@ -26,11 +27,15 @@ use(sinonChai);
 
 describe("Login component", () => {
     let store: IStore<RopehoAdminState>,
-        dispatchStub: sinon.SinonStub;
+        dispatchStub: sinon.SinonStub,
+        replaceStub: sinon.SinonStub;
     before(() => {
-        store = mockStore<RopehoAdminState>(middlewares)(initialState);
+        replaceStub = stub(window.location, "replace");
+        store = mockStore<RopehoAdminState>(middlewares())(initialState);
         dispatchStub = stub(store, "dispatch");
     });
+    afterEach(() => replaceStub.reset());
+    after(() => replaceStub.restore());
     describe("Element", () => {
         const props: LoginProps = {
             getCurrentUser: (): Promise<sessionModule.Actions.SetCurrentUser> => new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => resolve({
@@ -75,6 +80,8 @@ describe("Login component", () => {
                 const onSubmitProp: any = loginShallow.find("form").prop("onSubmit");
                 (typeof onSubmitProp).should.equal("function");
             });
+            it("Should have a connect with Facebook button", () =>
+                mount(<Login {...props} />).findWhere((node: ReactWrapper<any, {}>) => node.type() === "button" && node.text() === "Connexion avec Facebook" && typeof node.prop("onClick") === "function").should.have.lengthOf(1));
         });
         describe("Errors", () => {
             it("Should show errors on the page", () =>
@@ -82,27 +89,62 @@ describe("Login component", () => {
             it("Should not show if there is no error", () =>
                 mount(<Login {...props} error={{ userMessage: "testerror" }} />).html().should.contain("testerror"));
         });
-        describe("Methods", () => {
-            const loginSpy: sinon.SinonSpy = spy();
-            const logoutSpy: sinon.SinonSpy = spy();
-            const props: LoginProps = {
-                getCurrentUser: (): Promise<sessionModule.Actions.SetCurrentUser> => new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => resolve({
-                    type: sessionModule.ActionTypes.SET_CURRENT_USER,
-                    user: { role: Roles.Administrator }
-                })),
-                login: (email: string, password: string): any => loginSpy(email, password),
-                logout: (): any => logoutSpy()
-            };
+    });
+    describe("Methods", () => {
+        let getCurrentUser: () => Promise<sessionModule.Actions.SetCurrentUser>;
+        before(() => getCurrentUser = (): Promise<sessionModule.Actions.SetCurrentUser> => new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => resolve({
+            type: sessionModule.ActionTypes.SET_CURRENT_USER,
+            user: { role: Roles.Administrator }
+        })));
+        describe("Classic login handler", () => {
+            let setErrorSpy: sinon.SinonSpy;
+            before(() => setErrorSpy = spy());
+            afterEach(() => setErrorSpy.reset());
+            it("Should not do anything if there's no user", () => {
+                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: {} });
+                replaceStub.should.not.have.been.called;
+                setErrorSpy.should.not.have.been.called;
+            });
+            it("Should notify if the user is not an administrator", () => {
+                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: { _id: v4(), role: Roles.User } });
+                replaceStub.should.not.have.been.called;
+                setErrorSpy.should.have.been.calledOnce;
+            });
+            it("Should login if the user is an administrator", () => {
+                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: { _id: v4(), role: Roles.Administrator } });
+                replaceStub.should.have.been.calledOnce;
+                setErrorSpy.should.not.have.been.called;
+            });
+        });
+        describe("Classic login", () => {
+            let loginSpy: sinon.SinonSpy;
+            let props: LoginProps;
+            before(() => {
+                loginSpy = spy();
+                props = {
+                    getCurrentUser,
+                    login: (email: string, password: string): any => loginSpy(email, password)
+                };
+            });
             afterEach(() => loginSpy.reset());
             it("Should login using the email and password inputs", (done: MochaDone) => {
                 const email: string = "email@test.com",
                     password: string = "MyPasswordNobodyWillEverFind";
-                const loginProp: (email: string, password: string) => Promise<sessionModule.Actions.SetCurrentUser> =
-                    (email: string, password: string): Promise<sessionModule.Actions.SetCurrentUser> => new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => {
-                        loginSpy(email, password);
+                const loginProp: sinon.SinonSpy = spy((email: string, password: string): Promise<sessionModule.Actions.SetCurrentUser> =>
+                    Promise.resolve<sessionModule.Actions.SetCurrentUser>({
+                        type: sessionModule.ActionTypes.SET_CURRENT_USER,
+                        user: { _id: v4(), role: Roles.Administrator }
+                    }));
+                const loginInstance: Login = mount(<Login {...props} login={loginProp} />).instance() as Login;
+                stub(loginInstance, "handleLogin")
+                    .callsFake(() => {
+                        loginProp.should.have.been.calledOnce;
+                        loginProp.should.have.been.calledWith(email, password);
                         done();
                     });
-                const loginInstance: Login = mount(<Login {...props} login={loginProp} />).instance() as Login;
                 loginInstance.email = email;
                 loginInstance.password = password;
                 loginInstance.login();
@@ -125,9 +167,18 @@ describe("Login component", () => {
                 loginInstance.login();
                 loginSpy.should.have.not.been.calledOnce;
             });
+        });
+        describe("Logout", () => {
             it("Should disconnect the current user", () => {
-                (mount(<Login {...props} />).instance() as Login).logout();
+                const logoutSpy: sinon.SinonSpy = spy();
+                (mount(<Login logout={logoutSpy} getCurrentUser={getCurrentUser} />).instance() as Login).logout();
                 logoutSpy.should.have.been.calledOnce;
+            });
+        });
+        describe("Facebook login", () => {
+            it("Should prompt facebook connection", () => {
+                (mount(<Login getCurrentUser={getCurrentUser} />).instance() as Login).facebookLogin();
+                replaceStub.should.have.been.calledWith(`${ADMIN_END_POINT}/api/auth/facebook?admin=1`);
             });
         });
     });
@@ -173,7 +224,7 @@ describe("Login component", () => {
         });
     });
     describe("Lifecycle", () => {
-        it("Should get the current user", () => {
+        it("Should get the user", () => {
             const getCurrentSpy: sinon.SinonSpy = spy();
             const props: LoginProps = {
                 getCurrentUser: (): Promise<sessionModule.Actions.SetCurrentUser> => {
@@ -187,25 +238,11 @@ describe("Login component", () => {
             shallow(<Login {...props} />);
             getCurrentSpy.should.have.been.calledOnce;
         });
-        it("Should dispatch an error if the user is not an administrator", (done: MochaDone) => {
-            const props: LoginProps = {
-                getCurrentUser: (): Promise<sessionModule.Actions.SetCurrentUser> => {
-                    return new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => resolve({
-                        type: sessionModule.ActionTypes.SET_CURRENT_USER,
-                        user: { _id: v4(), role: Roles.User }
-                    }));
-                },
-                setError: (): any => {
-                    done();
-                }
-            };
-            shallow(<Login {...props} />);
-        });
     });
     describe("Server side fetching", () => {
         it("Should get the current user using the static fetch", () => {
             const fetchCurrentStub: sinon.SinonStub = stub(sessionModule, "fetchCurrentUser");
-            Login.FetchData(dispatchStub);
+            Login.fetchData(dispatchStub);
             fetchCurrentStub.should.have.been.calledOnce;
             fetchCurrentStub.restore();
         });

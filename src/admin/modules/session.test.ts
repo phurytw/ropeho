@@ -8,7 +8,7 @@ import { IStore, default as mockStore } from "redux-mock-store";
 import { ActionTypes, SessionState, login, logout, fetchCurrentUser, default as reducer } from "./session";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { ActionTypes as ErrorTypes } from "./error";
 import { head } from "lodash";
@@ -26,11 +26,16 @@ describe("Session module", () => {
         status: 500,
         userMessage: "A nice error"
     };
-    before(() => store = mockStore<SessionState>(middlewares)(new SessionState()));
+    before(() => store = mockStore<SessionState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new SessionState()));
     afterEach(() => store.clearActions());
     describe("Logging in", () => {
         it("Should receive a user", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/auth", {
                     email: user.email,
                     password: user.password
@@ -44,7 +49,7 @@ describe("Session module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/auth", {
                     email: user.email,
                     password: user.password
@@ -60,7 +65,7 @@ describe("Session module", () => {
     });
     describe("Logging off", () => {
         it("Should disconnect from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/auth/logout")
                 .reply(200, {});
             await store.dispatch(logout());
@@ -71,7 +76,7 @@ describe("Session module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post("/api/auth/logout")
                 .reply(500, error);
             await store.dispatch(logout());
@@ -84,7 +89,7 @@ describe("Session module", () => {
     });
     describe("Getting the current session", () => {
         it("Should receive a user", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/auth")
                 .reply(200, user);
             await store.dispatch(fetchCurrentUser());
@@ -95,7 +100,7 @@ describe("Session module", () => {
             scope.done();
         });
         it("Should handle HTTP errors", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/auth")
                 .reply(500, error);
             await store.dispatch(fetchCurrentUser());

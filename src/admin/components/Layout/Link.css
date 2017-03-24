@@ -4,3 +4,9 @@
 .active {
     color: white !important;
 }
+.link:last-child {
+    color: #FFAAAA !important;
+}
+.active:last-child {
+    color: #FFAAAA !important;
+}

@@ -9,6 +9,5 @@ if (process.argv[2].includes("client")) {
 
 require("ts-node").register({
     project,
-    lazy: true,
     fast: true
 });

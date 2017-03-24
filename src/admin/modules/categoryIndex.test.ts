@@ -9,7 +9,7 @@ import { CategoryIndexState, fetchCategories, ActionTypes, default as reducer } 
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { categories } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
@@ -19,7 +19,12 @@ should();
 describe("Category index module", () => {
     let store: IStore<CategoryIndexState>;
     before(() => {
-        store = mockStore<CategoryIndexState>(middlewares)(new CategoryIndexState());
+        store = mockStore<CategoryIndexState>(middlewares({
+            host: ADMIN_END_POINT,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))(new CategoryIndexState());
     });
     afterEach(() => {
         store.clearActions();
@@ -27,7 +32,7 @@ describe("Category index module", () => {
     });
     describe("Actions", () => {
         it("Should fetch categories from the API server", async () => {
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/categories")
                 .reply(200, categories);
             await store.dispatch(fetchCategories());
@@ -44,7 +49,7 @@ describe("Category index module", () => {
                 status: 500,
                 userMessage: "A nice error"
             };
-            const scope: nock.Scope = nock(API_END_POINT)
+            const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .get("/api/categories")
                 .reply(500, error);
             await store.dispatch(fetchCategories());

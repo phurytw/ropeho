@@ -1,3 +1,13 @@
 .container {
-    padding: 64px 2em 2em 2em;
+    padding-top: 64px;
+}
+@media screen and (max-width: 480px) and (orientation: portrait) {
+    .container {
+        padding-top: 56px;
+    }
+}
+@media screen and (max-width: 600px) and (orientation: landscape) {
+    .container {
+        padding-top: 48px;
+    }
 }

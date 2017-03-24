@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { Category } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchCategories: (fields?: string[]) => ThunkAction<Promise<Actions.SetCategories>, CategoryIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetCategories>, CategoryIndexState, {}> => {
-        return fetchThunk<Actions.SetCategories, Models.Category[], CategoryIndexState>(`${API_END_POINT}/api/categories${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryIndexState>, categories: Models.Category[]) => dispatch<Actions.SetCategories>({
+        return fetchThunk<Actions.SetCategories, Models.Category[], CategoryIndexState>(`/api/categories${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryIndexState>, categories: Models.Category[]) => dispatch<Actions.SetCategories>({
             type: ActionTypes.SET_CATEGORIES,
             categories
         }));

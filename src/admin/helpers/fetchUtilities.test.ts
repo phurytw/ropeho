@@ -57,7 +57,12 @@ describe("Error handler", () => {
         let store: IStore<TestState>,
             thunk: ThunkAction<Promise<TestState>, TestState, {}>,
             thunkSpy: sinon.SinonSpy;
-        before(() => store = mockStore<TestState>(middlewares)());
+        before(() => store = mockStore<TestState>(middlewares({
+            host,
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        }))());
         beforeEach(() => {
             store.clearActions();
             thunkSpy = spy();

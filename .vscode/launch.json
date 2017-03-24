@@ -6,6 +6,14 @@
             "request": "attach",
             "name": "Attach to Process",
             "port": 9229
+        },
+        {
+            "name": "Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "url": "http://localhost:3010",
+            "webRoot": "${workspaceRoot}"
         }
     ]
 }

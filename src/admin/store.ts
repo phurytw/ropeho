@@ -8,14 +8,29 @@ import { RopehoAdminState, default as reducer } from "./reducer";
 import reduxThunk from "redux-thunk";
 import { ActionTypes } from "./modules/error";
 
-export const middlewares: Middleware[] = [reduxThunk.withExtraArgument({ type: ActionTypes.SET_ERROR })];
+import FetchThunkExtras = Ropeho.FetchThunkExtras;
+
+const defaultExtras: FetchThunkExtras = {
+    init: {
+        credentials: "include"
+    },
+    error: {
+        type: ActionTypes.SET_ERROR
+    }
+};
+
+export const middlewares: (thunkExtras?: FetchThunkExtras) => Middleware[] =
+    (thunkExtras?: FetchThunkExtras): Middleware[] => [reduxThunk.withExtraArgument(thunkExtras)];
 
 // compose with Redux devtools for Chrome
-const composeEnhancer: typeof compose = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+const composeEnhancer: typeof compose = global.window ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose : compose;
 
-const configureStore: (initialState?: RopehoAdminState) => Store<RopehoAdminState> =
-    (initialState?: RopehoAdminState): Store<RopehoAdminState> => {
-        return createStore<RopehoAdminState>(reducer, initialState, composeEnhancer(applyMiddleware(...middlewares)));
+const configureStore: (initialState?: RopehoAdminState, thunkExtras?: FetchThunkExtras) => Store<RopehoAdminState> =
+    (initialState?: RopehoAdminState, thunkExtras?: FetchThunkExtras): Store<RopehoAdminState> => {
+        return createStore<RopehoAdminState>(reducer, initialState, composeEnhancer(applyMiddleware(...middlewares({
+            ...defaultExtras,
+            ...thunkExtras
+        }))));
     };
 
 export default configureStore;

@@ -19,3 +19,6 @@ export const getError: (state: RopehoAdminState) => Ropeho.IErrorResponse =
 
 export const getProductions: (state: RopehoAdminState) => Production[] =
     (state: RopehoAdminState): Production[] => state.productionIndex.productions;
+
+export const getProduction: (state: RopehoAdminState) => Production =
+    (state: RopehoAdminState): Production => state.productionEdit.production;

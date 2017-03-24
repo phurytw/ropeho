@@ -13,7 +13,7 @@ export const adminConfig: (env: string) => Configuration =
         // add hot module replacement if not in production
         let entry: Entry = {
             main: "./src/admin/index.tsx",
-            vendor: ["react", "react-dom", "react-router", "redux", "react-helmet", "react-redux", "serialize-javascript"]
+            vendor: ["react", "react-dom", "react-router-dom", "redux", "react-helmet", "react-redux", "serialize-javascript"]
         };
         entry = env !== "production" ? {
             hot: ["react-hot-loader/patch"],

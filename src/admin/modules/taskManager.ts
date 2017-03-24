@@ -7,7 +7,6 @@ import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { Job } from "kue";
 import { join, map, filter } from "lodash";
 
@@ -50,7 +49,7 @@ export namespace ActionTypes {
 // get all tasks and connected clients
 export const fetchRunning: (fields?: string[]) => ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> => {
-        return fetchThunk<Actions.SetTasksAndClients, Ropeho.TaskList, TaskManagerState>(`${API_END_POINT}/api/taskmanager${fields ? `?fields=${join(fields, ",")}` : ""}`, { credentials: "include" },
+        return fetchThunk<Actions.SetTasksAndClients, Ropeho.TaskList, TaskManagerState>(`/api/taskmanager${fields ? `?fields=${join(fields, ",")}` : ""}`, { credentials: "include" },
             (dispatch: Dispatch<TaskManagerState>, running: Ropeho.TaskList) => {
                 const action: Actions.SetTasksAndClients = { type: ActionTypes.SET_TASKS_AND_CLIENTS };
                 if (running.clients) {
@@ -65,10 +64,9 @@ export const fetchRunning: (fields?: string[]) => ThunkAction<Promise<Actions.Se
 // starts a tasks and updates the tasks in the state
 export const startTask: (taskId: number) => ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> =
     (taskId: number): ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> => {
-        return fetchThunk<Actions.SetTasksAndClients, Job, TaskManagerState>(`${API_END_POINT}/api/taskmanager/task/${taskId}`,
+        return fetchThunk<Actions.SetTasksAndClients, Job, TaskManagerState>(`/api/taskmanager/task/${taskId}`,
             {
                 method: "POST",
-                credentials: "include"
             },
             (dispatch: Dispatch<TaskManagerState>, task: Job, getState: () => TaskManagerState) =>
                 dispatch<Actions.SetTasksAndClients>({
@@ -79,10 +77,9 @@ export const startTask: (taskId: number) => ThunkAction<Promise<Actions.SetTasks
 // deletes a tasks and updates the tasks in the state
 export const cancelTask: (taskId: number) => ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> =
     (taskId: number): ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> => {
-        return fetchThunk<Actions.SetTasksAndClients, {}, TaskManagerState>(`${API_END_POINT}/api/taskmanager/task/${taskId}`,
+        return fetchThunk<Actions.SetTasksAndClients, {}, TaskManagerState>(`/api/taskmanager/task/${taskId}`,
             {
                 method: "DELETE",
-                credentials: "include"
             },
             (dispatch: Dispatch<TaskManagerState>, nothing: {}, getState: () => TaskManagerState) =>
                 dispatch<Actions.SetTasksAndClients>({
@@ -93,10 +90,9 @@ export const cancelTask: (taskId: number) => ThunkAction<Promise<Actions.SetTask
 // disconnects a client and updates the client in the state
 export const kickClient: (clientId: string) => ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> =
     (clientId: string): ThunkAction<Promise<Actions.SetTasksAndClients>, TaskManagerState, {}> => {
-        return fetchThunk<Actions.SetTasksAndClients, {}, TaskManagerState>(`${API_END_POINT}/api/taskmanager/socket/${clientId}`,
+        return fetchThunk<Actions.SetTasksAndClients, {}, TaskManagerState>(`/api/taskmanager/socket/${clientId}`,
             {
                 method: "DELETE",
-                credentials: "include"
             },
             (dispatch: Dispatch<TaskManagerState>, nothing: {}, getState: () => TaskManagerState) =>
                 dispatch<Actions.SetTasksAndClients>({

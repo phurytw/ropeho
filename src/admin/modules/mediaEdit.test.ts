@@ -18,7 +18,7 @@ import Models = Ropeho.Models;
 describe("Media edit module", () => {
     let store: IStore<MediaEditState>;
     const media: Models.Media = productions[0].banner;
-    before(() => store = mockStore<MediaEditState>(middlewares)(new MediaEditState()));
+    before(() => store = mockStore<MediaEditState>(middlewares())(new MediaEditState()));
     afterEach(() => store.clearActions());
     describe("Actions", () => {
         it("Should dispatch a media", () => {

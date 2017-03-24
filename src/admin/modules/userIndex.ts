@@ -6,7 +6,6 @@
 import { Dispatch, Action } from "redux";
 import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { API_END_POINT } from "../helpers/resolveEndPoint";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
 import { User } from "../models";
@@ -40,7 +39,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchUsers: (fields?: string[]) => ThunkAction<Promise<Actions.SetUsers>, UserIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetUsers>, UserIndexState, {}> => {
-        return fetchThunk<Actions.SetUsers, Models.User[], UserIndexState>(`${API_END_POINT}/api/users${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserIndexState>, users: Models.User[]) => dispatch<Actions.SetUsers>({
+        return fetchThunk<Actions.SetUsers, Models.User[], UserIndexState>(`/api/users${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserIndexState>, users: Models.User[]) => dispatch<Actions.SetUsers>({
             type: ActionTypes.SET_USERS,
             users
         }));

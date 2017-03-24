@@ -66,7 +66,7 @@ const config: Ropeho.Configuration.ConfigurationObject = {
         }
     },
     redis: {
-        host: "localhost",
+        host: "redis",
         port: 6379,
         db: "0"
     },

@@ -19,7 +19,7 @@ describe("Error handler module", () => {
         userMessage: "A nice error"
     };
     let store: IStore<ErrorState>;
-    before(() => store = mockStore<ErrorState>(middlewares)(new ErrorState()));
+    before(() => store = mockStore<ErrorState>(middlewares())(new ErrorState()));
     afterEach(() => store.clearActions());
     describe("Error action", () => {
         it("Should dispatch an error", () => {
