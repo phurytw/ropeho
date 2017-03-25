@@ -37,6 +37,13 @@ export namespace ActionTypes {
 }
 
 // action creators
+export const setProduction: (production: Models.Production) => ThunkAction<Actions.SetProduction, ProductionEditState, {}> =
+    (production: Models.Production): ThunkAction<Actions.SetProduction, ProductionEditState, {}> => {
+        return (dispatch: Dispatch<ProductionEditState>) => dispatch<Actions.SetProduction>({
+            type: ActionTypes.SET_PRODUCTION,
+            production
+        });
+    };
 export const fetchProductionById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
         return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(`/api/productions/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({

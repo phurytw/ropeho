@@ -19,7 +19,8 @@ import { middlewares } from "../../store";
 import hook from "../../helpers/cssModulesHook";
 hook();
 import { ProductionEdit, ProductionEditProps, mapStateToProps, mapDispatchToProps } from "./ProductionEdit";
-import { Button } from "react-toolbox";
+import { Button, Tab, Tabs, Dialog } from "react-toolbox";
+import { Prompt } from "react-router";
 should();
 use(sinonChai);
 use(chaiEnzyme);
@@ -52,13 +53,74 @@ describe("Production Edit component", () => {
             it("Should display an save changes button", () => {
                 const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
                 const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
-                wrapper.find(Button).find({ onClick: instance.promptSave }).should.have.lengthOf(1);
+                wrapper.find(Button).find({ onClick: instance.promptSaveShow }).should.have.lengthOf(1);
             });
-            it("Should display an delete button", () => {
+            it("Should display a delete button", () => {
                 const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
                 const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
-                wrapper.find(Button).find({ onClick: instance.promptDelete }).should.have.lengthOf(1);
+                wrapper.find(Button).find({ onClick: instance.promptDeleteShow }).should.have.lengthOf(1);
             });
+        });
+        describe("Tabs", () => {
+            it("Should have a navbar to navigate between editors", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
+                const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
+                wrapper.find(Tabs).find({ onChange: instance.setTab }).should.have.lengthOf(1);
+            });
+            it("Should have a tab to edit production metadata", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
+                wrapper.find(Tab).find({ label: "Production" }).should.have.lengthOf(1);
+            });
+            it("Should have a tab to edit banner", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
+                wrapper.find(Tab).find({ label: "Bannière" }).should.have.lengthOf(1);
+            });
+            it("Should have a tab to edit background", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
+                wrapper.find(Tab).find({ label: "Fond" }).should.have.lengthOf(1);
+            });
+            it("Should have a tab to edit medias", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
+                wrapper.find(Tab).find({ label: "Medias" }).should.have.lengthOf(1);
+            });
+        });
+        describe("Action notifications", () => {
+            it("Should notify user when attempting to close or exit", () => {
+                shallow(<ProductionEdit {...props} />).find(Prompt).should.have.lengthOf(1);
+            });
+            it("Should prompt a dialog asking for user confirmation when saving", () => {
+                shallow(<ProductionEdit {...props} />).setState({ promptSave: true }).find(Dialog).find({ title: "Enregistrer les modifications" }).should.have.lengthOf(1);
+            });
+            it("Should prompt a dialog asking for user confirmation when saving", () => {
+                shallow(<ProductionEdit {...props} />).setState({ promptDelete: true }).find(Dialog).find({ title: "Supprimer la production" }).should.have.lengthOf(1);
+            });
+        });
+    });
+    describe("Methods", () => {
+        it("Should set promptSave to true", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.promptSaveShow();
+            instance.state.promptSave.should.equal(true);
+        });
+        it("Should set promptSave to false", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.promptSaveHide();
+            instance.state.promptSave.should.equal(false);
+        });
+        it("Should set promptDelete to true", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.promptDeleteShow();
+            instance.state.promptDelete.should.equal(true);
+        });
+        it("Should set promptDelete to false", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.promptDeleteHide();
+            instance.state.promptDelete.should.equal(false);
+        });
+        it("Should set tab", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.setTab(1000);
+            instance.state.tab.should.equal(1000);
         });
     });
     describe("Props", () => {

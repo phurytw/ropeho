@@ -1,0 +1,7 @@
+.deleteDialog {
+    background-color: #FF5555;
+}
+.deleteDialog * {
+    background-color: #FF5555;
+    color: white !important;
+}

@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { ProductionEditState, fetchProductionById, updateProduction, deleteProduction, ActionTypes, default as reducer } from "./productionEdit";
+import { ProductionEditState, fetchProductionById, updateProduction, deleteProduction, setProduction, ActionTypes, default as reducer } from "./productionEdit";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -14,6 +14,7 @@ import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
 import { is } from "immutable";
+import { v4 } from "uuid";
 should();
 
 import Models = Ropeho.Models;
@@ -32,6 +33,16 @@ describe("Production edit module", () => {
     afterEach(() => {
         store.clearActions();
         nock.cleanAll();
+    });
+    describe("Set action", () => {
+        it("Should set the current production", () => {
+            const production: Models.Production = { _id: v4() };
+            store.dispatch(setProduction(production));
+            head(store.getActions()).should.deep.equal({
+                type: ActionTypes.SET_PRODUCTION,
+                production
+            });
+        });
     });
     describe("Fetch action", () => {
         it("Should fetch a production from the API server", async () => {

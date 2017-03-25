@@ -1,0 +1,8 @@
+.productionMetaForm {
+    lost-center: 840px;
+    width: 100%;
+}
+
+.productionMetaForm > *:last-child {
+    max-width: 400px;
+}
