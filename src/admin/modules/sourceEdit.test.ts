@@ -10,7 +10,7 @@ import { middlewares } from "../store";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, Map } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -30,10 +30,12 @@ describe("Source edit module", () => {
         });
         it("Should set the buffer with data", () => {
             const buffer: ArrayBuffer = new ArrayBuffer(100);
-            store.dispatch(setBuffer(buffer));
+            const sourceId: string = "sid";
+            store.dispatch(setBuffer(sourceId, buffer));
             head(store.getActions()).should.deep.equal({
                 type: ActionTypes.SET_BUFFER,
-                buffer
+                buffer,
+                sourceId
             });
         });
     });
@@ -43,18 +45,37 @@ describe("Source edit module", () => {
                 type: ActionTypes.SET_SOURCE,
                 source
             }), new SourceEditState({
-                source,
-                buffer: undefined
+                sources: Map.of(source._id, source),
             })).should.be.true;
         });
         it("Should set state with an immutable buffer", () => {
             const buffer: ArrayBuffer = new ArrayBuffer(100);
+            const sourceId: string = "sid";
             is(reducer(new SourceEditState(), {
                 type: ActionTypes.SET_BUFFER,
-                buffer
+                buffer, sourceId
             }), new SourceEditState({
-                source: undefined,
-                buffer
+                buffers: Map.of(sourceId, buffer)
+            })).should.be.true;
+        });
+        it("Should replace sources with new sources", () => {
+            is(reducer(new SourceEditState({
+                sources: Map.of("niceId", source)
+            }), {
+                    type: ActionTypes.REPLACE_SOURCES,
+                    sources: [source, source]
+                }), new SourceEditState({
+                    sources: Map.of(source._id, source),
+                })).should.be.true;
+        });
+        it("Should replace buffers with new buffers", () => {
+            const [sid, sid2]: string[] = ["sid", "sid2"];
+            const buffers: { [key: string]: ArrayBuffer } = { [sid]: new ArrayBuffer(100), [sid2]: new ArrayBuffer(100) };
+            is(reducer(new SourceEditState(), {
+                type: ActionTypes.REPLACE_BUFFERS,
+                buffers
+            }), new SourceEditState({
+                buffers: Map.of(sid, buffers[sid], sid2, buffers[sid2])
             })).should.be.true;
         });
     });

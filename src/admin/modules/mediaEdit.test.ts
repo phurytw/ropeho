@@ -10,7 +10,7 @@ import { middlewares } from "../store";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, Map } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -30,13 +30,23 @@ describe("Media edit module", () => {
         });
     });
     describe("Reducer", () => {
-        it("Should set the state with an immutable media", () => {
+        it("Should update a media in the state with an immutable media", () => {
             is(reducer(new MediaEditState(), {
                 type: ActionTypes.SET_MEDIA,
                 media
             }), new MediaEditState({
-                media
+                medias: Map.of(media._id, media)
             })).should.be.true;
+        });
+        it("Should replace all medias in the state with immutable medias", () => {
+            is(reducer(new MediaEditState({
+                medias: Map.of("someId", media)
+            }), {
+                    type: ActionTypes.REPLACE_MEDIAS,
+                    medias: [media, media]
+                }), new MediaEditState({
+                    medias: Map.of(media._id, media)
+                })).should.be.true;
         });
     });
 });
