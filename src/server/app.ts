@@ -18,6 +18,7 @@ import GenericRepository from "./dal/genericRepository";
 import { verifyPassword } from "./accounts/password";
 import { normalizeEmail, isEmail } from "validator";
 import { renderFile } from "ejs";
+import { uriFriendlyFormat } from "./helpers/uriFriendlyFormat";
 import * as connectRedis from "connect-redis";
 
 // Routes
@@ -53,7 +54,7 @@ passport.use(new LocalStrategy({
                     errorCode: ErrorCodes.NotFound,
                     status: 400
                 };
-            if (!user) {
+            if (!user || uriFriendlyFormat(user.email) !== uriFriendlyFormat(normalizeEmail(email) as string)) {
                 done(null, false, badCredentials);
             } else if (!user.password) {
                 done(null, false, badCredentials);

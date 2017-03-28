@@ -372,10 +372,9 @@ export default class RedisGenericRepository<T extends any> implements Ropeho.Mod
     /**
      * Search entities
      * @param {IDictionary} filters search criterias
-     * @param {number} range amount of items to look up (defaults to 10)
      * @param {Promise<T[]>} A promise that fulfills with the found entities
      */
-    search(filters: IDictionary, range: number = 10): Promise<T[]> {
+    search(filters: IDictionary): Promise<T[]> {
         return new Promise<T[]>(async (resolve: (value?: T[] | PromiseLike<T[]>) => void, reject: (reason?: any) => void) => {
             const { redis, indexes, namespace }: RedisGenericRepository<T> = this;
             const filterKeys: string[] = _(filters).pickBy<IIndexes>((value: string, key: string) => _(indexes).keys().includes(key)).keys().value();
