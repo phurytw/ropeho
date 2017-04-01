@@ -8,6 +8,11 @@ Object.keys(document.defaultView).forEach((property) => {
     }
 });
 
+global.Blob = window.Blob;
+global.File = window.File;
+global.URL = window.URL;
+global.Image = window.Image;
+
 global.navigator = {
     userAgent: "node.js"
 };
