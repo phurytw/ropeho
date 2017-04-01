@@ -3,7 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 import { resolve } from "path";
-import { Configuration, optimize, HotModuleReplacementPlugin, NamedModulesPlugin, Entry, DefinePlugin, Plugin, LoaderOptionsPlugin, OldLoader } from "webpack";
+import { Configuration, optimize, HotModuleReplacementPlugin, NamedModulesPlugin, Entry, DefinePlugin, Plugin, LoaderOptionsPlugin, OldLoader, Rule } from "webpack";
 import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 
 export const cssModulePattern: string = "[name]__[local]___[hash:base64:8]";
@@ -20,7 +20,7 @@ export const adminConfig: (env: string) => Configuration =
             ...entry
         } : entry;
         // set devtool according to the environment
-        const devtool: "source-map" | "eval-source-map" = env === "production" ? "source-map" : "eval-source-map";
+        const devtool: "source-map" | "eval-source-map" = env === "production" ? "source-map" : "source-map";
         let plugins: Plugin[] = [new optimize.CommonsChunkPlugin({
             names: ["vendor", "common"]
         }), new ExtractTextPlugin("styles.css")];
@@ -41,6 +41,29 @@ export const adminConfig: (env: string) => Configuration =
         })] : [...plugins,
         new HotModuleReplacementPlugin(),
         new NamedModulesPlugin()];
+        const cssRule: Rule = env === "production" ? {
+            test: /\.css$/,
+            use: ExtractTextPlugin.extract([{
+                loader: "css-loader",
+                options: {
+                    modules: true,
+                    sourceMap: true,
+                    importLoaders: 1,
+                    localIdentName: cssModulePattern
+                }
+            } as OldLoader, "postcss-loader"])
+        } : {
+                test: /\.css$/,
+                use: ["style-loader", {
+                    loader: "css-loader",
+                    options: {
+                        modules: true,
+                        sourceMap: true,
+                        importLoaders: 1,
+                        localIdentName: cssModulePattern
+                    }
+                } as OldLoader, "postcss-loader"]
+            };
 
         return {
             entry,
@@ -60,18 +83,7 @@ export const adminConfig: (env: string) => Configuration =
                         use: ["awesome-typescript-loader?configFileName=tsconfig.admin.json"],
                         exclude: /node_modules/
                     },
-                    {
-                        test: /\.css$/,
-                        use: ExtractTextPlugin.extract([{
-                            loader: "css-loader",
-                            options: {
-                                modules: true,
-                                sourceMap: true,
-                                importLoaders: 1,
-                                localIdentName: cssModulePattern
-                            }
-                        } as OldLoader, "postcss-loader"])
-                    }
+                    cssRule
                 ]
             },
             plugins

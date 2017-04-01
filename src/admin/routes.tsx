@@ -39,7 +39,7 @@ const routeConfig: RouteConfig[] = [
             exact: true
         }, {
             component: ProductionEdit,
-            path: "/productions/:productionId",
+            path: "/productions/:productionId/:mediaId?/:sourceId?",
         }, {
             component: CategoryIndex,
             path: "/categories",

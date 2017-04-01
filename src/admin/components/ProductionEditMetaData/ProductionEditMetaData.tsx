@@ -44,6 +44,7 @@ export class ProductionEditMetaData extends React.Component<ProductionEditMetaDa
             <Input label="Nom" onChange={this.setName} value={production.name} />
             <Input label="Description" onChange={this.setDescription} value={production.description} />
             <Dropdown
+                required
                 label="Accès"
                 value={production.state}
                 onChange={this.setMediaPermissions}

@@ -22,6 +22,7 @@ import { Roles } from "../../../enum";
 import ErrorDialog from "../ErrorDialog";
 import { Redirect } from "react-router";
 import { RouteConfig, renderRoutes } from "react-router-config";
+import { PartialRouteComponentProps } from "react-router-dom";
 
 export const mapStateToProps: (state: RopehoAdminState, ownProps?: LayoutProps) => LayoutProps =
     (state: RopehoAdminState, ownProps?: LayoutProps): LayoutProps => ({
@@ -37,7 +38,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LayoutProp
         setError: (error: Ropeho.IErrorResponse) => dispatch<ErrorActions.SetError, {}>(setError(error))
     });
 
-export interface LayoutProps {
+export interface LayoutProps extends PartialRouteComponentProps<void> {
     currentUser?: Ropeho.Models.User;
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;
@@ -48,16 +49,16 @@ export interface LayoutProps {
 }
 
 export class Layout extends React.Component<LayoutProps, {}> {
-    goToProductions: () => void = (): void => window.location.assign("/productions");
-    goToCategories: () => void = (): void => window.location.assign("/categories");
-    goToPresentations: () => void = (): void => window.location.assign("/presentations");
-    goToUsers: () => void = (): void => window.location.assign("/users");
-    goToTasks: () => void = (): void => window.location.assign("/taskmanager");
+    goToProductions: () => void = (): void => this.props.history.push("/productions");
+    goToCategories: () => void = (): void => this.props.history.push("/categories");
+    goToPresentations: () => void = (): void => this.props.history.push("/presentations");
+    goToUsers: () => void = (): void => this.props.history.push("/users");
+    goToTasks: () => void = (): void => this.props.history.push("/taskmanager");
     constructor(props: LayoutProps) {
         super(props);
     }
     dismissError: () => void = (): void => this.props.setError(undefined);
-    logout: () => Promise<void> = (): Promise<void> => this.props.logout().then(() => window.location.replace("/login"));
+    logout: () => Promise<void> = (): Promise<void> => this.props.logout().then(() => this.props.history.replace("/login"));
     componentWillMount(): void {
         const { hasRendered, getCurrentUser }: LayoutProps = this.props;
         if (!hasRendered) {
@@ -85,11 +86,11 @@ export class Layout extends React.Component<LayoutProps, {}> {
                 <AppBar fixed={true}>
                     <h1 className={title}><a href="/">Ropeho Administration</a></h1>
                     <Navigation type="horizontal" theme={topLinkStyles}>
-                        <Link theme={linkStyles} href="/productions" label="Productions" icon="photo_camera" />
-                        <Link theme={linkStyles} href="/categories" label="Category" icon="photo_album" />
-                        <Link theme={linkStyles} href="/presentations" label="Page d'acceuil" icon="home" />
-                        <Link theme={linkStyles} href="/users" label="Comptes utilisateurs" icon="person" />
-                        <Link theme={linkStyles} href="/taskmanager" label="Gestionnaire" icon="storage" />
+                        <Link theme={linkStyles} onClick={this.goToProductions} label="Productions" icon="photo_camera" />
+                        <Link theme={linkStyles} onClick={this.goToCategories} label="Category" icon="photo_album" />
+                        <Link theme={linkStyles} onClick={this.goToPresentations} label="Page d'acceuil" icon="home" />
+                        <Link theme={linkStyles} onClick={this.goToUsers} label="Comptes utilisateurs" icon="person" />
+                        <Link theme={linkStyles} onClick={this.goToTasks} label="Gestionnaire" icon="storage" />
                         {currentUser ? <Link theme={linkStyles} onClick={this.logout} label={`Déconnexion (${currentUser.name})`} icon="power_settings_new" /> : ""}
                     </Navigation>
                     <IconMenu icon="menu" theme={iconMenuStyles}>

@@ -9,7 +9,7 @@ import * as sinonChai from "sinon-chai";
 import * as chaiEnzyme from "chai-enzyme";
 import { stub, spy } from "sinon";
 import { shallow, mount, ReactWrapper, ShallowWrapper } from "enzyme";
-import { RopehoAdminState, initialState } from "../../reducer";
+import { RopehoAdminState, default as rootReducer } from "../../reducer";
 import * as selectors from "../../selectors";
 import * as sessionModule from "../../modules/session";
 import { IStore, default as mockStore } from "redux-mock-store";
@@ -21,21 +21,18 @@ import { ADMIN_END_POINT } from "../../helpers/resolveEndPoint";
 import hook from "../../helpers/cssModulesHook";
 hook();
 import { LoginProps, mapDispatchToProps, mapStateToProps, Login } from "./Login";
+import { Card } from "react-toolbox";
 should();
 use(chaiEnzyme);
 use(sinonChai);
 
 describe("Login component", () => {
     let store: IStore<RopehoAdminState>,
-        dispatchStub: sinon.SinonStub,
-        replaceStub: sinon.SinonStub;
+        dispatchStub: sinon.SinonStub;
     before(() => {
-        replaceStub = stub(window.location, "replace");
-        store = mockStore<RopehoAdminState>(middlewares())(initialState);
+        store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
         dispatchStub = stub(store, "dispatch");
     });
-    afterEach(() => replaceStub.reset());
-    after(() => replaceStub.restore());
     describe("Element", () => {
         const props: LoginProps = {
             getCurrentUser: (): Promise<sessionModule.Actions.SetCurrentUser> => new Promise<any>((resolve: (value?: sessionModule.Actions.SetCurrentUser | PromiseLike<sessionModule.Actions.SetCurrentUser>) => void) => resolve({
@@ -87,7 +84,7 @@ describe("Login component", () => {
             it("Should show errors on the page", () =>
                 mount(<Login {...props} error={{ userMessage: "testerror" }} />).html().should.contain("testerror"));
             it("Should not show if there is no error", () =>
-                mount(<Login {...props} error={{ userMessage: "testerror" }} />).html().should.contain("testerror"));
+                shallow(<Login {...props} />).find(Card).should.have.lengthOf(0));
         });
     });
     describe("Methods", () => {
@@ -101,19 +98,22 @@ describe("Login component", () => {
             before(() => setErrorSpy = spy());
             afterEach(() => setErrorSpy.reset());
             it("Should not do anything if there's no user", () => {
-                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                const replaceStub: sinon.SinonStub = stub();
+                const loginInstance: Login = shallow(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} history={{ replace: replaceStub } as any} />).instance() as Login;
                 loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: {} });
                 replaceStub.should.not.have.been.called;
-                setErrorSpy.should.not.have.been.called;
+                setErrorSpy.should.have.been.calledOnce;
             });
             it("Should notify if the user is not an administrator", () => {
-                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                const replaceStub: sinon.SinonStub = stub();
+                const loginInstance: Login = shallow(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} history={{ replace: replaceStub } as any} />).instance() as Login;
                 loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: { _id: v4(), role: Roles.User } });
                 replaceStub.should.not.have.been.called;
                 setErrorSpy.should.have.been.calledOnce;
             });
             it("Should login if the user is an administrator", () => {
-                const loginInstance: Login = mount(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} />).instance() as Login;
+                const replaceStub: sinon.SinonStub = stub();
+                const loginInstance: Login = shallow(<Login setError={setErrorSpy} getCurrentUser={getCurrentUser} history={{ replace: replaceStub } as any} />).instance() as Login;
                 loginInstance.handleLogin({ type: sessionModule.ActionTypes.SET_CURRENT_USER, user: { _id: v4(), role: Roles.Administrator } });
                 replaceStub.should.have.been.calledOnce;
                 setErrorSpy.should.not.have.been.called;
@@ -158,7 +158,7 @@ describe("Login component", () => {
                 loginInstance.login();
                 loginSpy.should.have.not.been.calledOnce;
             });
-            it("Should not login if the password is not empty", () => {
+            it("Should not login if the password is empty", () => {
                 const email: string = "email@test.com",
                     password: string = "";
                 const loginInstance: Login = mount(<Login {...props} />).instance() as Login;
@@ -177,8 +177,10 @@ describe("Login component", () => {
         });
         describe("Facebook login", () => {
             it("Should prompt facebook connection", () => {
-                (mount(<Login getCurrentUser={getCurrentUser} />).instance() as Login).facebookLogin();
+                const replaceStub: sinon.SinonStub = stub(window.location, "replace");
+                (mount(<Login getCurrentUser={getCurrentUser} error={{}} />).instance() as Login).facebookLogin();
                 replaceStub.should.have.been.calledWith(`${ADMIN_END_POINT}/api/auth/facebook?admin=1`);
+                replaceStub.restore();
             });
         });
     });

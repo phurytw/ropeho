@@ -10,10 +10,9 @@ import { shallow } from "enzyme";
 import { stub, spy } from "sinon";
 import * as React from "react";
 import { productions } from "../../../sampleData/testDb";
-import { ProductionIndexState } from "../../modules/productionIndex";
 import * as productionIndexModule from "../../modules/productionIndex";
 import { IStore, default as mockStore } from "redux-mock-store";
-import { RopehoAdminState, initialState } from "../../reducer";
+import { RopehoAdminState, default as rootReducer } from "../../reducer";
 import * as selectors from "../../selectors";
 import { middlewares } from "../../store";
 import hook from "../../helpers/cssModulesHook";
@@ -23,6 +22,7 @@ import { ProductionIndex, ProductionIndexProps, mapStateToProps, mapDispatchToPr
 import ProductionNew from "../ProductionNew";
 import { Tabs, Tab } from "react-toolbox";
 import PreviewCard from "../PreviewCard";
+import { fromJS } from "immutable";
 should();
 use(sinonChai);
 use(chaiEnzyme);
@@ -37,7 +37,7 @@ describe("Production Index component", () => {
         }))
     };
     before(() => {
-        store = mockStore<RopehoAdminState>(middlewares())(initialState);
+        store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
         dispatchStub = stub(store, "dispatch");
     });
     afterEach(() => store.clearActions());
@@ -59,7 +59,7 @@ describe("Production Index component", () => {
             const fetchSpy: sinon.SinonSpy = spy(selectors, "getProductions");
             mapStateToProps({
                 ...store.getState(),
-                productionIndex: new ProductionIndexState({
+                productionIndex: fromJS({
                     productions
                 })
             }).productions.should.deep.equal(productions);

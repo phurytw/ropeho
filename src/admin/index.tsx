@@ -34,7 +34,7 @@ const render: (routes: RouteConfig[]) => void = (routes: RouteConfig[]) => {
 render(App);
 
 // enable client side loading
-setRendered(false);
+store.dispatch(setRendered(false));
 
 // hot reloading
 if (module.hot) {

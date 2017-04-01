@@ -1,0 +1,60 @@
+:root {
+    --length: 10px;
+    --border: 1px;
+}
+
+.pointer {
+    position: absolute;
+    top: calc(var(--length) * -1);
+    left: calc(var(--length) * -1);
+}
+.pointer > * {
+    animation: blink 2s infinite;
+}
+.pointer > *:nth-child(1) {
+    position: absolute;
+    width: var(--length);
+    height: var(--length);
+    top: 0;
+    left: 0;
+    border-bottom: var(--border) solid black;
+    border-right: var(--border) solid black;
+}
+.pointer > *:nth-child(2) {
+    position: absolute;
+    width: var(--length);
+    height: var(--length);
+    top: 0;
+    left: var(--length);
+    border-left: var(--border) solid black;
+    border-bottom: var(--border) solid black;
+}
+.pointer > *:nth-child(3) {
+    position: absolute;
+    width: var(--length);
+    height: var(--length);
+    top: var(--length);
+    left: 0;
+    border-top: var(--border) solid black;
+    border-right: var(--border) solid black;
+}
+.pointer > *:nth-child(4) {
+    position: absolute;
+    width: var(--length);
+    height: var(--length);
+    top: var(--length);
+    left: var(--length);
+    border-top: var(--border) solid black;
+    border-left: var(--border) solid black;
+}
+@keyframes blink {
+    0% {
+        border-color: black;
+    }
+    50% {
+        border-color: white;
+    }
+    100% {
+        border-color: black;
+    }
+}

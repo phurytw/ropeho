@@ -87,24 +87,6 @@ const [productionA, productionB, productionC]: Production[] = [
                     preview: "",
                     fileSize: 0,
                     zoom: 0
-                }, {
-                    _id: v4(),
-                    src: "proda1_1_src",
-                    fallback: "",
-                    posX: 0,
-                    posY: 0,
-                    preview: "",
-                    fileSize: 0,
-                    zoom: 0
-                }, {
-                    _id: v4(),
-                    src: "proda1_2_src",
-                    fallback: "",
-                    posX: 0,
-                    posY: 0,
-                    preview: "",
-                    fileSize: 0,
-                    zoom: 0
                 }],
                 state: MediaPermissions.Public,
                 delay: 0,

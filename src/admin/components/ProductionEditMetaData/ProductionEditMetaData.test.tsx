@@ -19,7 +19,8 @@ describe("Production Edit Metadata component", () => {
     const production: Ropeho.Models.Production = {
         description: "desc",
         name: "name",
-        state: 0
+        state: 0,
+        _id: "id"
     };
     const setProductionSpy: sinon.SinonSpy = spy();
     const props: ProductionEditMetaDataProps = {
@@ -45,5 +46,35 @@ describe("Production Edit Metadata component", () => {
         input.should.have.lengthOf(1);
         input.prop("source").should.have.lengthOf(3);
         input.prop("onChange").should.equal((wrapper.instance() as ProductionEditMetaData).setMediaPermissions);
+    });
+    it("Should set the production with the updated name", () => {
+        const wrapper: ShallowWrapper<ProductionEditMetaDataProps, {}> = shallow(<ProductionEditMetaData {...props} />);
+        const instance: ProductionEditMetaData = wrapper.instance() as ProductionEditMetaData;
+        const name: string = "newName";
+        instance.setName(name);
+        setProductionSpy.should.have.been.calledWith({
+            ...production,
+            name
+        });
+    });
+    it("Should set the production with the updated description", () => {
+        const wrapper: ShallowWrapper<ProductionEditMetaDataProps, {}> = shallow(<ProductionEditMetaData {...props} />);
+        const instance: ProductionEditMetaData = wrapper.instance() as ProductionEditMetaData;
+        const description: string = "newDescription";
+        instance.setDescription(description);
+        setProductionSpy.should.have.been.calledWith({
+            ...production,
+            description
+        });
+    });
+    it("Should set the production with the updated media permissions", () => {
+        const wrapper: ShallowWrapper<ProductionEditMetaDataProps, {}> = shallow(<ProductionEditMetaData {...props} />);
+        const instance: ProductionEditMetaData = wrapper.instance() as ProductionEditMetaData;
+        const state: number = 1;
+        instance.setMediaPermissions(state);
+        setProductionSpy.should.have.been.calledWith({
+            ...production,
+            state
+        });
     });
 });

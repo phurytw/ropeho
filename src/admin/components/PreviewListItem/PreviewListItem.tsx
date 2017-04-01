@@ -9,22 +9,16 @@ import { ListItem } from "react-toolbox";
 export interface PreviewListItemProps {
     src?: string;
     name?: string;
-    href?: string;
+    onClick?: () => any;
 }
 
 export class PreviewListItem extends React.Component<PreviewListItemProps, {}> {
     constructor(props: PreviewListItemProps) {
         super(props);
     }
-    goToHref: () => void = (): void => {
-        const { href }: PreviewListItemProps = this.props;
-        if (href) {
-            window.location.assign(href);
-        }
-    }
     render(): JSX.Element {
-        const { href, name, src }: PreviewListItemProps = this.props;
-        return <ListItem style={{ cursor: href ? "pointer" : "initial" }} onClick={this.goToHref}>
+        const { onClick, name, src }: PreviewListItemProps = this.props;
+        return <ListItem style={{ cursor: onClick ? "pointer" : "initial" }} onClick={onClick}>
             <img src={src} alt={name} />
             {name}
         </ListItem>;

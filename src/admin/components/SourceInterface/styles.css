@@ -1,0 +1,22 @@
+:root {
+    --size-xs: 80px;
+}
+
+.container {
+    width: var(--size-xs);
+}
+
+.preview {
+    display: flex;
+    align-items: center;
+    border: 4px dashed black;
+    border-radius: 4px;
+    width: var(--size-xs);
+    height: var(--size-xs);
+}
+
+.preview > p {
+    width: 100%;
+    text-align: center;
+    font-size: 3rem;
+}

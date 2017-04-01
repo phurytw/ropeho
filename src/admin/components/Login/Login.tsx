@@ -14,6 +14,7 @@ import { Input, Button, Card, CardTitle, CardText } from "react-toolbox";
 import { container, errorBox, element, logo as logoStyles } from "./container.css";
 import { isEmail } from "validator";
 import { logo } from "../../assets";
+import { PartialRouteComponentProps } from "react-router-dom";
 import { Roles, ErrorCodes } from "../../../enum";
 import { ADMIN_END_POINT } from "../../helpers/resolveEndPoint";
 import * as facebookButtonStyles from "./facebook.css";
@@ -33,7 +34,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LoginProps
         setError: (error: Ropeho.IErrorResponse) => dispatch<ErrorActions.SetError, {}>(setError(error))
     });
 
-export interface LoginProps {
+export interface LoginProps extends PartialRouteComponentProps<void> {
     currentUser?: Ropeho.Models.User;
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;
@@ -85,7 +86,7 @@ export class Login extends React.Component<LoginProps, LoginState> {
         }
     }
     logout: () => Promise<Actions.SetCurrentUser> = (): Promise<Actions.SetCurrentUser> => this.props.logout();
-    continueToDashboard: () => void = (): void => window.location.replace("/");
+    continueToDashboard: () => void = (): void => this.props.history.replace("/");
     setEmail: (email: string) => void = (email: string): void => {
         this.email = email;
     }
@@ -104,6 +105,13 @@ export class Login extends React.Component<LoginProps, LoginState> {
                     userMessage: "Cet utilisateur n'est pas autorisé à accéder à cette interface"
                 });
             }
+        } else {
+            this.props.setError({
+                developerMessage: "Credentials do not match any user",
+                errorCode: ErrorCodes.NotFound,
+                status: 400,
+                userMessage: "L'email ou le mot de passe est incorrect"
+            });
         }
     }
     facebookLogin: () => void = (): void => window.location.replace(`${ADMIN_END_POINT}/api/auth/facebook?admin=1`);

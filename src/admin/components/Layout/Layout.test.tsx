@@ -10,7 +10,7 @@ import * as chaiEnzyme from "chai-enzyme";
 import { stub, spy } from "sinon";
 import { shallow, ShallowWrapper } from "enzyme";
 import hook from "../../helpers/cssModulesHook";
-import { RopehoAdminState, initialState } from "../../reducer";
+import { RopehoAdminState, default as rootReducer } from "../../reducer";
 import * as selectors from "../../selectors";
 import * as sessionModule from "../../modules/session";
 import { IStore, default as mockStore } from "redux-mock-store";
@@ -37,24 +37,42 @@ describe("Layout component", () => {
         currentUser: user,
         route: {
             routes: []
-        }
+        },
+        history: {
+            replace: () => ({})
+        } as any
     };
     before(() => {
-        store = mockStore<RopehoAdminState>(middlewares())(initialState);
+        store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
         dispatchStub = stub(store, "dispatch");
     });
     describe("Element", () => {
         describe("Navigation links", () => {
-            it("Should have a navbar with a link to the production index", () =>
-                shallow(<Layout {...props} />).find(AppBar).find(Link).find({ href: "/productions" }).should.have.lengthOf(1));
-            it("Should have a navbar with a link to the category index", () =>
-                shallow(<Layout {...props} />).find(AppBar).find(Link).find({ href: "/categories" }).should.have.lengthOf(1));
-            it("Should have a navbar with a link to the presentation index", () =>
-                shallow(<Layout {...props} />).find(AppBar).find(Link).find({ href: "/presentations" }).should.have.lengthOf(1));
-            it("Should have a navbar with a link to the user index", () =>
-                shallow(<Layout {...props} />).find(AppBar).find(Link).find({ href: "/users" }).should.have.lengthOf(1));
-            it("Should have a navbar with a link to the task manager route", () =>
-                shallow(<Layout {...props} />).find(AppBar).find(Link).find({ href: "/taskmanager" }).should.have.lengthOf(1));
+            it("Should have a navbar with a link to the production index", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<Layout {...props} />);
+                const instance: Layout = wrapper.instance() as Layout;
+                wrapper.find(AppBar).find(Link).find({ onClick: instance.goToProductions }).should.have.lengthOf(1);
+            });
+            it("Should have a navbar with a link to the category index", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<Layout {...props} />);
+                const instance: Layout = wrapper.instance() as Layout;
+                wrapper.find(AppBar).find(Link).find({ onClick: instance.goToCategories }).should.have.lengthOf(1);
+            });
+            it("Should have a navbar with a link to the presentation index", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<Layout {...props} />);
+                const instance: Layout = wrapper.instance() as Layout;
+                wrapper.find(AppBar).find(Link).find({ onClick: instance.goToPresentations }).should.have.lengthOf(1);
+            });
+            it("Should have a navbar with a link to the user index", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<Layout {...props} />);
+                const instance: Layout = wrapper.instance() as Layout;
+                wrapper.find(AppBar).find(Link).find({ onClick: instance.goToUsers }).should.have.lengthOf(1);
+            });
+            it("Should have a navbar with a link to the task manager route", () => {
+                const wrapper: ShallowWrapper<any, {}> = shallow(<Layout {...props} />);
+                const instance: Layout = wrapper.instance() as Layout;
+                wrapper.find(AppBar).find(Link).find({ onClick: instance.goToTasks }).should.have.lengthOf(1);
+            });
             it("Should have a navbar with a link to a disconnect button", () =>
                 shallow(<Layout {...props} />).find(AppBar).find(Link).findWhere((link: ShallowWrapper<any, {}>) => {
                     const props: any = link.props();
@@ -67,35 +85,34 @@ describe("Layout component", () => {
         });
     });
     describe("Methods", () => {
-        let windowLocationAssignStub: sinon.SinonStub;
-        before(() => windowLocationAssignStub = stub(window.location, "assign"));
-        afterEach(() => windowLocationAssignStub.reset());
-        after(() => windowLocationAssignStub.restore());
+        let pushStub: sinon.SinonStub;
+        before(() => pushStub = stub());
+        afterEach(() => pushStub.reset());
         describe("Redirection methods", () => {
             it("Should redirect to productions", () => {
-                (shallow(<Layout {...props} />).instance() as Layout).goToProductions();
-                windowLocationAssignStub.should.have.been.calledOnce;
-                windowLocationAssignStub.should.have.been.calledWith("/productions");
+                (shallow(<Layout {...props} history={({ push: pushStub } as any)} />).instance() as Layout).goToProductions();
+                pushStub.should.have.been.calledOnce;
+                pushStub.should.have.been.calledWith("/productions");
             });
             it("Should redirect to categories", () => {
-                (shallow(<Layout {...props} />).instance() as Layout).goToCategories();
-                windowLocationAssignStub.should.have.been.calledOnce;
-                windowLocationAssignStub.should.have.been.calledWith("/categories");
+                (shallow(<Layout {...props} history={({ push: pushStub } as any)} />).instance() as Layout).goToCategories();
+                pushStub.should.have.been.calledOnce;
+                pushStub.should.have.been.calledWith("/categories");
             });
             it("Should redirect to users", () => {
-                (shallow(<Layout {...props} />).instance() as Layout).goToUsers();
-                windowLocationAssignStub.should.have.been.calledOnce;
-                windowLocationAssignStub.should.have.been.calledWith("/users");
+                (shallow(<Layout {...props} history={({ push: pushStub } as any)} />).instance() as Layout).goToUsers();
+                pushStub.should.have.been.calledOnce;
+                pushStub.should.have.been.calledWith("/users");
             });
             it("Should redirect to presentations", () => {
-                (shallow(<Layout {...props} />).instance() as Layout).goToPresentations();
-                windowLocationAssignStub.should.have.been.calledOnce;
-                windowLocationAssignStub.should.have.been.calledWith("/presentations");
+                (shallow(<Layout {...props} history={({ push: pushStub } as any)} />).instance() as Layout).goToPresentations();
+                pushStub.should.have.been.calledOnce;
+                pushStub.should.have.been.calledWith("/presentations");
             });
             it("Should redirect to task manager", () => {
-                (shallow(<Layout {...props} />).instance() as Layout).goToTasks();
-                windowLocationAssignStub.should.have.been.calledOnce;
-                windowLocationAssignStub.should.have.been.calledWith("/taskmanager");
+                (shallow(<Layout {...props} history={({ push: pushStub } as any)} />).instance() as Layout).goToTasks();
+                pushStub.should.have.been.calledOnce;
+                pushStub.should.have.been.calledWith("/taskmanager");
             });
         });
         it("Should log the user out", () => {

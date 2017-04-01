@@ -10,6 +10,7 @@ import { Dispatch } from "redux";
 import { getProductions, getHasRendered } from "../../selectors";
 import { fetchProductions, createProduction, Actions } from "../../modules/productionIndex";
 import { Tabs, Tab } from "react-toolbox";
+import { PartialRouteComponentProps } from "react-router-dom";
 import ProductionNew from "../ProductionNew";
 import { Location } from "history";
 import { map } from "lodash";
@@ -30,7 +31,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps
         createProduction: (production: Production) => dispatch<Promise<Actions.SetProductions>, {}>(createProduction(production))
     });
 
-export interface ProductionIndexProps {
+export interface ProductionIndexProps extends PartialRouteComponentProps<void> {
     hasRendered?: boolean;
     productions?: Production[];
     fetchProductions?: () => Promise<Actions.SetProductions>;
@@ -62,15 +63,19 @@ export class ProductionIndex extends React.Component<ProductionIndexProps, Produ
             fetchProductions();
         }
     }
+    goToProduction(production: Production): void {
+        this.props.history.push(`/productions/${production._id}`);
+    }
     static fetchData(dispatch: Dispatch<RopehoAdminState>): Promise<Actions.SetProductions> {
         return dispatch(fetchProductions(productionFields));
     }
     render(): JSX.Element {
+        // tslint:disable:react-this-binding-issue
         const { productions, createProduction }: ProductionIndexProps = this.props;
         return <nav>
             <Tabs index={this.state.index} onChange={this.handleTabChange}>
                 <Tab label="Parcourir">
-                    {map<Production, JSX.Element>(productions, (p: Production) => <PreviewCard href={`/productions/${p._id}`} name={p.name} key={p._id} />)}
+                    {map<Production, JSX.Element>(productions, (p: Production) => <PreviewCard onClick={this.goToProduction.bind(this, p)} name={p.name} key={p._id} />)}
                 </Tab>
                 <Tab label="Créer">
                     <ProductionNew createProduction={createProduction} />

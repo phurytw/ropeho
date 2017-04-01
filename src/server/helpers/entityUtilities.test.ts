@@ -306,7 +306,7 @@ describe("Entity utilities", () => {
         });
         it("Should return all sources as an object with 3 IDs", () => {
             const stos: SourceTargetOptions[] = getAllSourceTargetOptionsFromEntity(productionA);
-            stos.should.have.lengthOf(9);
+            stos.should.have.lengthOf(7);
             forEach<SourceTargetOptions>(stos, (sto: SourceTargetOptions) => {
                 const { mainId, mediaId, sourceId }: SourceTargetOptions = sto;
                 mainId.should.be.ok;

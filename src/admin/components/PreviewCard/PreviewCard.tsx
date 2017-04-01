@@ -9,22 +9,16 @@ import { Card, CardTitle, CardMedia } from "react-toolbox";
 export interface PreviewCardProps {
     src?: string;
     name?: string;
-    href?: string;
+    onClick?: () => any;
 }
 
 export class PreviewCard extends React.Component<PreviewCardProps, {}> {
     constructor(props: PreviewCardProps) {
         super(props);
     }
-    goToHref: () => void = (): void => {
-        const { href }: PreviewCardProps = this.props;
-        if (href) {
-            window.location.assign(href);
-        }
-    }
     render(): JSX.Element {
-        const { href, name, src }: PreviewCardProps = this.props;
-        return <Card style={{ cursor: href ? "pointer" : "initial" }} onClick={this.goToHref}>
+        const { onClick, name, src }: PreviewCardProps = this.props;
+        return <Card style={{ cursor: onClick ? "pointer" : "initial" }} onClick={onClick}>
             <CardTitle
                 title={name}
             />
