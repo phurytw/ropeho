@@ -5,9 +5,9 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { ErrorState, setError, ActionTypes, default as reducer } from "./error";
+import { ErrorState, defaultState, setError, ActionTypes, default as reducer } from "./error";
 import { middlewares } from "../store";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 import "isomorphic-fetch";
 should();
 
@@ -19,7 +19,7 @@ describe("Error handler module", () => {
         userMessage: "A nice error"
     };
     let store: IStore<ErrorState>;
-    before(() => store = mockStore<ErrorState>(middlewares())(new ErrorState()));
+    before(() => store = mockStore<ErrorState>(middlewares())(defaultState));
     afterEach(() => store.clearActions());
     describe("Error action", () => {
         it("Should dispatch an error", () => {
@@ -31,10 +31,10 @@ describe("Error handler module", () => {
     });
     describe("Error reducer", () => {
         it("Should create a new state with the new error", () => {
-            is(reducer(new ErrorState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_ERROR,
                 error
-            }), new ErrorState({
+            }), fromJS({
                 error
             }));
         });

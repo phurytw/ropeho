@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS, List } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { Category } from "../models";
 
-import Models = Ropeho.Models;
+import Category = Ropeho.Models.Category;
 
 // state
-export interface ICategoryIndexState {
-    categories: Models.Category[];
-}
-const defaultState: ICategoryIndexState = {
-    categories: []
-};
-export class CategoryIndexState extends Record(defaultState, "CategoryIndexState") implements ICategoryIndexState {
-    public categories: Category[];
-    constructor(init?: ICategoryIndexState) {
-        super(init);
-    }
-}
+export type CategoryIndexState = Map<string, List<any>>;
+export const defaultState: CategoryIndexState = Map<string, List<any>>({
+    categories: Map<string, any>()
+});
 
 // types
 export namespace Actions {
-    export type SetCategories = { categories: Models.Category[] } & Action;
+    export type SetCategories = { categories: Category[] } & Action;
 }
 
 // actions types
@@ -39,7 +30,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchCategories: (fields?: string[]) => ThunkAction<Promise<Actions.SetCategories>, CategoryIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetCategories>, CategoryIndexState, {}> => {
-        return fetchThunk<Actions.SetCategories, Models.Category[], CategoryIndexState>(`/api/categories${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryIndexState>, categories: Models.Category[]) => dispatch<Actions.SetCategories>({
+        return fetchThunk<Actions.SetCategories, Category[], CategoryIndexState>(`/api/categories${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryIndexState>, categories: Category[]) => dispatch<Actions.SetCategories>({
             type: ActionTypes.SET_CATEGORIES,
             categories
         }));
@@ -47,13 +38,14 @@ export const fetchCategories: (fields?: string[]) => ThunkAction<Promise<Actions
 
 // reducer
 const reducer: (state: CategoryIndexState, action: any & Action) => CategoryIndexState =
-    (state: CategoryIndexState = new CategoryIndexState(), action: Action): CategoryIndexState => {
+    (state: CategoryIndexState = defaultState, action: Action): CategoryIndexState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_CATEGORIES:
-                return new CategoryIndexState({
-                    ...state,
-                    categories: (action as Actions.SetCategories).categories
-                });
+                const categories: Category[] = (action as Actions.SetCategories).categories;
+                return state.set("categories", fromJS(categories));
             default:
                 return state;
         }

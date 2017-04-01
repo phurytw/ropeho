@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { UserEditState, fetchUserById, updateUser, deleteUser, ActionTypes, default as reducer } from "./userEdit";
+import { UserEditState, defaultState, fetchUserById, updateUser, deleteUser, ActionTypes, default as reducer } from "./userEdit";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,7 +13,7 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -33,7 +33,7 @@ describe("User edit module", () => {
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new UserEditState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -113,10 +113,10 @@ describe("User edit module", () => {
     });
     describe("Reducer", () => {
         it("Should set users with an immutable state", () => {
-            is(reducer(new UserEditState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_USER,
                 user
-            }), new UserEditState({
+            }), fromJS({
                 user
             })).should.be.true;
         });

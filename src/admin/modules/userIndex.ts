@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, List, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { User } from "../models";
 
-import Models = Ropeho.Models;
+import User = Ropeho.Models.User;
 
 // state
-export interface IUserIndexState {
-    users: Models.User[];
-}
-const defaultState: IUserIndexState = {
-    users: []
-};
-export class UserIndexState extends Record(defaultState, "UserIndexState") implements IUserIndexState {
-    public users: User[];
-    constructor(init?: IUserIndexState) {
-        super(init);
-    }
-}
+export type UserIndexState = Map<string, List<any>>;
+export const defaultState: UserIndexState = Map<string, List<any>>({
+    users: List<any>()
+});
 
 // types
 export namespace Actions {
-    export type SetUsers = { users: Models.User[] } & Action;
+    export type SetUsers = { users: User[] } & Action;
 }
 
 // actions types
@@ -39,7 +30,7 @@ export namespace ActionTypes {
 // action creators
 export const fetchUsers: (fields?: string[]) => ThunkAction<Promise<Actions.SetUsers>, UserIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetUsers>, UserIndexState, {}> => {
-        return fetchThunk<Actions.SetUsers, Models.User[], UserIndexState>(`/api/users${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserIndexState>, users: Models.User[]) => dispatch<Actions.SetUsers>({
+        return fetchThunk<Actions.SetUsers, User[], UserIndexState>(`/api/users${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserIndexState>, users: User[]) => dispatch<Actions.SetUsers>({
             type: ActionTypes.SET_USERS,
             users
         }));
@@ -47,13 +38,14 @@ export const fetchUsers: (fields?: string[]) => ThunkAction<Promise<Actions.SetU
 
 // reducer
 const reducer: (state: UserIndexState, action: any & Action) => UserIndexState =
-    (state: UserIndexState = new UserIndexState(), action: Action): UserIndexState => {
+    (state: UserIndexState = defaultState, action: Action): UserIndexState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_USERS:
-                return new UserIndexState({
-                    ...state,
-                    users: (action as Actions.SetUsers).users
-                });
+                const users: User[] = (action as Actions.SetUsers).users;
+                return state.set("users", fromJS(users));
             default:
                 return state;
         }

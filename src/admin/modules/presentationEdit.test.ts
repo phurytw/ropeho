@@ -5,12 +5,12 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { PresentationEditState, setPresentation, ActionTypes, default as reducer } from "./presentationEdit";
+import { PresentationEditState, defaultState, setPresentation, ActionTypes, default as reducer } from "./presentationEdit";
 import { middlewares } from "../store";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -18,7 +18,7 @@ import Models = Ropeho.Models;
 describe("Presentation edit module", () => {
     let store: IStore<PresentationEditState>;
     const presentation: Models.Media = productions[0].banner;
-    before(() => store = mockStore<PresentationEditState>(middlewares())(new PresentationEditState()));
+    before(() => store = mockStore<PresentationEditState>(middlewares())(defaultState));
     afterEach(() => store.clearActions());
     describe("Actions", () => {
         it("Should dispatch a presentation", () => {
@@ -31,10 +31,10 @@ describe("Presentation edit module", () => {
     });
     describe("Reducer", () => {
         it("Should set the state with an immutable presentation", () => {
-            is(reducer(new PresentationEditState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_PRESENTATION,
                 presentation
-            }), new PresentationEditState({
+            }), fromJS({
                 presentation
             })).should.be.true;
         });

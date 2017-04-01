@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { Production } from "../models";
 
-import Models = Ropeho.Models;
+import Production = Ropeho.Models.Production;
 
 // state
-export interface IProductionEditState {
-    production: Models.Production;
-}
-const defaultState: IProductionEditState = {
+export type ProductionEditState = Map<string, Map<string, any>>;
+export const defaultState: ProductionEditState = Map<string, any>({
     production: undefined
-};
-export class ProductionEditState extends Record(defaultState, "ProductionEditState") implements IProductionEditState {
-    public production: Production;
-    constructor(init?: IProductionEditState) {
-        super(init);
-    }
-}
+});
 
 // types
 export namespace Actions {
-    export type SetProduction = { production: Models.Production } & Action;
+    export type SetProduction = { production: Production } & Action;
 }
 
 // actions types
@@ -37,8 +28,8 @@ export namespace ActionTypes {
 }
 
 // action creators
-export const setProduction: (production: Models.Production) => ThunkAction<Actions.SetProduction, ProductionEditState, {}> =
-    (production: Models.Production): ThunkAction<Actions.SetProduction, ProductionEditState, {}> => {
+export const setProduction: (production: Production) => ThunkAction<Actions.SetProduction, ProductionEditState, {}> =
+    (production: Production): ThunkAction<Actions.SetProduction, ProductionEditState, {}> => {
         return (dispatch: Dispatch<ProductionEditState>) => dispatch<Actions.SetProduction>({
             type: ActionTypes.SET_PRODUCTION,
             production
@@ -46,14 +37,14 @@ export const setProduction: (production: Models.Production) => ThunkAction<Actio
     };
 export const fetchProductionById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
-        return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(`/api/productions/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
+        return fetchThunk<Actions.SetProduction, Production[], ProductionEditState>(`/api/productions/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionEditState>, production: Production) => dispatch<Actions.SetProduction>({
             type: ActionTypes.SET_PRODUCTION,
             production
         }));
     };
-export const updateProduction: (production: Models.Production) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
-    (production: Models.Production): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
-        return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(
+export const updateProduction: (production: Production) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
+    (production: Production): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
+        return fetchThunk<Actions.SetProduction, Production[], ProductionEditState>(
             `/api/productions/${production._id}`,
             {
                 body: JSON.stringify(production),
@@ -62,16 +53,16 @@ export const updateProduction: (production: Models.Production) => ThunkAction<Pr
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
+            (dispatch: Dispatch<ProductionEditState>, production: Production) => dispatch<Actions.SetProduction>({
                 type: ActionTypes.SET_PRODUCTION,
                 production
             }));
     };
 export const deleteProduction: (productionId: string) => ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> =
     (productionId: string): ThunkAction<Promise<Actions.SetProduction>, ProductionEditState, {}> => {
-        return fetchThunk<Actions.SetProduction, Models.Production[], ProductionEditState>(
+        return fetchThunk<Actions.SetProduction, Production[], ProductionEditState>(
             `/api/productions/${productionId}`, { method: "DELETE", },
-            (dispatch: Dispatch<ProductionEditState>, production: Models.Production) => dispatch<Actions.SetProduction>({
+            (dispatch: Dispatch<ProductionEditState>, production: Production) => dispatch<Actions.SetProduction>({
                 type: ActionTypes.SET_PRODUCTION,
                 production: undefined
             }));
@@ -79,13 +70,14 @@ export const deleteProduction: (productionId: string) => ThunkAction<Promise<Act
 
 // reducer
 const reducer: (state: ProductionEditState, action: any & Action) => ProductionEditState =
-    (state: ProductionEditState = new ProductionEditState(), action: Action): ProductionEditState => {
+    (state: ProductionEditState = defaultState, action: Action): ProductionEditState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_PRODUCTION:
-                return new ProductionEditState({
-                    ...state,
-                    production: (action as Actions.SetProduction).production
-                });
+                const production: Production = (action as Actions.SetProduction).production;
+                return state.set("production", fromJS(production));
             default:
                 return state;
         }

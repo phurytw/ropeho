@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, List, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { Production } from "../models";
 
-import Models = Ropeho.Models;
+import Production = Ropeho.Models.Production;
 
-// state
-export interface IProductionIndexState {
-    productions: Models.Production[];
-}
-const defaultState: IProductionIndexState = {
-    productions: []
-};
-export class ProductionIndexState extends Record(defaultState, "ProductionIndexState") implements IProductionIndexState {
-    public productions: Production[];
-    constructor(init?: IProductionIndexState) {
-        super(init);
-    }
-}
+// initial state
+export type ProductionIndexState = Map<string, List<any>>;
+export const defaultState: ProductionIndexState = Map<string, List<any>>({
+    productions: List<any>()
+});
 
 // types
 export namespace Actions {
-    export type SetProductions = { productions: Models.Production[] } & Action;
+    export type SetProductions = { productions: Production[] } & Action;
 }
 
 // actions types
@@ -39,14 +30,14 @@ export namespace ActionTypes {
 // action creators
 export const fetchProductions: (fields?: string[]) => ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> =
     (fields?: string[]): ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> => {
-        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`/api/productions${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionIndexState>, productions: Models.Production[]) => dispatch<Actions.SetProductions>({
+        return fetchThunk<Actions.SetProductions, Production[], ProductionIndexState>(`/api/productions${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ProductionIndexState>, productions: Production[]) => dispatch<Actions.SetProductions>({
             type: ActionTypes.SET_PRODUCTIONS,
             productions
         }));
     };
-export const createProduction: (production: Models.Production) => ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> =
-    (production: Models.Production): ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> => {
-        return fetchThunk<Actions.SetProductions, Models.Production[], ProductionIndexState>(`/api/productions`,
+export const createProduction: (production: Production) => ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> =
+    (production: Production): ThunkAction<Promise<Actions.SetProductions>, ProductionIndexState, {}> => {
+        return fetchThunk<Actions.SetProductions, Production[], ProductionIndexState>(`/api/productions`,
             {
                 body: JSON.stringify(production),
                 method: "POST",
@@ -54,21 +45,22 @@ export const createProduction: (production: Models.Production) => ThunkAction<Pr
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<ProductionIndexState>, production: Models.Production, getState: () => ProductionIndexState) => dispatch<Actions.SetProductions>({
+            (dispatch: Dispatch<ProductionIndexState>, production: Production, getState: () => ProductionIndexState) => dispatch<Actions.SetProductions>({
                 type: ActionTypes.SET_PRODUCTIONS,
-                productions: [...getState().productions, production]
+                productions: [...getState().get("productions").toJS(), production]
             }));
     };
 
 // reducer
 const reducer: (state: ProductionIndexState, action: any & Action) => ProductionIndexState =
-    (state: ProductionIndexState = new ProductionIndexState(), action: Action): ProductionIndexState => {
+    (state: ProductionIndexState = defaultState, action: Action): ProductionIndexState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_PRODUCTIONS:
-                return new ProductionIndexState({
-                    ...state,
-                    productions: (action as Actions.SetProductions).productions
-                });
+                const productions: Production[] = (action as Actions.SetProductions).productions;
+                return state.set("productions", fromJS(productions));
             default:
                 return state;
         }

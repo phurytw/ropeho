@@ -4,10 +4,10 @@
  */
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
-import { is } from "immutable";
-import { ActionTypes, ITaskManagerState, TaskManagerState, cancelTask, fetchRunning, kickClient, setTransferQueue, startTask, default as reducer } from "./taskManager";
+import { is, fromJS } from "immutable";
+import { ActionTypes, TaskManagerState, cancelTask, fetchRunning, kickClient, startTask, default as reducer } from "./taskManager";
 import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
-import { head, filter } from "lodash";
+import { head } from "lodash";
 import { default as mockStore, IStore } from "redux-mock-store";
 import "isomorphic-fetch";
 import { middlewares } from "../store";
@@ -17,21 +17,20 @@ import { ActionTypes as ErrorTypes } from "./error";
 should();
 
 import SocketClient = Ropeho.Socket.SocketClient;
-import SourceData = Ropeho.Socket.SourceData;
 
 describe("Task manager module", () => {
     let store: IStore<TaskManagerState>;
-    const initialState: ITaskManagerState = {
-        tasks: [{ id: 20 } as Job, { id: 40 } as Job],
-        clients: [{ socket: { id: "client1" } as SocketIO.Socket, state: 0 }, { socket: { id: "client2" } as SocketIO.Socket, state: 0 }]
-    };
+    const initialState: TaskManagerState = fromJS({
+        tasks: { "20": { id: 20 } as Job, "40": { id: 40 } as Job },
+        clients: { "client1": { socket: { id: "client1" } as SocketIO.Socket, state: 0 }, "client2": { socket: { id: "client2" } as SocketIO.Socket, state: 0 } }
+    });
     before(() => {
         store = mockStore<TaskManagerState>(middlewares({
             host: ADMIN_END_POINT,
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new TaskManagerState(initialState));
+        }))(initialState);
     });
     afterEach(() => {
         store.clearActions();
@@ -45,11 +44,13 @@ describe("Task manager module", () => {
                 .get("/api/taskmanager")
                 .reply(200, { tasks, clients });
             await store.dispatch(fetchRunning());
-            head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
-                tasks,
+            store.getActions().should.deep.equal([{
+                type: ActionTypes.SET_CLIENTS,
                 clients
-            });
+            }, {
+                type: ActionTypes.SET_TASKS,
+                tasks
+            }]);
             scope.done();
         });
     });
@@ -64,34 +65,32 @@ describe("Task manager module", () => {
                 .reply(200, { tasks });
             await store.dispatch(fetchRunning(["tasks"]));
             head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
+                type: ActionTypes.SET_TASKS,
                 tasks
             });
             scope.done();
         });
         it("Should start a task and dispatch the updated task list", async () => {
-            const tasks: Job[] = store.getState().tasks;
-            const [task]: Job[] = tasks;
+            const task: Job = store.getState().getIn(["tasks", "20"]).toJS();
             const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .post(`/api/taskmanager/task/${task.id}`)
                 .reply(200, task);
             await store.dispatch(startTask(task.id));
             head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
-                tasks,
+                type: ActionTypes.SET_TASK,
+                task
             });
             scope.done();
         });
         it("Should cancel a task and dispatch the updated task list", async () => {
-            const tasks: Job[] = store.getState().tasks;
-            const [task]: Job[] = tasks;
+            const task: Job = store.getState().getIn(["tasks", "20"]).toJS();
             const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/taskmanager/task/${task.id}`)
                 .reply(200, {});
             await store.dispatch(cancelTask(task.id));
             head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
-                tasks: filter<Job>(tasks, (t: Job) => t.id !== task.id)
+                type: ActionTypes.REMOVE_TASK,
+                taskId: task.id
             });
             scope.done();
         });
@@ -107,108 +106,40 @@ describe("Task manager module", () => {
                 .reply(200, { clients });
             await store.dispatch(fetchRunning(["clients"]));
             head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
+                type: ActionTypes.SET_CLIENTS,
                 clients
             });
             scope.done();
         });
         it("Should disconnect a client and dispatch the updated client list", async () => {
-            const clients: SocketClient[] = store.getState().clients;
-            const [client]: SocketClient[] = clients;
+            const client: SocketClient = store.getState().getIn(["clients", "client1"]).toJS();
             const scope: nock.Scope = nock(ADMIN_END_POINT)
                 .delete(`/api/taskmanager/socket/${client.socket.id}`)
                 .reply(200, {});
             await store.dispatch(kickClient(client.socket.id));
             head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
-                clients: filter<SocketClient>(clients, (c: SocketClient) => c.socket.id !== client.socket.id)
+                type: ActionTypes.REMOVE_CLIENT,
+                clientId: client.socket.id
             });
             scope.done();
-        });
-    });
-    describe("File transfer queue", () => {
-        it("Should set the transfer queue", () => {
-            const transferQueue: SourceData[] = [{
-                data: new ArrayBuffer(100),
-                isUpload: true,
-                target: {
-                    mainId: "p1",
-                    mediaId: "m1",
-                    sourceId: "s1"
-                }
-            }, {
-                data: new ArrayBuffer(100),
-                isUpload: false,
-                target: {
-                    mainId: "p2",
-                    mediaId: "m2",
-                    sourceId: "s2"
-                }
-            }];
-            store.dispatch(setTransferQueue(transferQueue));
-            head(store.getActions()).should.deep.equal({
-                type: ActionTypes.SET_TRANSFER_QUEUE,
-                transferQueue
-            });
         });
     });
     describe("Reducer", () => {
         const tasks: Job[] = [{ id: 30 } as Job];
         const clients: SocketClient[] = [{ socket: { id: "client1" } as SocketIO.Socket, state: 0 }];
         it("Should set the tasks only", () => {
-            is(reducer(new TaskManagerState(initialState), {
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
+            const [task]: Job[] = tasks;
+            is(reducer(initialState, {
+                type: ActionTypes.SET_TASKS,
                 tasks
-            }), new TaskManagerState({
-                ...initialState,
-                tasks
-            })).should.be.true;
+            }), initialState.set("tasks", fromJS({ [task.id]: task }))).should.be.true;
         });
         it("Should set the clients only", () => {
-            is(reducer(new TaskManagerState(initialState), {
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
+            const [client]: SocketClient[] = clients;
+            is(reducer(initialState, {
+                type: ActionTypes.SET_CLIENTS,
                 clients
-            }), new TaskManagerState({
-                ...initialState,
-                clients
-            })).should.be.true;
-        });
-        it("Should set both the tasks and the clients only", () => {
-            is(reducer(new TaskManagerState(initialState), {
-                type: ActionTypes.SET_TASKS_AND_CLIENTS,
-                tasks,
-                clients
-            }), new TaskManagerState({
-                ...initialState,
-                tasks,
-                clients
-            })).should.be.true;
-        });
-        it("Should set the transfer queue", () => {
-            const transferQueue: SourceData[] = [{
-                data: new ArrayBuffer(100),
-                isUpload: true,
-                target: {
-                    mainId: "p1",
-                    mediaId: "m1",
-                    sourceId: "s1"
-                }
-            }, {
-                data: new ArrayBuffer(100),
-                isUpload: false,
-                target: {
-                    mainId: "p2",
-                    mediaId: "m2",
-                    sourceId: "s2"
-                }
-            }];
-            is(reducer(new TaskManagerState(initialState), {
-                type: ActionTypes.SET_TRANSFER_QUEUE,
-                transferQueue
-            }), new TaskManagerState({
-                ...initialState,
-                transferQueue
-            })).should.be.true;
+            }), initialState.set("clients", fromJS({ [client.socket.id]: client }))).should.be.true;
         });
     });
 });

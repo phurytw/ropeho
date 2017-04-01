@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { PresentationContainerIndexState, fetchContainers, ActionTypes, default as reducer } from "./containerIndex";
+import { ContainerIndexState, defaultState, fetchContainers, ActionTypes, default as reducer } from "./containerIndex";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,18 +13,18 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { presentations } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 describe("Presentation index module", () => {
-    let store: IStore<PresentationContainerIndexState>;
+    let store: IStore<ContainerIndexState>;
     before(() => {
-        store = mockStore<PresentationContainerIndexState>(middlewares({
+        store = mockStore<ContainerIndexState>(middlewares({
             host: ADMIN_END_POINT,
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new PresentationContainerIndexState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -62,10 +62,10 @@ describe("Presentation index module", () => {
     });
     describe("Reducer", () => {
         it("Should set presentations with an immutable state", () => {
-            is(reducer(new PresentationContainerIndexState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_CONTAINERS,
                 containers: presentations
-            }), new PresentationContainerIndexState({
+            }), fromJS({
                 containers: presentations
             })).should.be.true;
         });

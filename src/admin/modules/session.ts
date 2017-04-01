@@ -3,31 +3,23 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 /// <reference path="../../test.d.ts" />
-import { User } from "../models";
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { fetchThunk } from "../helpers/fetchUtilities";
 
-import Models = Ropeho.Models;
+import User = Ropeho.Models.User;
+import Production = Ropeho.Models.Production;
 
 // state
-export interface ISessionState {
-    user: Models.User;
-}
-const defaultState: ISessionState = {
-    user: undefined
-};
-export class SessionState extends Record(defaultState, "SessionState") implements ISessionState {
-    public user: User;
-    constructor(init?: ISessionState) {
-        super(init);
-    }
-}
+export type SessionState = Map<string, Map<string, any>>;
+export const defaultState: SessionState = Map<string, Map<string, any>>({
+    user: Map<string, any>()
+});
 
 // types
 export namespace Actions {
-    export type SetCurrentUser = { user: Models.User } & Action;
+    export type SetCurrentUser = { user: User } & Action;
 }
 
 // actions types
@@ -38,7 +30,7 @@ export namespace ActionTypes {
 // action creators
 export const login: (email: string, password: string) => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (email: string, password: string): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth`,
+        return fetchThunk<Actions.SetCurrentUser, Production[], SessionState>(`/api/auth`,
             {
                 body: JSON.stringify({ email, password }),
                 method: "POST",
@@ -46,26 +38,26 @@ export const login: (email: string, password: string) => ThunkAction<Promise<Act
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<SessionState>, user: Models.User) => dispatch<Actions.SetCurrentUser>({
+            (dispatch: Dispatch<SessionState>, user: User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
                 user
             }));
     };
 export const logout: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth/logout`,
+        return fetchThunk<Actions.SetCurrentUser, Production[], SessionState>(`/api/auth/logout`,
             {
                 method: "POST",
             },
-            (dispatch: Dispatch<SessionState>, user: Models.User) => dispatch<Actions.SetCurrentUser>({
+            (dispatch: Dispatch<SessionState>, user: User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
                 user: undefined
             }));
     };
 export const fetchCurrentUser: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Models.Production[], SessionState>(`/api/auth`, { credentials: "include" },
-            (dispatch: Dispatch<SessionState>, user: Models.User) => dispatch<Actions.SetCurrentUser>({
+        return fetchThunk<Actions.SetCurrentUser, Production[], SessionState>(`/api/auth`, { credentials: "include" },
+            (dispatch: Dispatch<SessionState>, user: User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
                 user
             }));
@@ -73,13 +65,14 @@ export const fetchCurrentUser: () => ThunkAction<Promise<Actions.SetCurrentUser>
 
 // reducer
 const reducer: (state: SessionState, action: any & Action) => SessionState =
-    (state: SessionState = new SessionState(), action: Action): SessionState => {
+    (state: SessionState = defaultState, action: Action): SessionState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_CURRENT_USER:
-                return new SessionState({
-                    ...state,
-                    user: (action as Actions.SetCurrentUser).user
-                });
+                const user: User = (action as Actions.SetCurrentUser).user;
+                return state.set("user", fromJS(user));
             default:
                 return state;
         }

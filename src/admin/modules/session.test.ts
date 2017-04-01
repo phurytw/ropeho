@@ -5,14 +5,14 @@
 /// <reference path="../typings.d.ts" />
 import { should } from "chai";
 import { IStore, default as mockStore } from "redux-mock-store";
-import { ActionTypes, SessionState, login, logout, fetchCurrentUser, default as reducer } from "./session";
+import { defaultState, ActionTypes, SessionState, login, logout, fetchCurrentUser, default as reducer } from "./session";
 import { middlewares } from "../store";
 import * as nock from "nock";
 import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { ActionTypes as ErrorTypes } from "./error";
 import { head } from "lodash";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -27,11 +27,11 @@ describe("Session module", () => {
         userMessage: "A nice error"
     };
     before(() => store = mockStore<SessionState>(middlewares({
-            host: ADMIN_END_POINT,
-            error: {
-                type: ErrorTypes.SET_ERROR
-            }
-        }))(new SessionState()));
+        host: ADMIN_END_POINT,
+        error: {
+            type: ErrorTypes.SET_ERROR
+        }
+    }))(defaultState));
     afterEach(() => store.clearActions());
     describe("Logging in", () => {
         it("Should receive a user", async () => {
@@ -113,10 +113,10 @@ describe("Session module", () => {
     });
     describe("Reducer", () => {
         it("Should store an immutable user in the state", () => {
-            is(reducer(new SessionState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_CURRENT_USER,
                 user
-            }), new SessionState({
+            }), fromJS({
                 user
             }));
         });

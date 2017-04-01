@@ -41,7 +41,6 @@ app.all("/api*", (req: Request, res: Response, next: NextFunction) => {
 // server side rendering
 app.get("*", (req: Request, res: Response) => {
     try {
-
         const store: Store<RopehoAdminState> = createStore(undefined, {
             host: API_END_POINT,
             init: {

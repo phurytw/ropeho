@@ -9,6 +9,8 @@ import { SessionState, default as session } from "./modules/session";
 import { ErrorState, default as error } from "./modules/error";
 import { ProductionIndexState, default as productionIndex } from "./modules/productionIndex";
 import { ProductionEditState, default as productionEdit } from "./modules/productionEdit";
+import { MediaEditState, default as mediaEdit } from "./modules/mediaEdit";
+import { SourceEditState, default as sourceEdit } from "./modules/sourceEdit";
 
 export interface RopehoAdminState {
     rendering?: RenderingState;
@@ -16,20 +18,16 @@ export interface RopehoAdminState {
     error?: ErrorState;
     productionIndex?: ProductionIndexState;
     productionEdit?: ProductionEditState;
+    mediaEdit?: MediaEditState;
+    sourceEdit?: SourceEditState;
 }
-
-export const initialState: RopehoAdminState = {
-    rendering: new RenderingState(),
-    session: new SessionState(),
-    error: new ErrorState(),
-    productionIndex: new ProductionIndexState(),
-    productionEdit: new ProductionEditState()
-};
 
 export default combineReducers<RopehoAdminState>({
     rendering,
     session,
     error,
     productionIndex,
-    productionEdit
+    productionEdit,
+    mediaEdit,
+    sourceEdit
 });

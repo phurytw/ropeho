@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { Category } from "../models";
+import { Map, fromJS } from "immutable";
 
-import Models = Ropeho.Models;
+import Category = Ropeho.Models.Category;
 
 // state
-export interface ICategoryEditState {
-    category: Models.Category;
-}
-const defaultState: ICategoryEditState = {
-    category: undefined
-};
-export class CategoryEditState extends Record(defaultState, "CategoryEditState") implements ICategoryEditState {
-    public category: Category;
-    constructor(init?: ICategoryEditState) {
-        super(init);
-    }
-}
+export type CategoryEditState = Map<string, Map<string, any>>;
+export const defaultState: CategoryEditState = Map<string, Map<string, any>>({
+    category: Map<string, any>()
+});
 
 // types
 export namespace Actions {
-    export type SetCategory = { category: Models.Category } & Action;
+    export type SetCategory = { category: Category } & Action;
 }
 
 // actions types
@@ -39,14 +30,14 @@ export namespace ActionTypes {
 // action creators
 export const fetchCategoryById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
-        return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(`/api/categories/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
+        return fetchThunk<Actions.SetCategory, Category[], CategoryEditState>(`/api/categories/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<CategoryEditState>, category: Category) => dispatch<Actions.SetCategory>({
             type: ActionTypes.SET_CATEGORY,
             category
         }));
     };
-export const updateCategory: (category: Models.Category) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
-    (category: Models.Category): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
-        return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(
+export const updateCategory: (category: Category) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
+    (category: Category): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
+        return fetchThunk<Actions.SetCategory, Category[], CategoryEditState>(
             `/api/categories/${category._id}`,
             {
                 body: JSON.stringify(category),
@@ -55,16 +46,16 @@ export const updateCategory: (category: Models.Category) => ThunkAction<Promise<
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
+            (dispatch: Dispatch<CategoryEditState>, category: Category) => dispatch<Actions.SetCategory>({
                 type: ActionTypes.SET_CATEGORY,
                 category
             }));
     };
 export const deleteCategory: (categoryId: string) => ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> =
     (categoryId: string): ThunkAction<Promise<Actions.SetCategory>, CategoryEditState, {}> => {
-        return fetchThunk<Actions.SetCategory, Models.Category[], CategoryEditState>(
+        return fetchThunk<Actions.SetCategory, Category[], CategoryEditState>(
             `/api/categories/${categoryId}`, { method: "DELETE" },
-            (dispatch: Dispatch<CategoryEditState>, category: Models.Category) => dispatch<Actions.SetCategory>({
+            (dispatch: Dispatch<CategoryEditState>, category: Category) => dispatch<Actions.SetCategory>({
                 type: ActionTypes.SET_CATEGORY,
                 category: undefined
             }));
@@ -72,13 +63,14 @@ export const deleteCategory: (categoryId: string) => ThunkAction<Promise<Actions
 
 // reducer
 const reducer: (state: CategoryEditState, action: any & Action) => CategoryEditState =
-    (state: CategoryEditState = new CategoryEditState(), action: Action): CategoryEditState => {
+    (state: CategoryEditState = defaultState, action: Action): CategoryEditState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_CATEGORY:
-                return new CategoryEditState({
-                    ...state,
-                    category: (action as Actions.SetCategory).category
-                });
+                const category: Category = (action as Actions.SetCategory).category;
+                return state.set("category", fromJS(category));
             default:
                 return state;
         }

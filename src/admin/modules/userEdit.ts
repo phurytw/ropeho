@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { User } from "../models";
 
-import Models = Ropeho.Models;
+import User = Ropeho.Models.User;
 
 // state
-export interface IUserEditState {
-    user: Models.User;
-}
-const defaultState: IUserEditState = {
-    user: undefined
-};
-export class UserEditState extends Record(defaultState, "UserEditState") implements IUserEditState {
-    public user: User;
-    constructor(init?: IUserEditState) {
-        super(init);
-    }
-}
+export type UserEditState = Map<string, Map<string, any>>;
+export const defaultState: UserEditState = Map<string, Map<string, any>>({
+    user: Map<string, any>()
+});
 
 // types
 export namespace Actions {
-    export type SetUser = { user: Models.User } & Action;
+    export type SetUser = { user: User } & Action;
 }
 
 // actions types
@@ -39,14 +30,14 @@ export namespace ActionTypes {
 // action creators
 export const fetchUserById: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
-        return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(`/api/users/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserEditState>, user: Models.User) => dispatch<Actions.SetUser>({
+        return fetchThunk<Actions.SetUser, User[], UserEditState>(`/api/users/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<UserEditState>, user: User) => dispatch<Actions.SetUser>({
             type: ActionTypes.SET_USER,
             user
         }));
     };
-export const updateUser: (user: Models.User) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
-    (user: Models.User): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
-        return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(
+export const updateUser: (user: User) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
+    (user: User): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
+        return fetchThunk<Actions.SetUser, User[], UserEditState>(
             `/api/users/${user._id}`,
             {
                 body: JSON.stringify(user),
@@ -55,16 +46,16 @@ export const updateUser: (user: Models.User) => ThunkAction<Promise<Actions.SetU
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<UserEditState>, production: Models.User) => dispatch<Actions.SetUser>({
+            (dispatch: Dispatch<UserEditState>, production: User) => dispatch<Actions.SetUser>({
                 type: ActionTypes.SET_USER,
                 user
             }));
     };
 export const deleteUser: (userId: string) => ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> =
     (userId: string): ThunkAction<Promise<Actions.SetUser>, UserEditState, {}> => {
-        return fetchThunk<Actions.SetUser, Models.User[], UserEditState>(
+        return fetchThunk<Actions.SetUser, User[], UserEditState>(
             `/api/users/${userId}`, { method: "DELETE", },
-            (dispatch: Dispatch<UserEditState>, production: Models.User) => dispatch<Actions.SetUser>({
+            (dispatch: Dispatch<UserEditState>, production: User) => dispatch<Actions.SetUser>({
                 type: ActionTypes.SET_USER,
                 user: undefined
             }));
@@ -72,13 +63,14 @@ export const deleteUser: (userId: string) => ThunkAction<Promise<Actions.SetUser
 
 // reducer
 const reducer: (state: UserEditState, action: any & Action) => UserEditState =
-    (state: UserEditState = new UserEditState(), action: Action): UserEditState => {
+    (state: UserEditState = defaultState, action: Action): UserEditState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_USER:
-                return new UserEditState({
-                    ...state,
-                    user: (action as Actions.SetUser).user
-                });
+                const user: User = (action as Actions.SetUser).user;
+                return state.set("user", fromJS(user));
             default:
                 return state;
         }

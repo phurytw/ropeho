@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { CategoryIndexState, fetchCategories, ActionTypes, default as reducer } from "./categoryIndex";
+import { CategoryIndexState, defaultState, fetchCategories, ActionTypes, default as reducer } from "./categoryIndex";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,7 +13,7 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { categories } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 describe("Category index module", () => {
@@ -24,7 +24,7 @@ describe("Category index module", () => {
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new CategoryIndexState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -62,10 +62,10 @@ describe("Category index module", () => {
     });
     describe("Reducer", () => {
         it("Should set categories with an immutable state", () => {
-            is(reducer(new CategoryIndexState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_CATEGORIES,
                 categories
-            }), new CategoryIndexState({
+            }), fromJS({
                 categories
             })).should.be.true;
         });

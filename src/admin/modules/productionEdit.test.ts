@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { ProductionEditState, fetchProductionById, updateProduction, deleteProduction, setProduction, ActionTypes, default as reducer } from "./productionEdit";
+import { ProductionEditState, defaultState, fetchProductionById, updateProduction, deleteProduction, setProduction, ActionTypes, default as reducer } from "./productionEdit";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,7 +13,7 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 import { v4 } from "uuid";
 should();
 
@@ -28,7 +28,7 @@ describe("Production edit module", () => {
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new ProductionEditState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -136,10 +136,10 @@ describe("Production edit module", () => {
     });
     describe("Reducer", () => {
         it("Should set productions with an immutable state", () => {
-            is(reducer(new ProductionEditState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_PRODUCTION,
                 production
-            }), new ProductionEditState({
+            }), fromJS({
                 production
             })).should.be.true;
         });

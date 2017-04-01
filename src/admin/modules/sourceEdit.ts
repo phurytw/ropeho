@@ -4,50 +4,46 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, OrderedSet, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
-import { Map } from "immutable";
-import { mapKeys } from "lodash";
 
-import Models = Ropeho.Models;
+import Source = Ropeho.Models.Source;
 
 // state
-export interface ISourceEditState {
-    sources?: Map<string, Models.Source>;
-    buffers?: Map<string, ArrayBuffer>;
-
-}
-const defaultState: ISourceEditState = {
-    sources: Map<string, Models.Source>(),
-    buffers: Map<string, ArrayBuffer>()
-};
-export class SourceEditState extends Record(defaultState, "SourceEditState") implements ISourceEditState {
-    public sources: Map<string, Models.Source>;
-    public buffers: Map<string, ArrayBuffer>;
-    constructor(init?: ISourceEditState) {
-        super(init);
-    }
-}
+export type SourceEditState = Map<string, Map<string, any> | OrderedSet<string> | string>;
+export const defaultState: SourceEditState = Map<string, Map<string, any> | OrderedSet<string> | string>({
+    sources: Map<string, any>(),
+    selected: undefined
+});
 
 // types
 export namespace Actions {
-    export type ReplaceSources = { sources: Models.Source[] } & Action;
-    export type SetSource = { source: Models.Source } & Action;
-    export type ReplaceBuffers = { buffers: { [key: string]: ArrayBuffer } } & Action;
-    export type SetBuffer = { buffer: ArrayBuffer, sourceId: string } & Action;
+    export type SelectSource = { sourceId: string } & Action;
+    export type ReplaceSources = { sources: Source[] } & Action;
+    export type SetSource = { source: Source } & Action;
+    export type RemoveSources = { sourceIds: string[] } & Action;
 }
 
 // actions types
 export namespace ActionTypes {
+    export const SELECT_SOURCE: string = "ropeho/sourceEdit/SELECT_SOURCE";
     export const SET_SOURCE: string = "ropeho/sourceEdit/SET_SOURCE";
     export const REPLACE_SOURCES: string = "ropeho/sourceEdit/REPLACE_SOURCES";
-    export const SET_BUFFER: string = "ropeho/sourceEdit/SET_BUFFER";
-    export const REPLACE_BUFFERS: string = "ropeho/sourceEdit/REPLACE_BUFFERS";
+    export const REMOVE_SOURCES: string = "ropeho/sourceEdit/REMOVE_SOURCES";
 }
 
 // action creators
-export const setSource: (source: Models.Source) => ThunkAction<Actions.SetSource, SourceEditState, {}> =
-    (source: Models.Source): ThunkAction<Actions.SetSource, SourceEditState, {}> => {
+export const selectSource: (sourceId: string) => ThunkAction<Actions.SelectSource, SourceEditState, {}> =
+    (sourceId: string): ThunkAction<Actions.SelectSource, SourceEditState, {}> => {
+        return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.SelectSource => {
+            return dispatch<Actions.SelectSource>({
+                type: ActionTypes.SELECT_SOURCE,
+                sourceId
+            });
+        };
+    };
+export const setSource: (source: Source) => ThunkAction<Actions.SetSource, SourceEditState, {}> =
+    (source: Source): ThunkAction<Actions.SetSource, SourceEditState, {}> => {
         return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.SetSource => {
             return dispatch<Actions.SetSource>({
                 type: ActionTypes.SET_SOURCE,
@@ -55,8 +51,8 @@ export const setSource: (source: Models.Source) => ThunkAction<Actions.SetSource
             });
         };
     };
-export const replaceSources: (sources: Models.Source[]) => ThunkAction<Actions.ReplaceSources, SourceEditState, {}> =
-    (sources: Models.Source[]): ThunkAction<Actions.ReplaceSources, SourceEditState, {}> => {
+export const replaceSources: (sources: Source[]) => ThunkAction<Actions.ReplaceSources, SourceEditState, {}> =
+    (sources: Source[]): ThunkAction<Actions.ReplaceSources, SourceEditState, {}> => {
         return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.ReplaceSources => {
             return dispatch<Actions.ReplaceSources>({
                 type: ActionTypes.REPLACE_SOURCES,
@@ -64,53 +60,42 @@ export const replaceSources: (sources: Models.Source[]) => ThunkAction<Actions.R
             });
         };
     };
-export const setBuffer: (sourceId: string, buffer: ArrayBuffer) => ThunkAction<Actions.SetBuffer, SourceEditState, {}> =
-    (sourceId: string, buffer: ArrayBuffer): ThunkAction<Actions.SetBuffer, SourceEditState, {}> => {
-        return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.SetBuffer => {
-            return dispatch<Actions.SetBuffer>({
-                type: ActionTypes.SET_BUFFER,
-                buffer, sourceId
-            });
-        };
-    };
-export const replaceBuffers: (buffers: { [key: string]: ArrayBuffer }) => ThunkAction<Actions.ReplaceBuffers, SourceEditState, {}> =
-    (buffers: { [key: string]: ArrayBuffer }): ThunkAction<Actions.ReplaceBuffers, SourceEditState, {}> => {
-        return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.ReplaceBuffers => {
-            return dispatch<Actions.ReplaceBuffers>({
-                type: ActionTypes.SET_BUFFER,
-                buffers
+export const removeSources: (sourceIds: string[]) => ThunkAction<Actions.RemoveSources, SourceEditState, {}> =
+    (sourceIds: string[]): ThunkAction<Actions.RemoveSources, SourceEditState, {}> => {
+        return (dispatch: Dispatch<SourceEditState>, getState: () => SourceEditState): Actions.RemoveSources => {
+            return dispatch<Actions.RemoveSources>({
+                type: ActionTypes.REMOVE_SOURCES,
+                sourceIds
             });
         };
     };
 
 // reducer
 const reducer: (state: SourceEditState, action: any & Action) => SourceEditState =
-    (state: SourceEditState = new SourceEditState(), action: Action): SourceEditState => {
+    (state: SourceEditState = defaultState, action: Action): SourceEditState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_SOURCE:
-                const source: Models.Source = (action as Actions.SetSource).source;
-                return new SourceEditState({
-                    ...state,
-                    sources: state.sources.set(source._id, source)
-                });
-            case ActionTypes.SET_BUFFER:
-                const { buffer, sourceId }: Actions.SetBuffer = (action as Actions.SetBuffer);
-                return new SourceEditState({
-                    ...state,
-                    buffers: state.buffers.set(sourceId, buffer)
-                });
+                const source: Source = (action as Actions.SetSource).source;
+                if (source && source._id) {
+                    return state.setIn(["sources", source._id], fromJS(source));
+                } else {
+                    return state;
+                }
+            case ActionTypes.SELECT_SOURCE:
+                const selected: string = (action as Actions.SelectSource).sourceId;
+                return state.set("selected", selected);
+            case ActionTypes.REMOVE_SOURCES:
+                const sourceIds: string[] = (action as Actions.RemoveSources).sourceIds;
+                if (sourceIds.indexOf(state.get("selected") as string) >= 0) {
+                    state = state.set("selected", undefined);
+                }
+                return state.updateIn(["sources"], (sources: Map<string, any>) => sources.filter((s: any, key: string) => sourceIds.indexOf(key) === -1));
             case ActionTypes.REPLACE_SOURCES:
-                const sources: Models.Source[] = (action as Actions.ReplaceSources).sources;
-                return new SourceEditState({
-                    ...state,
-                    sources: Map<string, Models.Source>(mapKeys<Models.Source, string>(sources, (s: Models.Source) => s._id))
-                });
-            case ActionTypes.REPLACE_BUFFERS:
-                const { buffers }: Actions.ReplaceBuffers = (action as Actions.ReplaceBuffers);
-                return new SourceEditState({
-                    ...state,
-                    buffers: Map<string, ArrayBuffer>(buffers)
-                });
+                const sources: Source[] = (action as Actions.ReplaceSources).sources;
+                return state.set("sources", Map<string, any>(sources.map<any[]>((s: Source) => [s._id, fromJS(s)])));
             default:
                 return state;
         }

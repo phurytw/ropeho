@@ -4,22 +4,14 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 
 // state
-export interface IRenderingState {
-    hasRendered: boolean;
-}
-const defaultState: IRenderingState = {
+export type RenderingState = Map<string, boolean>;
+export const defaultState: RenderingState = Map<string, boolean>({
     hasRendered: false
-};
-export class RenderingState extends Record(defaultState, "RenderingState") implements IRenderingState {
-    public hasRendered: boolean;
-    constructor(init?: IRenderingState) {
-        super(init);
-    }
-}
+});
 
 // types
 export namespace Actions {
@@ -44,13 +36,14 @@ export const setRendered: (hasRendered: boolean) => ThunkAction<Actions.SetRende
 
 // reducer
 const reducer: (state: RenderingState, action: any & Action) => RenderingState =
-    (state: RenderingState = new RenderingState(), action: Action): RenderingState => {
+    (state: RenderingState = defaultState, action: Action): RenderingState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_RENDERED:
-                return new RenderingState({
-                    ...state,
-                    hasRendered: (action as Actions.SetRendered).hasRendered
-                });
+                const hasRendered: boolean = (action as Actions.SetRendered).hasRendered;
+                return state.set("hasRendered", hasRendered);
             default:
                 return state;
         }

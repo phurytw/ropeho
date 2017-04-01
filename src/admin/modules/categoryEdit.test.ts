@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { CategoryEditState, fetchCategoryById, updateCategory, deleteCategory, ActionTypes, default as reducer } from "./categoryEdit";
+import { CategoryEditState, defaultState, fetchCategoryById, updateCategory, deleteCategory, ActionTypes, default as reducer } from "./categoryEdit";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,21 +13,21 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { categories } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
-import Models = Ropeho.Models;
+import Category = Ropeho.Models.Category;
 
 describe("Category edit module", () => {
     let store: IStore<CategoryEditState>;
-    const [category]: Models.Category[] = categories;
+    const [category]: Category[] = categories;
     before(() => {
         store = mockStore<CategoryEditState>(middlewares({
             host: ADMIN_END_POINT,
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new CategoryEditState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -125,10 +125,10 @@ describe("Category edit module", () => {
     });
     describe("Reducer", () => {
         it("Should set categories with an immutable state", () => {
-            is(reducer(new CategoryEditState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_CATEGORY,
                 category
-            }), new CategoryEditState({
+            }), fromJS({
                 category
             })).should.be.true;
         });

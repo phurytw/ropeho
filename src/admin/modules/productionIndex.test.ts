@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { ProductionIndexState, fetchProductions, createProduction, ActionTypes, default as reducer } from "./productionIndex";
+import { ProductionIndexState, defaultState, fetchProductions, createProduction, ActionTypes, default as reducer } from "./productionIndex";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,7 +13,7 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { productions } from "../../sampleData/testDb";
 import { map, head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -26,7 +26,7 @@ describe("Production index module", () => {
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new ProductionIndexState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -100,10 +100,10 @@ describe("Production index module", () => {
     });
     describe("Reducer", () => {
         it("Should set productions with an immutable state", () => {
-            is(reducer(new ProductionIndexState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_PRODUCTIONS,
                 productions
-            }), new ProductionIndexState({
+            }), fromJS({
                 productions
             })).should.be.true;
         });

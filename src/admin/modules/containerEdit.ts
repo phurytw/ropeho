@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { Presentation } from "../models";
 
-import Models = Ropeho.Models;
+import PresentationContainer = Ropeho.Models.PresentationContainer;
 
 // state
-export interface IProductionContainerEditState {
-    container: Models.PresentationContainer;
-}
-const defaultState: IProductionContainerEditState = {
-    container: undefined
-};
-export class PresentationContainerEditState extends Record(defaultState, "PresentationContainerEditState") implements IProductionContainerEditState {
-    public container: Presentation;
-    constructor(init?: IProductionContainerEditState) {
-        super(init);
-    }
-}
+export type PresentationContainerEditState = Map<string, Map<string, any>>;
+export const defaultState: PresentationContainerEditState = Map<string, Map<string, any>>({
+    container: Map<string, any>()
+});
 
 // types
 export namespace Actions {
-    export type SetContainer = { container: Models.PresentationContainer } & Action;
+    export type SetContainer = { container: PresentationContainer } & Action;
 }
 
 // actions types
@@ -39,14 +30,14 @@ export namespace ActionTypes {
 // action creators
 export const fetchContainerByid: (id: string, fields?: string[]) => ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> =
     (id: string, fields?: string[]): ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> => {
-        return fetchThunk<Actions.SetContainer, Models.PresentationContainer[], PresentationContainerEditState>(`/api/presentations/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<PresentationContainerEditState>, container: Models.PresentationContainer) => dispatch<Actions.SetContainer>({
+        return fetchThunk<Actions.SetContainer, PresentationContainer[], PresentationContainerEditState>(`/api/presentations/${id}${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<PresentationContainerEditState>, container: PresentationContainer) => dispatch<Actions.SetContainer>({
             type: ActionTypes.SET_CONTAINER,
             container
         }));
     };
-export const updateContainer: (container: Models.PresentationContainer) => ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> =
-    (container: Models.PresentationContainer): ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> => {
-        return fetchThunk<Actions.SetContainer, Models.PresentationContainer[], PresentationContainerEditState>(
+export const updateContainer: (container: PresentationContainer) => ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> =
+    (container: PresentationContainer): ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> => {
+        return fetchThunk<Actions.SetContainer, PresentationContainer[], PresentationContainerEditState>(
             `/api/presentations/${container._id}`,
             {
                 body: JSON.stringify(container),
@@ -55,16 +46,16 @@ export const updateContainer: (container: Models.PresentationContainer) => Thunk
                     "Content-Type": "application/json"
                 }
             },
-            (dispatch: Dispatch<PresentationContainerEditState>, container: Models.PresentationContainer) => dispatch<Actions.SetContainer>({
+            (dispatch: Dispatch<PresentationContainerEditState>, container: PresentationContainer) => dispatch<Actions.SetContainer>({
                 type: ActionTypes.SET_CONTAINER,
                 container
             }));
     };
 export const deleteContainer: (containerId: string) => ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> =
     (containerId: string): ThunkAction<Promise<Actions.SetContainer>, PresentationContainerEditState, {}> => {
-        return fetchThunk<Actions.SetContainer, Models.Category[], PresentationContainerEditState>(
+        return fetchThunk<Actions.SetContainer, {}, PresentationContainerEditState>(
             `/api/presentations/${containerId}`, { method: "DELETE" },
-            (dispatch: Dispatch<PresentationContainerEditState>, category: Models.Category) => dispatch<Actions.SetContainer>({
+            (dispatch: Dispatch<PresentationContainerEditState>, deleted: {}) => dispatch<Actions.SetContainer>({
                 type: ActionTypes.SET_CONTAINER,
                 container: undefined
             }));
@@ -72,13 +63,14 @@ export const deleteContainer: (containerId: string) => ThunkAction<Promise<Actio
 
 // reducer
 const reducer: (state: PresentationContainerEditState, action: any & Action) => PresentationContainerEditState =
-    (state: PresentationContainerEditState = new PresentationContainerEditState(), action: Action): PresentationContainerEditState => {
+    (state: PresentationContainerEditState = defaultState, action: Action): PresentationContainerEditState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_CONTAINER:
-                return new PresentationContainerEditState({
-                    ...state,
-                    container: (action as Actions.SetContainer).container
-                });
+                const container: PresentationContainer = (action as Actions.SetContainer).container;
+                return state.set("container", fromJS(container));
             default:
                 return state;
         }

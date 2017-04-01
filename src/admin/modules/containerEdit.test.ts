@@ -5,7 +5,7 @@
 /// <reference path="../../test.d.ts" />
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { PresentationContainerEditState, fetchContainerByid, updateContainer, deleteContainer, ActionTypes, default as reducer } from "./containerEdit";
+import { PresentationContainerEditState, defaultState, fetchContainerByid, updateContainer, deleteContainer, ActionTypes, default as reducer } from "./containerEdit";
 import { ActionTypes as ErrorTypes } from "./error";
 import { middlewares } from "../store";
 import * as nock from "nock";
@@ -13,7 +13,7 @@ import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { presentations } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";
-import { is } from "immutable";
+import { is, fromJS } from "immutable";
 should();
 
 import Models = Ropeho.Models;
@@ -27,7 +27,7 @@ describe("Presentation container edit module", () => {
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(new PresentationContainerEditState());
+        }))(defaultState);
     });
     afterEach(() => {
         store.clearActions();
@@ -125,10 +125,10 @@ describe("Presentation container edit module", () => {
     });
     describe("Reducer", () => {
         it("Should set presentation containers with an immutable state", () => {
-            is(reducer(new PresentationContainerEditState(), {
+            is(reducer(undefined, {
                 type: ActionTypes.SET_CONTAINER,
                 container
-            }), new PresentationContainerEditState({
+            }), fromJS({
                 container
             })).should.be.true;
         });

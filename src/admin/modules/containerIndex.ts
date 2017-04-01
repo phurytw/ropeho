@@ -4,31 +4,22 @@
  */
 /// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
-import { Record } from "immutable";
+import { Map, List, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
 import { fetchThunk } from "../helpers/fetchUtilities";
-import { PresentationContainer } from "../models";
 
-import Models = Ropeho.Models;
+import PresentationContainer = Ropeho.Models.PresentationContainer;
 
 // state
-export interface IPresentationContainerIndexState {
-    containers: Models.PresentationContainer[];
-}
-const defaultState: IPresentationContainerIndexState = {
-    containers: []
-};
-export class PresentationContainerIndexState extends Record(defaultState, "PresentationContainerIndexState") implements IPresentationContainerIndexState {
-    public containers: PresentationContainer[];
-    constructor(init?: IPresentationContainerIndexState) {
-        super(init);
-    }
-}
+export type ContainerIndexState = Map<string, List<any>>;
+export const defaultState: ContainerIndexState = Map<string, List<any>>({
+    containers: List<any>()
+});
 
 // types
 export namespace Actions {
-    export type SetContainers = { containers: Models.PresentationContainer[] } & Action;
+    export type SetContainers = { containers: PresentationContainer[] } & Action;
 }
 
 // actions types
@@ -37,23 +28,24 @@ export namespace ActionTypes {
 }
 
 // action creators
-export const fetchContainers: (fields?: string[]) => ThunkAction<Promise<Actions.SetContainers>, PresentationContainerIndexState, {}> =
-    (fields?: string[]): ThunkAction<Promise<Actions.SetContainers>, PresentationContainerIndexState, {}> => {
-        return fetchThunk<Actions.SetContainers, Models.PresentationContainer[], PresentationContainerIndexState>(`/api/presentations${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<PresentationContainerIndexState>, containers: Models.PresentationContainer[]) => dispatch<Actions.SetContainers>({
+export const fetchContainers: (fields?: string[]) => ThunkAction<Promise<Actions.SetContainers>, ContainerIndexState, {}> =
+    (fields?: string[]): ThunkAction<Promise<Actions.SetContainers>, ContainerIndexState, {}> => {
+        return fetchThunk<Actions.SetContainers, PresentationContainer[], ContainerIndexState>(`/api/presentations${fields ? `?fields=${join(fields, ",")}` : ""}`, (dispatch: Dispatch<ContainerIndexState>, containers: PresentationContainer[]) => dispatch<Actions.SetContainers>({
             type: ActionTypes.SET_CONTAINERS,
             containers
         }));
     };
 
 // reducer
-const reducer: (state: PresentationContainerIndexState, action: any & Action) => PresentationContainerIndexState =
-    (state: PresentationContainerIndexState = new PresentationContainerIndexState(), action: Action): PresentationContainerIndexState => {
+const reducer: (state: ContainerIndexState, action: any & Action) => ContainerIndexState =
+    (state: ContainerIndexState = defaultState, action: Action): ContainerIndexState => {
+        if (!Map.isMap(state)) {
+            state = fromJS(state);
+        }
         switch (action.type) {
             case ActionTypes.SET_CONTAINERS:
-                return new PresentationContainerIndexState({
-                    ...state,
-                    containers: (action as Actions.SetContainers).containers
-                });
+                const containers: PresentationContainer[] = (action as Actions.SetContainers).containers;
+                return state.set("containers", fromJS(containers));
             default:
                 return state;
         }
