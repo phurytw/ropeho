@@ -13,13 +13,13 @@ import { Actions as MediaActions } from "../../modules/mediaEdit";
 import * as mediaModule from "../../modules/mediaEdit";
 import { Actions as SourceActions } from "../../modules/sourceEdit";
 import * as sourceModule from "../../modules/sourceEdit";
-import { setError, Actions as ErrorActions } from "../../modules/error";
+import { setError, Actions as ErrorActions } from "../../../common/modules/error";
 import { Dispatch } from "redux";
 import { PartialRouteComponentProps, Redirect, Route } from "react-router-dom";
 import { Button, Tabs, Tab, Dialog } from "react-toolbox";
 import { headerBar } from "./headerBar.css";
 import { deleteDialog } from "./deleteDialog.css";
-import * as entityUtils from "../../../server/helpers/entityUtilities";
+import * as entityUtils from "../../../common/helpers/entityUtilities";
 import ProductionEditMetaData from "../ProductionEditMetaData";
 import MediaEdit from "../MediaEdit";
 

@@ -4,8 +4,8 @@
 /// <reference path="../../../test.d.ts" />
 import * as React from "react";
 import Helmet from "react-helmet";
-import { fetchCurrentUser, Actions, logout, login } from "../../modules/session";
-import { setError, Actions as ErrorActions } from "../../modules/error";
+import { fetchCurrentUser, Actions, logout, login } from "../../../common/modules/session";
+import { setError, Actions as ErrorActions } from "../../../common/modules/error";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { RopehoAdminState } from "../../reducer";
@@ -16,7 +16,7 @@ import { isEmail } from "validator";
 import { logo } from "../../assets";
 import { PartialRouteComponentProps } from "react-router-dom";
 import { Roles, ErrorCodes } from "../../../enum";
-import { ADMIN_END_POINT } from "../../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../../../common/helpers/resolveEndPoint";
 import * as facebookButtonStyles from "./facebook.css";
 
 export const mapStateToProps: (state: RopehoAdminState, ownProps?: LoginProps) => LoginProps =

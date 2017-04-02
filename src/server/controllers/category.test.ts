@@ -20,7 +20,7 @@ import { computeHashSync } from "../accounts/password";
 import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
 import { categories, productions } from "../../sampleData/testDb";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import * as socket from "../socket";
 import * as detect from "detect-port";
 import config from "../../config";

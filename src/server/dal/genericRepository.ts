@@ -9,7 +9,7 @@ import { map, isArray, forEach, includes, pickBy, filter, join, startsWith } fro
 import * as _ from "lodash";
 import { createClient, RedisClient, Multi } from "redis";
 import * as redis from "redis";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import config from "../../config";
 import { plural, singular } from "pluralize";
 

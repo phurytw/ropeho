@@ -13,7 +13,7 @@ import { Store } from "redux";
 import { BrowserRouter } from "react-router-dom";
 import { renderRoutes, RouteConfig } from "react-router-config";
 import App from "./routes";
-import { setRendered } from "./modules/rendering";
+import { setRendered } from "../common/modules/rendering";
 import "normalize.css";
 import "./styles/global.css";
 

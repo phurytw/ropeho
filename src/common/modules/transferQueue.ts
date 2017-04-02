@@ -2,7 +2,6 @@
  * @file Redux module that manages incoming downloads/uploads
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
 import { OrderedSet, Map, fromJS, Iterable } from "immutable";
 import { ThunkAction } from "redux-thunk";

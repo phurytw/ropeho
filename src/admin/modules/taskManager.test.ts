@@ -6,14 +6,14 @@
 import { should } from "chai";
 import { is, fromJS } from "immutable";
 import { ActionTypes, TaskManagerState, cancelTask, fetchRunning, kickClient, startTask, default as reducer } from "./taskManager";
-import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../../common/helpers/resolveEndPoint";
 import { head } from "lodash";
 import { default as mockStore, IStore } from "redux-mock-store";
 import "isomorphic-fetch";
 import { middlewares } from "../store";
 import * as nock from "nock";
 import { Job } from "kue";
-import { ActionTypes as ErrorTypes } from "./error";
+import { ActionTypes as ErrorTypes } from "../../common/modules/error";
 should();
 
 import SocketClient = Ropeho.Socket.SocketClient;

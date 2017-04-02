@@ -2,9 +2,8 @@
  * @file Element that displays an image. Zooms and moves the image accordingly to show only the relevant part
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../../typings.d.ts" />
 import * as React from "react";
-import { MediaPreviewProps, mediaPreview } from "../MediaPreviewCore";
+import { MediaPreviewProps, mediaPreview } from "../../../common/components/MediaPreviewCore";
 import { MediaTypes } from "../../../enum";
 import Pointer from "../Pointer";
 

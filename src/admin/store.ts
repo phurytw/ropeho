@@ -6,7 +6,7 @@
 import { createStore, Store, applyMiddleware, Middleware, compose } from "redux";
 import { RopehoAdminState, default as reducer } from "./reducer";
 import reduxThunk from "redux-thunk";
-import { ActionTypes } from "./modules/error";
+import { ActionTypes } from "../common/modules/error";
 
 import FetchThunkExtras = Ropeho.FetchThunkExtras;
 

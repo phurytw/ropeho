@@ -13,7 +13,7 @@ import { Express, Request, Response, NextFunction, RequestHandler } from "expres
 import { Server } from "http";
 import * as express from "express";
 import GlobalRepository from "../dal/globalRepository";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import { cloneDeep, filter, every, includes } from "lodash";
 import * as detect from "detect-port";
 import config from "../../config";

@@ -11,7 +11,7 @@ import { isEmpty, keys, map, isArray, includes, pickBy, every, trim } from "loda
 import { isAdmin } from "../accounts/authorize";
 import config from "../../config";
 import { PresentationTypes, ErrorCodes } from "../../enum";
-import { isPresentationContainer } from "../helpers/entityUtilities";
+import { isPresentationContainer } from "../../common/helpers/entityUtilities";
 import ErrorResponse from "../helpers/errorResponse";
 import { v4 } from "uuid";
 import { isUUID } from "validator";

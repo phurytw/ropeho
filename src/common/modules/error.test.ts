@@ -6,7 +6,7 @@
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
 import { ErrorState, defaultState, setError, ActionTypes, default as reducer } from "./error";
-import { middlewares } from "../store";
+import reduxThunk from "redux-thunk";
 import { is, fromJS } from "immutable";
 import "isomorphic-fetch";
 should();
@@ -19,7 +19,7 @@ describe("Error handler module", () => {
         userMessage: "A nice error"
     };
     let store: IStore<ErrorState>;
-    before(() => store = mockStore<ErrorState>(middlewares())(defaultState));
+    before(() => store = mockStore<ErrorState>([reduxThunk])(defaultState));
     afterEach(() => store.clearActions());
     describe("Error action", () => {
         it("Should dispatch an error", () => {

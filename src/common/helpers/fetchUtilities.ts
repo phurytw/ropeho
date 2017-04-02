@@ -2,7 +2,6 @@
  * @file Rejects fetch if status is 400 or above
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../typings.d.ts" />
 import { ThunkAction } from "redux-thunk";
 import { Dispatch } from "redux";
 import { ErrorCodes } from "../../enum";

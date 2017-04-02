@@ -8,10 +8,10 @@ import { spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { errorHandler, fetchThunk } from "./fetchUtilities";
 import { ActionTypes as ErrorTypes } from "../modules/error";
+import reduxThunk from "redux-thunk";
 import * as nock from "nock";
 import "isomorphic-fetch";
 import { default as mockStore, IStore } from "redux-mock-store";
-import { middlewares } from "../store";
 import { ThunkAction } from "redux-thunk";
 import { Dispatch, Action } from "redux";
 import "isomorphic-fetch";
@@ -57,12 +57,14 @@ describe("Error handler", () => {
         let store: IStore<TestState>,
             thunk: ThunkAction<Promise<TestState>, TestState, {}>,
             thunkSpy: sinon.SinonSpy;
-        before(() => store = mockStore<TestState>(middlewares({
-            host,
+        before(() => store = mockStore<TestState>([reduxThunk.withExtraArgument({
+            init: {
+                credentials: "include"
+            },
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))());
+        })])());
         beforeEach(() => {
             store.clearActions();
             thunkSpy = spy();

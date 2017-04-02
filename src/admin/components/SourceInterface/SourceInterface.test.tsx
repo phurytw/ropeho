@@ -8,7 +8,7 @@ import { spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import { shallow, ShallowWrapper } from "enzyme";
 import * as React from "react";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { SourceInterfaceProps, SourceInterfaceState, default as SourceInterface } from "./SourceInterface";
 import SourceInterfaceButtons from "../SourceInterfaceButtons";

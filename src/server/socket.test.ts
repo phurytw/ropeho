@@ -23,8 +23,8 @@ import * as authorize from "./accounts/authorize";
 import { basename, join } from "path";
 import * as task from "./media/taskQueue";
 import { createHash } from "crypto";
-import { getAllSourceTargetOptionsFromEntity } from "./helpers/entityUtilities";
-import { uriFriendlyFormat } from "./helpers/uriFriendlyFormat";
+import { getAllSourceTargetOptionsFromEntity } from "../common/helpers/entityUtilities";
+import { uriFriendlyFormat } from "../common/helpers/uriFriendlyFormat";
 should();
 use(sinonChai);
 

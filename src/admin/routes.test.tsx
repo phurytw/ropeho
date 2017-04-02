@@ -5,7 +5,7 @@
 /// <reference path="../test.d.ts" />
 import { should } from "chai";
 import { RouteConfig } from "react-router-config";
-import hook from "./helpers/cssModulesHook";
+import hook from "../common/helpers/cssModulesHook";
 hook();
 import routeConfig from "./routes";
 import Login from "./components/Login";

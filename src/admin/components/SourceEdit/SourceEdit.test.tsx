@@ -6,7 +6,7 @@
 import { should } from "chai";
 import * as React from "react";
 import { shallow, ShallowWrapper } from "enzyme";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { SourceEdit, SourceEditProps } from "./SourceEdit";
 import { SourceEditMetaData } from "../SourceEditMetaData";

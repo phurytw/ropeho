@@ -2,7 +2,6 @@
  * @file Returns a map of keys and values from a TypeScript enum
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../typings.d.ts" />
 
 /**
  * Returns a map of keys and values from a TypeScript enum

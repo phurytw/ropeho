@@ -2,13 +2,12 @@
  * @file Tests for the session module
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../typings.d.ts" />
 import { should } from "chai";
 import { IStore, default as mockStore } from "redux-mock-store";
 import { defaultState, ActionTypes, SessionState, login, logout, fetchCurrentUser, default as reducer } from "./session";
-import { middlewares } from "../store";
 import * as nock from "nock";
 import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
+import reduxThunk from "redux-thunk";
 import { users } from "../../sampleData/testDb";
 import { ActionTypes as ErrorTypes } from "./error";
 import { head } from "lodash";
@@ -26,12 +25,15 @@ describe("Session module", () => {
         status: 500,
         userMessage: "A nice error"
     };
-    before(() => store = mockStore<SessionState>(middlewares({
-        host: ADMIN_END_POINT,
-        error: {
-            type: ErrorTypes.SET_ERROR
-        }
-    }))(defaultState));
+    before(() => store = mockStore<SessionState>([reduxThunk.withExtraArgument({
+            host: ADMIN_END_POINT,
+            init: {
+                credentials: "include"
+            },
+            error: {
+                type: ErrorTypes.SET_ERROR
+            }
+        })])(defaultState));
     afterEach(() => store.clearActions());
     describe("Logging in", () => {
         it("Should receive a user", async () => {

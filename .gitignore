@@ -44,5 +44,4 @@ jspm_packages
 dist
 *.ppk
 src/client/**/*
-src/common/**/*
 *client*

@@ -6,10 +6,10 @@
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
 import { UserEditState, defaultState, fetchUserById, updateUser, deleteUser, ActionTypes, default as reducer } from "./userEdit";
-import { ActionTypes as ErrorTypes } from "./error";
+import { ActionTypes as ErrorTypes } from "../../common/modules/error";
 import { middlewares } from "../store";
 import * as nock from "nock";
-import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
+import { ADMIN_END_POINT } from "../../common/helpers/resolveEndPoint";
 import { users } from "../../sampleData/testDb";
 import { head } from "lodash";
 import "isomorphic-fetch";

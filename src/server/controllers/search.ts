@@ -10,7 +10,7 @@ import config from "../../config";
 import { Roles, MediaPermissions } from "../../enum";
 import * as _ from "lodash";
 import { includes } from "lodash";
-import { isCategory, isProduction, isUser } from "../helpers/entityUtilities";
+import { isCategory, isProduction, isUser } from "../../common/helpers/entityUtilities";
 import ErrorResponse from "../helpers/errorResponse";
 const router: Router = express.Router();
 

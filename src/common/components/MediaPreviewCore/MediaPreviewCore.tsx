@@ -2,7 +2,6 @@
  * @file HOC that wraps an element and exposes props for the media preview
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../../typings.d.ts" />
 import * as React from "react";
 
 import Source = Ropeho.Models.Source;

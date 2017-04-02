@@ -8,7 +8,7 @@ import { spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import * as React from "react";
 import { ReactWrapper, mount } from "enzyme";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 import { includes } from "lodash";
 hook();
 import { PreviewListItemProps, default as PreviewListItem } from "./PreviewListItem";

@@ -2,7 +2,6 @@
  * @file Redux module that handles promise rejections
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../typings.d.ts" />
 import { Dispatch, Action } from "redux";
 import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";

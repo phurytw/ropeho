@@ -21,7 +21,7 @@ import { Roles } from "../../enum";
 import config from "../../config";
 import GenericRepository from "../dal/genericRepository";
 import * as passport from "passport";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import * as detect from "detect-port";
 
 should();

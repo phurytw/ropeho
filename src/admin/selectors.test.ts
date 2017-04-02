@@ -17,10 +17,10 @@ import {
     getSourcesFromSelectedMedia
 } from "./selectors";
 import { users, productions } from "../sampleData/testDb";
-import sessionReducer from "./modules/session";
-import renderingReducer from "./modules/rendering";
-import errorReducer from "./modules/error";
-import productionIndexReducer from "./modules/productionIndex";
+import sessionReducer from "../common/modules/session";
+import renderingReducer from "../common/modules/rendering";
+import errorReducer from "../common/modules/error";
+import productionIndexReducer from "../common/modules/productionIndex";
 import productionEditReducer from "./modules/productionEdit";
 import mediaEditReducer from "./modules/mediaEdit";
 import sourceEditReducer from "./modules/sourceEdit";

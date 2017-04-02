@@ -2,7 +2,7 @@
  * @file Combines host name and port into a single string
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-import { trim, isFinite } from "lodash";
+import { trim } from "lodash";
 import config from "../../config";
 const endPoints: Ropeho.Configuration.EndPointsConfiguration = config.endPoints;
 
@@ -12,7 +12,7 @@ const resolveEndPoint: (host: string, port?: number) => string =
         host = trim(host);
         host = trim(host, ":");
         host = trim(host, "/");
-        if (!isFinite(port)) {
+        if (!isFinite(port) || isNaN(port)) {
             return host;
         } else if (/^https:/.test(host) && port === 443) {
             return host;

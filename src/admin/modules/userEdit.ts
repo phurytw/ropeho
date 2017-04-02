@@ -7,7 +7,7 @@ import { Dispatch, Action } from "redux";
 import { Map, fromJS } from "immutable";
 import { ThunkAction } from "redux-thunk";
 import { join } from "lodash";
-import { fetchThunk } from "../helpers/fetchUtilities";
+import { fetchThunk } from "../../common/helpers/fetchUtilities";
 
 import User = Ropeho.Models.User;
 

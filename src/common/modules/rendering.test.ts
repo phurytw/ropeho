@@ -6,13 +6,13 @@
 import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
 import { RenderingState, defaultState, setRendered, ActionTypes, default as reducer } from "./rendering";
-import { middlewares } from "../store";
 import { is, fromJS } from "immutable";
+import reduxThunk from "redux-thunk";
 should();
 
 describe("Rendering module", () => {
     let store: IStore<RenderingState>;
-    before(() => store = mockStore<RenderingState>(middlewares())(defaultState));
+    before(() => store = mockStore<RenderingState>([reduxThunk])(defaultState));
     afterEach(() => store.clearActions());
     it("Should dispatch an action with boolean", () => {
         store.dispatch(setRendered(true));

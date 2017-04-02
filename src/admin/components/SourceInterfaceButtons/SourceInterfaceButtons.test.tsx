@@ -6,7 +6,7 @@
 import { should } from "chai";
 import { shallow, ShallowWrapper } from "enzyme";
 import * as React from "react";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { SourceInterfaceButtonsProps, SourceInterfaceButtons } from "./SourceInterfaceButtons";
 import { Button } from "react-toolbox";

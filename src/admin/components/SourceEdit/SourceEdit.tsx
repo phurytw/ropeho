@@ -5,8 +5,8 @@
 /// <reference path="../../typings.d.ts" />
 import * as React from "react";
 import { SourceEditMetaData } from "../SourceEditMetaData";
-import MediaPreviewImage from "../MediaPreviewImage";
-import MediaPreviewVideo from "../MediaPreviewVideo";
+import MediaPreviewImage from "../../../common/components/MediaPreviewImage";
+import MediaPreviewVideo from "../../../common/components/MediaPreviewVideo";
 import MediaPreviewPointer from "../MediaPreviewPointer";
 import { MediaTypes } from "../../../enum";
 import { sourcePreview } from "./styles.css";

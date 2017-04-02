@@ -18,7 +18,7 @@ import GenericRepository from "./dal/genericRepository";
 import { verifyPassword } from "./accounts/password";
 import { normalizeEmail, isEmail } from "validator";
 import { renderFile } from "ejs";
-import { uriFriendlyFormat } from "./helpers/uriFriendlyFormat";
+import { uriFriendlyFormat } from "../common/helpers/uriFriendlyFormat";
 import * as connectRedis from "connect-redis";
 
 // Routes

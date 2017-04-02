@@ -17,7 +17,7 @@ import mailer from "../helpers/mailer";
 import { renderAsString } from "../app";
 import { authenticate, AuthenticateOptions } from "passport";
 import config from "../../config";
-import { isUser } from "../helpers/entityUtilities";
+import { isUser } from "../../common/helpers/entityUtilities";
 import ErrorResponse from "../helpers/errorResponse";
 import { Roles, ErrorCodes } from "../../enum";
 

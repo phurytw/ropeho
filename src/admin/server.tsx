@@ -14,16 +14,16 @@ import { StaticRouter } from "react-router-dom";
 import { matchRoutes, renderRoutes, MatchedRoute } from "react-router-config";
 import "isomorphic-fetch";
 import * as serialize from "serialize-javascript";
-import { setRendered } from "./modules/rendering";
+import { setRendered } from "../common/modules/rendering";
 import { Provider } from "react-redux";
 import { Helmet, HelmetData } from "react-helmet";
 import config from "../config";
-import { ADMIN_DEV_SERVER_END_POINT, API_END_POINT } from "./helpers/resolveEndPoint";
+import { ADMIN_DEV_SERVER_END_POINT, API_END_POINT } from "../common/helpers/resolveEndPoint";
 import createStore from "./store";
 import * as httpProxy from "http-proxy";
 
 // hook to handle css modules
-import hook from "./helpers/cssModulesHook";
+import hook from "../common/helpers/cssModulesHook";
 hook();
 import routeConfig from "./routes";
 

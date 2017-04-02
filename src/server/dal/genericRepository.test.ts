@@ -7,7 +7,7 @@
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
 import RedisGenericRepository from "../dal/genericRepository";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import config from "../../config";
 import { createClient, RedisClient, Multi } from "redis";
 import { MediaTypes } from "../../enum";

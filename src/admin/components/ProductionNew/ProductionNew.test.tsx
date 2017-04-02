@@ -8,7 +8,7 @@ import { should, use } from "chai";
 import { spy } from "sinon";
 import { shallow, ShallowWrapper } from "enzyme";
 import * as chaiEnzyme from "chai-enzyme";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import ProductionNew from "./ProductionNew";
 import { Input } from "react-toolbox";

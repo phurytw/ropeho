@@ -17,8 +17,8 @@ import { deserializeCookie } from "./accounts/authorize";
 import { createFileUploadTask, createProcessImageTask, createProcessVideoTask } from "./media/taskQueue";
 import { createHash } from "crypto";
 import { isMD5, isUUID } from "validator";
-import { getMedias, getMediaFromEntity, getSourceFromMedia, getEntityType, updateMediaInEntity, updateSourceInMedia } from "./helpers/entityUtilities";
-import uriFriendlyFormat from "./helpers/uriFriendlyFormat";
+import { getMedias, getMediaFromEntity, getSourceFromMedia, getEntityType, updateMediaInEntity, updateSourceInMedia } from "../common/helpers/entityUtilities";
+import uriFriendlyFormat from "../common/helpers/uriFriendlyFormat";
 import { join, basename, extname } from "path";
 
 import DownloadOptions = Ropeho.Socket.DownloadOptions;

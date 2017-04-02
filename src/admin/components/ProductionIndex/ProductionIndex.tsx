@@ -8,7 +8,7 @@ import { connect } from "react-redux";
 import { RopehoAdminState } from "../../reducer";
 import { Dispatch } from "redux";
 import { getProductions, getHasRendered } from "../../selectors";
-import { fetchProductions, createProduction, Actions } from "../../modules/productionIndex";
+import { fetchProductions, createProduction, Actions } from "../../../common/modules/productionIndex";
 import { Tabs, Tab } from "react-toolbox";
 import { PartialRouteComponentProps } from "react-router-dom";
 import ProductionNew from "../ProductionNew";

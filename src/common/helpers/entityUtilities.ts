@@ -2,8 +2,6 @@
  * @file Module that manipulates entities
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-
-/// <reference path="../typings.d.ts" />
 import { EntityType, MediaPermissions } from "../../enum";
 import { isFinite, keys, isArray, flatMap, map, every, includes, filter } from "lodash";
 import * as _ from "lodash";

@@ -7,7 +7,7 @@ import { should } from "chai";
 import { default as mockStore, IStore } from "redux-mock-store";
 import { ProductionIndexState, defaultState, fetchProductions, createProduction, ActionTypes, default as reducer } from "./productionIndex";
 import { ActionTypes as ErrorTypes } from "./error";
-import { middlewares } from "../store";
+import reduxThunk from "redux-thunk";
 import * as nock from "nock";
 import { ADMIN_END_POINT } from "../helpers/resolveEndPoint";
 import { productions } from "../../sampleData/testDb";
@@ -21,12 +21,15 @@ import Models = Ropeho.Models;
 describe("Production index module", () => {
     let store: IStore<ProductionIndexState>;
     before(() => {
-        store = mockStore<ProductionIndexState>(middlewares({
+        store = mockStore<ProductionIndexState>([reduxThunk.withExtraArgument({
             host: ADMIN_END_POINT,
+            init: {
+                credentials: "include"
+            },
             error: {
                 type: ErrorTypes.SET_ERROR
             }
-        }))(defaultState);
+        })])(defaultState);
     });
     afterEach(() => {
         store.clearActions();

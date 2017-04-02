@@ -9,7 +9,7 @@ import * as sinonChai from "sinon-chai";
 import * as React from "react";
 import { StaticRouter } from "react-router-dom";
 import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { Dropdown, Input, Dialog } from "react-toolbox";
 import { MediaEdit, MediaEditProps, MediaEditState } from "./MediaEdit";

@@ -22,7 +22,7 @@ import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
 import * as passport from "passport";
 import mailer from "../helpers/mailer";
-import uriFriendlyFormat from "../helpers/uriFriendlyFormat";
+import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import * as detect from "detect-port";
 should();
 use(sinonChai);

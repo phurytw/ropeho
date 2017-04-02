@@ -8,7 +8,7 @@ import { stub, spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import * as React from "react";
 import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
-import hook from "../../helpers/cssModulesHook";
+import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { MediaPreviewPointer, MediaPreviewPointerProps } from "./MediaPreviewPointer";
 import { image, video } from "../../../sampleData/testMedias";

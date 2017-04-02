@@ -8,8 +8,8 @@ import { IStore, default as mockStore } from "redux-mock-store";
 import { ActionTypes, defaultState, TransferQueueState, addToQueue, removeFromQueue, setTransferQueue, default as reducer } from "./transferQueue";
 import { productions } from "../../sampleData/testDb";
 import { head } from "lodash";
-import { middlewares } from "../store";
 import { is, fromJS } from "immutable";
+import reduxThunk from "redux-thunk";
 should();
 
 import SourceData = Ropeho.Socket.SourceData;
@@ -22,7 +22,7 @@ describe("Transfer queue modoule", () => {
         sourceId: productions[0].background.sources[0]._id
     };
     const data: ArrayBuffer = new ArrayBuffer(100);
-    before(() => store = mockStore<TransferQueueState>(middlewares())(defaultState));
+    before(() => store = mockStore<TransferQueueState>([reduxThunk])(defaultState));
     afterEach(() => store.clearActions());
     describe("Action creators", () => {
         it("Should dispatch a source data to be added to the queue", () => {
