@@ -35,19 +35,20 @@ export class SourceEdit extends React.Component<SourceEditProps, {}> {
                     mediaPreview = <MediaPreviewVideo source={source} />;
                     break;
                 case MediaTypes.Slideshow:
+                    mediaPreview = <MediaPreviewImage source={source} />;
                     break;
             }
-            return <div>
-                {
-                    mediaPreview ? <div className={sourcePreview}>
-                        {mediaPreview}
-                        <MediaPreviewPointer source={source} type={type} setSource={setSource} />
-                    </div> : ""
-                }
-                <SourceEditMetaData source={source} setSource={setSource} />
-            </div>;
+            if (mediaPreview) {
+                return <div className={sourcePreview}>
+                    {mediaPreview}
+                    <MediaPreviewPointer source={source} type={type} setSource={setSource} />
+                    <SourceEditMetaData source={source} setSource={setSource} />
+                </div>;
+            } else {
+                return null;
+            }
         } else {
-            return <div></div>;
+            return null;
         }
     }
 }

@@ -1,0 +1,27 @@
+.mpEnter {
+    opacity: 0;
+}
+
+.mpEnterActive {
+    opacity: 1;
+    transition: opacity 500ms ease-in;
+}
+
+.mpLeave {
+    opacity: 1;
+}
+
+.mpLeaveActive {
+    opacity: 0;
+    transition: opacity 500ms ease-in;
+}
+
+.mp {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.mp > * {
+    position: absolute;
+}

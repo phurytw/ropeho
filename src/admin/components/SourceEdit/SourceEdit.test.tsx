@@ -10,6 +10,7 @@ import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { SourceEdit, SourceEditProps } from "./SourceEdit";
 import { SourceEditMetaData } from "../SourceEditMetaData";
+import { MediaTypes } from "../../../enum";
 should();
 
 describe("Source Edit component", () => {
@@ -20,7 +21,7 @@ describe("Source Edit component", () => {
         zoom: 0
     };
     it("Should have a source edit form", () => {
-        const wrapper: ShallowWrapper<SourceEditProps, {}> = shallow(<SourceEdit source={source} />);
+        const wrapper: ShallowWrapper<SourceEditProps, {}> = shallow(<SourceEdit source={source} type={MediaTypes.Image} />);
         wrapper.find(SourceEditMetaData).should.have.lengthOf(1);
     });
 });

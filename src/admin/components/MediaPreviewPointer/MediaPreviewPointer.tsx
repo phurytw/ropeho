@@ -43,6 +43,7 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
         if (source && setDimensions) {
             switch (type) {
                 case MediaTypes.Image:
+                case MediaTypes.Slideshow:
                     const imgElement: HTMLImageElement = new Image();
                     imgElement.onload = () => {
                         setDimensions(imgElement.width, imgElement.height);

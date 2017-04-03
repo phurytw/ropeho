@@ -20,6 +20,7 @@ import { Button, Tabs, Tab, Dialog } from "react-toolbox";
 import { headerBar } from "./headerBar.css";
 import { deleteDialog } from "./deleteDialog.css";
 import * as entityUtils from "../../../common/helpers/entityUtilities";
+import MediaPreview from "../../../common/components/MediaPreview";
 import ProductionEditMetaData from "../ProductionEditMetaData";
 import MediaEdit from "../MediaEdit";
 
@@ -219,17 +220,25 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                             path="/productions/:productionId/banniere"
                             render={() => {
                                 if (selectedMedia) {
-                                    return <MediaEdit
-                                        media={selectedMedia}
-                                        setMedia={updateMedia}
-                                        sources={sources}
-                                        setError={setError}
-                                        setSource={this.updateSource}
-                                        source={selectedSource}
-                                        deleteSources={this.removeSources}
-                                        setSourcePosition={setSourcePosition}
-                                        selectSource={this.navigateToSource.bind(this)}
-                                        publicOnly />;
+                                    return <div>
+                                        <div style={{ height: "300px" }}>
+                                            <MediaPreview media={{
+                                                ...selectedMedia,
+                                                sources
+                                            }} />
+                                        </div>
+                                        <MediaEdit
+                                            media={selectedMedia}
+                                            setMedia={updateMedia}
+                                            sources={sources}
+                                            setError={setError}
+                                            setSource={this.updateSource}
+                                            source={selectedSource}
+                                            deleteSources={this.removeSources}
+                                            setSourcePosition={setSourcePosition}
+                                            selectSource={this.navigateToSource.bind(this)}
+                                            publicOnly />
+                                    </div>;
                                 } else {
                                     return null;
                                 }

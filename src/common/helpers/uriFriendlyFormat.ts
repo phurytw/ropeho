@@ -10,5 +10,5 @@ import { deburr } from "lodash";
  * @returns {string} formatted string
  */
 export const uriFriendlyFormat: (input: string) => string =
-    (input: string): string => deburr(input.toLowerCase()).replace(/[^a-z0-9\._~-]/g, "_");
+    (input: string): string => typeof input === "string" && deburr(input.toLowerCase()).replace(/[^a-z0-9\._~-]/g, "_");
 export default uriFriendlyFormat;
