@@ -1,5 +1,5 @@
 /**
- * @file Configuration object for the production environment
+ * @file Configuration object for the development environment
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 /// <reference path="../ropeho.d.ts" />
@@ -61,14 +61,14 @@ const config: Ropeho.Configuration.ConfigurationObject = {
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: true,
-            maxAge: 31536000000
+            secure: false,
+            maxAge: 36000000
         }
     },
     redis: {
-        host: "redis",
+        host: "localhost",
         port: 6379,
-        db: "0"
+        db: "1"
     },
     users: {
         tokenLength: 48,
@@ -148,7 +148,7 @@ const config: Ropeho.Configuration.ConfigurationObject = {
             bitrate: 500,
             timestamp: "00:00:05"
         },
-        chunkSize: 8192,
+        chunkSize: 131072,
         overwrite: false
     },
     taskQueue: {
