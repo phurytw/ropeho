@@ -27,6 +27,7 @@ export default (store: Store<RopehoAdminState>, endPoint: string = API_END_POINT
     let isWorking: boolean = false;
     let uploadQueue: UploadEntry[] = [];
     let currentItem: UploadEntry;
+    let file: File;
 
     // socket
     const io: SocketIOClient.Socket = socketIoClient.connect(endPoint, {
@@ -40,8 +41,10 @@ export default (store: Store<RopehoAdminState>, endPoint: string = API_END_POINT
             isWorking = true;
             try {
                 await store.dispatch(socketAuthentication(io.id));
+                file = getFile(store.getState(), currentItem.objectURL);
                 io.emit(SocketEvents.UploadInit, {
-                    target: currentItem.target
+                    target: currentItem.target,
+                    filename: file && file.name ? file.name : undefined
                 } as UploadOptions);
             } catch (error) {
                 isWorking = true;
@@ -74,7 +77,6 @@ export default (store: Store<RopehoAdminState>, endPoint: string = API_END_POINT
     // events
     io.on(SocketEvents.UploadInit, async () => {
         const hash: sparkMD5.ArrayBuffer = new sparkMD5.ArrayBuffer();
-        const file: File = getFile(store.getState(), currentItem.objectURL);
         const reader: FileReader = new FileReader();
         const max: number = file.size;
         let bytesSent: number = 0;

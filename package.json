@@ -14,7 +14,8 @@
     "test:api": "cross-env NODE_ENV=test mocha src/server/**/*.test.ts --compilers ts:./ts-node-register",
     "coverage:server": "nyc --reporter=html --reporter=lcov --reporter=text npm run test:api",
     "lint": "tslint src/server/**/*.ts",
-    "clean": "rimraf ./src/**/*.js.map && rimraf ./src/**/*.js"
+    "clean": "rimraf ./src/**/*.js.map && rimraf ./src/**/*.js && rimraf ./media/**/* && rimraf ./temp/**/*",
+    "clean:temp": "rimraf ./temp/**/*"
   },
   "repository": {
     "type": "git",

@@ -21,7 +21,7 @@ import { createHash, Hash } from "crypto";
 import { isMD5, isUUID } from "validator";
 import { getMedias, getMediaFromEntity, getSourceFromMedia, getEntityType, updateMediaInEntity, updateSourceInMedia } from "../common/helpers/entityUtilities";
 import uriFriendlyFormat from "../common/helpers/uriFriendlyFormat";
-import { basename, extname } from "path";
+import { basename, extname, dirname } from "path";
 
 import DownloadOptions = Ropeho.Socket.DownloadOptions;
 import DownloadHashes = Ropeho.Socket.DownloadHashes;
@@ -372,9 +372,14 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                         dest: sourceTarget.src
                     });
 
+
                     // Upload / create WebM WebP
                     switch (mediaTarget.type) {
                         case MediaTypes.Video:
+                            // Add extensions to converted files
+                            sourceTarget.preview = `${dirname(sourceTarget.preview)}/${basename(sourceTarget.preview, extname(sourceTarget.preview))}.webm`;
+                            sourceTarget.fallback = `${dirname(sourceTarget.fallback)}/${basename(sourceTarget.fallback, extname(sourceTarget.fallback))}.webp`;
+                            // Create video conversion task
                             createProcessVideoTask({
                                 source: sourceTarget.src,
                                 dest: sourceTarget.preview,
@@ -383,6 +388,9 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                             break;
                         case MediaTypes.Slideshow:
                         case MediaTypes.Image:
+                            // Add extensions to converted files
+                            sourceTarget.preview = `${dirname(sourceTarget.preview)}/${basename(sourceTarget.preview, extname(sourceTarget.preview))}.webp`;
+                            // Create image conversion task
                             createProcessImageTask({
                                 source: sourceTarget.src,
                                 dest: sourceTarget.preview

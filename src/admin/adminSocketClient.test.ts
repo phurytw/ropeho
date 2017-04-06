@@ -145,7 +145,8 @@ describe("Admin socket client", () => {
             let receivedData: Buffer = new Buffer(0);
             let bytesSent: number = 0;
             server.on("connect", (client: SocketIO.Socket) => {
-                client.on(SocketEvents.UploadInit, () => {
+                client.on(SocketEvents.UploadInit, ({ filename }: Ropeho.Socket.UploadOptions) => {
+                    filename.should.equal(file.name);
                     client.emit(SocketEvents.UploadInit);
                 });
                 client.on(SocketEvents.Upload, (data: ArrayBuffer) => {

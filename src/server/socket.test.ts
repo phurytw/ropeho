@@ -12,6 +12,7 @@ import * as sinonChai from "sinon-chai";
 import GenericRepository from "./dal/genericRepository";
 import GlobalRepository from "./dal/globalRepository";
 import mediaManager from "./media/mediaManager";
+import tempMediaManager from "./media/tempMediaManager";
 import { filter, isArray, includes, range, head, last, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
 import { attach, getClients, getLocked, kickClient, getUploading, getDownloading, assignCookieToClient } from "./socket";
@@ -138,13 +139,20 @@ describe("Socket IO Server", () => {
                     throw new Error("File not found");
                 }
             });
-        sandbox.stub(mediaManager, "startUpload")
+        sandbox.stub(tempMediaManager, "startUpload")
             .callsFake((media: string): NodeJS.WritableStream => ({
                 writable: true,
                 write: (data: Buffer | string, cb?: Function) => true,
                 end: () => true
             } as any));
         sandbox.stub(mediaManager, "filesize")
+            .callsFake((media: string): Promise<number> =>
+                new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void) => {
+                    setTimeout(() => {
+                        resolve(expectedBuffer.byteLength);
+                    }, throttleTime);
+                }));
+        sandbox.stub(tempMediaManager, "filesize")
             .callsFake((media: string): Promise<number> =>
                 new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void) => {
                     setTimeout(() => {
@@ -173,7 +181,9 @@ describe("Socket IO Server", () => {
         sandbox.restore();
         clientIo.disconnect();
     });
-    after(() => serverIo.close());
+    after(() => {
+        serverIo.close();
+    });
     describe("Media management", () => {
         describe("Downloading", () => {
             it("Should reject if the request is not valid", (done: MochaDone) => {
@@ -350,7 +360,7 @@ describe("Socket IO Server", () => {
             it("Should reject if the user is not logged in", (done: MochaDone) => {
                 authenticatedUser = { _id: undefined };
                 clientIo.on(SocketEvents.BadRequest, () => {
-                    mediaManager.startUpload.should.have.not.been.called;
+                    tempMediaManager.startUpload.should.have.not.been.called;
                     done();
                 });
                 clientIo.on("connect", () => {
@@ -363,7 +373,7 @@ describe("Socket IO Server", () => {
                 const media: Media = category.banner,
                     [src]: Source[] = media.sources;
                 clientIo.on(SocketEvents.BadRequest, () => {
-                    mediaManager.startUpload.should.have.not.been.called;
+                    tempMediaManager.startUpload.should.have.not.been.called;
                     done();
                 });
                 clientIo.on("connect", () =>
@@ -380,6 +390,7 @@ describe("Socket IO Server", () => {
                     } else {
                         task.createProcessImageTask.should.have.been.calledOnce;
                     }
+                    tempMediaManager.filesize.should.have.been.calledOnce;
                     task.createFileUploadTask.should.have.been.calledOnce;
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
@@ -483,7 +494,7 @@ describe("Socket IO Server", () => {
             it("Should reject upload if any entity is not found", (done: MochaDone) => {
                 const media: Media = category.banner;
                 clientIo.on(SocketEvents.BadRequest, () => {
-                    mediaManager.startUpload.should.have.not.been.calledOnce;
+                    tempMediaManager.startUpload.should.have.not.been.calledOnce;
                     done();
                 });
                 clientIo.on("connect", () =>
@@ -504,19 +515,17 @@ describe("Socket IO Server", () => {
                     clientIo.emit(SocketEvents.UploadEnd);
                 });
             });
-            it("Should create a new name if it is its first upload", (done: MochaDone) => {
+            it("Should create a new name if it is its first upload and add extensions to preview images", (done: MochaDone) => {
                 entityType = EntityType.Category;
                 const category: Category = last<Category>(categories),
                     media: Media = category.banner,
                     [src]: Source[] = media.sources;
                 src.src = "";
                 const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}_`)}`;
+                const expectedDest: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}__preview.webp`)}`;
                 clientIo.on(SocketEvents.UploadEnd, () => {
-                    if (media.type === MediaTypes.Video) {
-                        task.createProcessVideoTask.should.have.been.calledOnce;
-                    } else {
-                        task.createProcessImageTask.should.have.been.calledOnce;
-                    }
+                    task.createProcessImageTask.should.have.been.calledOnce;
+                    task.createProcessImageTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedDest } as Ropeho.Tasks.ProcessImageOptions);
                     task.createFileUploadTask.should.have.been.calledOnce;
                     task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
@@ -541,17 +550,17 @@ describe("Socket IO Server", () => {
                     filename: string = "test.txt";
                 src.src = "";
                 const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}_${filename}`)}`;
-                clientIo.on(SocketEvents.UploadEnd, () => {
-                    if (media.type === MediaTypes.Video) {
-                        task.createProcessVideoTask.should.have.been.calledOnce;
-                    } else {
-                        task.createProcessImageTask.should.have.been.calledOnce;
-                    }
-                    task.createFileUploadTask.should.have.been.calledOnce;
-                    task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
-                    GlobalRepository.prototype.update.should.have.been.calledOnce;
-                    done();
-                });
+                    clientIo.on(SocketEvents.UploadEnd, () => {
+                        if (media.type === MediaTypes.Video) {
+                            task.createProcessVideoTask.should.have.been.calledOnce;
+                        } else {
+                            task.createProcessImageTask.should.have.been.calledOnce;
+                        }
+                        task.createFileUploadTask.should.have.been.calledOnce;
+                        task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
+                        GlobalRepository.prototype.update.should.have.been.calledOnce;
+                        done();
+                    });
                 clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
                         clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
