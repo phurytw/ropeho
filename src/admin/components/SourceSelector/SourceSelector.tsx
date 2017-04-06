@@ -19,6 +19,7 @@ export interface SourceSelectorProps {
     setSource?: (source: Source) => any;
     selectSource?: (sourceId: string) => any;
     setSourcePosition?: (sourceId: string, position: number) => any;
+    setFile?: (objectURL: string, file: File) => any;
 }
 
 export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
@@ -50,8 +51,8 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
         setSourcePosition(sourceId, sources.map((s: Source) => s._id).indexOf(sourceId) + 1);
     }
     render(): JSX.Element {
-        const { sources, media, setError, selectSource }: SourceSelectorProps = this.props;
-        let addNew: JSX.Element = <SourceInterface setError={setError} setSrc={this.setFromUrl} />;
+        const { sources, media, setError, selectSource, setFile }: SourceSelectorProps = this.props;
+        let addNew: JSX.Element = <SourceInterface setError={setError} setSrc={this.setFromUrl} setFile={setFile} />;
         let isVideo: boolean = false;
         // tslint:disable:react-this-binding-issue
         switch (media && media.type) {
@@ -84,6 +85,7 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
                     selectSource={selectSource}
                     moveDown={this.moveSourceDown}
                     moveUp={this.moveSourceUp}
+                    setFile={setFile}
                 />) : ""
             }
             {addNew}

@@ -41,7 +41,16 @@ jspm_packages
 .vscode/settings.json
 
 # Compiled files
-dist
+/dist/
+
+# Private data
 *.ppk
-src/client/**/*
-*client*
+*.pem
+
+# Temporary files
+/media/
+/temp/
+
+# Not to be included
+/src/client/**/*
+/tsconfig.client.json

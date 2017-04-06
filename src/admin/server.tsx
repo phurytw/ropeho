@@ -21,6 +21,7 @@ import config from "../config";
 import { ADMIN_DEV_SERVER_END_POINT, API_END_POINT } from "../common/helpers/resolveEndPoint";
 import createStore from "./store";
 import * as httpProxy from "http-proxy";
+import { createServer, Server } from "http";
 
 // hook to handle css modules
 import hook from "../common/helpers/cssModulesHook";
@@ -33,9 +34,11 @@ const app: Express = express();
 app.use(express.static("./dist/admin/static"));
 
 // proxying api requests
-const apiProxy: httpProxy = httpProxy.createProxyServer({});
+const apiProxy: httpProxy = httpProxy.createProxyServer({
+    target: API_END_POINT
+});
 app.all("/api*", (req: Request, res: Response, next: NextFunction) => {
-    apiProxy.web(req, res, { target: API_END_POINT });
+    apiProxy.web(req, res);
 });
 
 // server side rendering
@@ -119,7 +122,8 @@ if (process.env.NODE_ENV !== "test") {
         if (err) {
             throw err;
         }
-        app.listen(port, (err: Error) => {
+        const server: Server = createServer(app);
+        server.listen(port, (err: Error) => {
             if (err) {
                 throw err;
             }

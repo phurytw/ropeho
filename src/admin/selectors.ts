@@ -4,12 +4,13 @@
  */
 /// <reference path="./typings.d.ts" />
 import { RopehoAdminState } from "./reducer";
-import { OrderedSet, Map, List } from "immutable";
+import { Map, List } from "immutable";
 
 import User = Ropeho.Models.User;
 import Production = Ropeho.Models.Production;
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
+import UploadEntry = Ropeho.Socket.UploadEntry;
 
 export const getHasRendered: (state: RopehoAdminState) => boolean =
     (state: RopehoAdminState): boolean => state.rendering.get("hasRendered");
@@ -47,9 +48,17 @@ export const getMedias: (state: RopehoAdminState) => Media[] =
 
 export const getSources: (state: RopehoAdminState) => Source[] =
     (state: RopehoAdminState): Source[] => {
-        let sources: Source[] = [];
-        (state.sourceEdit.get("order") as OrderedSet<string>).forEach((id: string) => sources = [...sources, state.sourceEdit.getIn(["sources", id]).toJS()]);
-        return sources;
+        return (state.sourceEdit.get("sources") as Map<string, any>).toList().toJS();
+    };
+
+export const getUpdatedMedias: (state: RopehoAdminState) => Media[] =
+    (state: RopehoAdminState): Media[] => {
+        let medias: Media[] = [];
+        (state.mediaEdit.get("order") as List<string>).forEach((id: string) => {
+            const media: Map<string, any> = state.mediaEdit.getIn(["medias", id]).set("sources", (state.mediaEdit.getIn(["sources", id]) as List<string>).map((sid: string) => state.sourceEdit.getIn(["sources", sid])));
+            medias = [...medias, media.toJS()];
+        });
+        return medias;
     };
 
 export const getSelectedMedia: (state: RopehoAdminState) => Media =
@@ -72,4 +81,28 @@ export const getSourcesFromSelectedMedia: (state: RopehoAdminState) => Source[] 
         } else {
             return [];
         }
+    };
+
+export const getUploadQueue: (state: RopehoAdminState) => UploadEntry[] =
+    (state: RopehoAdminState): UploadEntry[] => {
+        let entries: UploadEntry[] = [];
+        (state.uploadQueue.get("order") as List<string>).forEach((id: string) => entries = [...entries, state.uploadQueue.getIn(["uploadQueue", id]).toJS()]);
+        return entries;
+    };
+
+export const getActiveUploadQueue: (state: RopehoAdminState) => UploadEntry[] =
+    (state: RopehoAdminState): UploadEntry[] => {
+        let entries: UploadEntry[] = [];
+        (state.uploadQueue.get("order") as List<string>).forEach((id: string) => {
+            const entry: UploadEntry = state.uploadQueue.getIn(["uploadQueue", id]).toJS();
+            if (entry.active) {
+                entries = [...entries, state.uploadQueue.getIn(["uploadQueue", id]).toJS()];
+            }
+        });
+        return entries;
+    };
+
+export const getFile: (state: RopehoAdminState, objectURL: string) => File =
+    (state: RopehoAdminState, objectURL: string): File => {
+        return state.objectURL.getIn(["objectURLs", objectURL]);
     };

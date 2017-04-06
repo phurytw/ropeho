@@ -18,7 +18,7 @@ import { middlewares } from "../../store";
 import { Roles } from "../../../enum";
 import { includes } from "lodash";
 hook();
-import { Link, AppBar } from "react-toolbox";
+import { Link, AppBar, Snackbar } from "react-toolbox";
 import { LayoutProps, mapDispatchToProps, mapStateToProps, Layout } from "./Layout";
 import { Redirect } from "react-router-dom";
 should();
@@ -40,7 +40,8 @@ describe("Layout component", () => {
         },
         history: {
             replace: () => ({})
-        } as any
+        } as any,
+        uploadQueue: []
     };
     before(() => {
         store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
@@ -73,11 +74,15 @@ describe("Layout component", () => {
                 const instance: Layout = wrapper.instance() as Layout;
                 wrapper.find(AppBar).find(Link).find({ onClick: instance.goToTasks }).should.have.lengthOf(1);
             });
-            it("Should have a navbar with a link to a disconnect button", () =>
+            it("Should have a navbar with a link to a disconnect button", () => {
                 shallow(<Layout {...props} />).find(AppBar).find(Link).findWhere((link: ShallowWrapper<any, {}>) => {
                     const props: any = link.props();
                     return typeof props.onClick === "function" && includes(props.label, "Déconnexion");
-                }).should.have.lengthOf(1));
+                }).should.have.lengthOf(1);
+            });
+            it("Should display currently transferring files at the bottom", () => {
+                shallow(<Layout {...props} uploadQueue={[{ bytesSent: 0, id: "id", max: 0, target: undefined, active: true, objectURL: "" }]} />).find(Snackbar).should.have.lengthOf(1);
+            });
         });
         describe("Redirection", () => {
             it("Should have a redirection element if the user is not allowed", () =>
@@ -153,6 +158,12 @@ describe("Layout component", () => {
             mapStateToProps(store.getState());
             getHasRenderedSpy.should.have.been.calledOnce;
             getHasRenderedSpy.restore();
+        });
+        it("Should get the upload queue", () => {
+            const getActiveUploadQueueSpy: sinon.SinonSpy = spy(selectors, "getActiveUploadQueue");
+            mapStateToProps(store.getState());
+            getActiveUploadQueueSpy.should.have.been.calledOnce;
+            getActiveUploadQueueSpy.restore();
         });
     });
     describe("Lifecycle", () => {

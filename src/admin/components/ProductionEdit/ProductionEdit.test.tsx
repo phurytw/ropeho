@@ -13,6 +13,8 @@ import { productions } from "../../../sampleData/testDb";
 import * as productionEditModule from "../../modules/productionEdit";
 import * as mediaEditModule from "../../modules/mediaEdit";
 import * as sourceEditModule from "../../modules/sourceEdit";
+import * as uploadQueueModule from "../../modules/uploadQueue";
+import * as objectURLModule from "../../modules/objectURL";
 import * as errorModule from "../../../common/modules/error";
 import { IStore, default as mockStore } from "redux-mock-store";
 import { RopehoAdminState, default as rootReducer } from "../../reducer";
@@ -30,8 +32,12 @@ should();
 use(sinonChai);
 use(chaiEnzyme);
 
+import Source = Ropeho.Models.Source;
+import Media = Ropeho.Models.Media;
+import Production = Ropeho.Models.Production;
+
 describe("Production Edit component", () => {
-    const production: Ropeho.Models.Production = productions[0];
+    const production: Production = productions[0];
     let store: IStore<RopehoAdminState>;
     let dispatchStub: sinon.SinonStub;
     const props: ProductionEditProps = {
@@ -176,7 +182,7 @@ describe("Production Edit component", () => {
             const updateSourceSpy: sinon.SinonSpy = spy();
             const addToMediaSpy: sinon.SinonSpy = spy();
             const instance: ProductionEdit = shallow(<ProductionEdit {...props} updateSource={updateSourceSpy} addSourceToMedia={addToMediaSpy} selectedMedia={production.banner} />).instance() as ProductionEdit;
-            const source: Ropeho.Models.Source = {
+            const source: Source = {
                 _id: "sourceId"
             };
             instance.updateSource(source);
@@ -200,9 +206,9 @@ describe("Production Edit component", () => {
             removeMediaSpy.should.have.been.calledOnce;
             removeMediaSpy.should.have.been.calledWith(production.banner._id);
             removeSourcesFromMediaSpy.should.have.been.calledOnce;
-            removeSourcesFromMediaSpy.should.have.been.calledWith(production.banner.sources.map((s: Ropeho.Models.Source) => s._id));
+            removeSourcesFromMediaSpy.should.have.been.calledWith(production.banner.sources.map((s: Source) => s._id));
             removeSourcesSpy.should.have.been.calledOnce;
-            removeSourcesSpy.should.have.been.calledWith(production.banner.sources.map((s: Ropeho.Models.Source) => s._id));
+            removeSourcesSpy.should.have.been.calledWith(production.banner.sources.map((s: Source) => s._id));
         });
         it("Should remove sources from the source state and the media state", () => {
             const removeSourcesFromMediaSpy: sinon.SinonSpy = spy();
@@ -215,12 +221,46 @@ describe("Production Edit component", () => {
                 removeSources: removeSourcesSpy
             };
             const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
-            const sourceIds: string[] = production.banner.sources.map((s: Ropeho.Models.Source) => s._id);
+            const sourceIds: string[] = production.banner.sources.map((s: Source) => s._id);
             instance.removeSources(sourceIds);
             removeSourcesFromMediaSpy.should.have.been.calledOnce;
             removeSourcesFromMediaSpy.should.have.been.calledWith(sourceIds);
             removeSourcesSpy.should.have.been.calledOnce;
             removeSourcesSpy.should.have.been.calledWith(sourceIds);
+        });
+        it("Should update the production with the changes made and redirect to the productions list", (done: MochaDone) => {
+            const pushSpy: sinon.SinonSpy = spy(() => {
+                updateProductionSpy.should.have.been.calledOnce;
+                uploadSpy.should.have.been.calledOnce;
+                updateProductionSpy.should.have.been.calledWithExactly(updatedProduction);
+                getUpdatedMedias.should.have.been.calledOnce;
+                pushSpy.should.have.been.calledOnce;
+                done();
+            });
+            const uploadSpy: sinon.SinonSpy = spy();
+            const newSource: Source = {
+                _id: "newSourceBaby",
+                preview: "blob:http://localhost/something"
+            };
+            const newMedia: Media = {
+                ...production.banner,
+                sources: [newSource]
+            };
+            const updatedProduction: Production = {
+                ...production,
+                banner: newMedia
+            };
+            const updateProductionSpy: sinon.SinonSpy = spy(() => Promise.resolve(updatedProduction));
+            const getUpdatedMedias: sinon.SinonSpy = spy(() => [newMedia, production.background, ...production.medias]);
+            const instance: ProductionEdit = shallow(<ProductionEdit
+                {...props}
+                production={production}
+                getUpdatedMedia={getUpdatedMedias}
+                updateProduction={updateProductionSpy}
+                history={{ push: pushSpy } as any}
+                uploadFile={uploadSpy}
+            />).instance() as ProductionEdit;
+            instance.saveChanges();
         });
     });
     describe("Props", () => {
@@ -264,6 +304,12 @@ describe("Production Edit component", () => {
             mapStateToProps(store.getState());
             getSelectedSourceSpy.should.have.been.calledOnce;
             getSelectedSourceSpy.restore();
+        });
+        it("Should get the updated medias", () => {
+            const getUpdatedMediasSpy: sinon.SinonSpy = spy(selectors, "getUpdatedMedias");
+            mapStateToProps(store.getState()).getUpdatedMedia();
+            getUpdatedMediasSpy.should.have.been.calledOnce;
+            getUpdatedMediasSpy.restore();
         });
         it("Should fetch a single production", () => {
             const fetchStub: sinon.SinonStub = stub(productionEditModule, "fetchProductionById");
@@ -371,6 +417,34 @@ describe("Production Edit component", () => {
             setSourcePositionStub.should.have.been.calledWith("mediaId", "sourceId", 10);
             setSourcePositionStub.restore();
         });
+        it("Should add a new item to the upload queue", () => {
+            const setEntryInUploadQueueStub: sinon.SinonStub = stub(uploadQueueModule, "setEntryInUploadQueue");
+            const file: Ropeho.Socket.UploadEntry = {
+                id: "id",
+                bytesSent: 0,
+                max: 0,
+                target: {
+                    mainId: "main",
+                    mediaId: "media",
+                    sourceId: "source"
+                },
+                active: true,
+                objectURL: ""
+            };
+            mapDispatchToProps(dispatchStub).uploadFile(file);
+            setEntryInUploadQueueStub.should.have.been.calledOnce;
+            setEntryInUploadQueueStub.should.have.been.calledWith(file);
+            setEntryInUploadQueueStub.restore();
+        });
+        it("Should add an objectURL's file in the state", () => {
+            const setFilenameStub: sinon.SinonStub = stub(objectURLModule, "setFile");
+            const objectURL: string = "blob:http://localhost/aNiceBlob";
+            const file: File = new File([new ArrayBuffer(100)], "aNiceFile.png");
+            mapDispatchToProps(dispatchStub).setFile(objectURL, file);
+            setFilenameStub.should.have.been.calledOnce;
+            setFilenameStub.should.have.been.calledWith(objectURL, file);
+            setFilenameStub.restore();
+        });
     });
     describe("Lifecycle", () => {
         it("Should fetch the production, medias and sources on initial render", (done: MochaDone) => {
@@ -388,7 +462,7 @@ describe("Production Edit component", () => {
                     }
                 },
                 setMedias: setMediasSpy,
-                setSources: (sources: Ropeho.Models.Source[]) => {
+                setSources: (sources: Source[]) => {
                     setSourcesSpy(sources);
                     getProductionSpy.should.have.been.calledOnce;
                     getProductionSpy.should.have.been.calledWith("id");

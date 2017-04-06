@@ -14,6 +14,7 @@ import { BrowserRouter } from "react-router-dom";
 import { renderRoutes, RouteConfig } from "react-router-config";
 import App from "./routes";
 import { setRendered } from "../common/modules/rendering";
+import socketClient from "./adminSocketClient";
 import "normalize.css";
 import "./styles/global.css";
 
@@ -35,6 +36,9 @@ render(App);
 
 // enable client side loading
 store.dispatch(setRendered(false));
+
+// start socket client
+socketClient(store);
 
 // hot reloading
 if (module.hot) {

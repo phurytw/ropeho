@@ -296,6 +296,8 @@ declare namespace Ropeho {
         interface MediaConfiguration {
             /** The directory to use when used with the local media manager */
             localDirectory: string;
+            /** The directory to use for temporary files */
+            tempDirectory: string;
             /** The path to the S3 bucket (appended to media host) */
             s3Bucket: string;
             /** Image encoding configuration */
@@ -349,28 +351,32 @@ declare namespace Ropeho {
         interface JobData<T> {
             data: T;
             /** Job's ID */
-            id: string;
+            id: number;
         }
         /** Options when creating a task to process an incoming video */
         interface ProcessImageOptions {
-            /** Image as a buffer */
-            data: Buffer;
+            /** Path to image */
+            source: string;
             /** Destination in the media directory */
             dest: string;
         }
         /** Options when creating a task to process an incoming image */
         interface ProcessVideoOptions {
-            /** Video as a buffer */
-            data: Buffer;
+            /** Path to video */
+            source: string;
             /** Destination in the media directory */
             dest: string;
             /** Destination of the fallback screenshot */
             fallbackDest: string;
+            /** Cut off the beginning of the video until this point */
+            offset?: number;
+            /** Duration for the preview video */
+            duration?: number;
         }
         /** Options when creating a task to process a file upload */
         interface FileUploadOptions {
-            /** File as a buffer */
-            data: Buffer;
+            /** Path to file */
+            source: string;
             /** Destination in the media directory */
             dest: string;
         }
@@ -387,29 +393,27 @@ declare namespace Ropeho {
             startUpload(media: string): NodeJS.WritableStream;
             rename(source: string, dest: string): Promise<void>;
             newName(path: string): Promise<string>;
+            filesize(media: string): Promise<number>;
         }
 
         interface CreateWebMOptions {
             dest?: string;
             offset?: number;
             duration?: number;
+            setProgress?: (progress: number) => any;
         }
     }
 
     namespace Socket {
         interface DownloadOptions {
-            cookie: string;
             targets: SourceTargetOptions[];
         }
         interface UploadOptions {
-            cookie: string;
             target: SourceTargetOptions;
-            hash: string;
             filename?: string;
         }
         interface DownloadData {
             file: string;
-            hash: string;
             fileSize: number;
             totalSize: number;
         }
@@ -439,19 +443,39 @@ declare namespace Ropeho {
             /** ID of the source */
             sourceId?: string;
         }
+        /** Data structure relative to a connected client */
         interface SocketClient {
+            /** Socket.IO Socket of the client */
             socket: SocketIO.Socket;
+            /** If the client is downloading, uploading or idle */
             state: number;
-            data?: Buffer;
+            /** Stream to write on when uploading */
+            uploadStream?: NodeJS.WritableStream;
+            /** Requested resource for upload */
             target?: SourceTargetOptions;
-            filename?: string;
-            hash?: string;
+            /** Requested entity for upload */
+            entityTarget?: Models.Production | Models.Category | Models.PresentationContainer;
+            /** Requested media for upload */
+            mediaTarget?: Models.Media;
+            /** Requested source for upload */
+            sourceTarget?: Models.Source;
+            /** Hash to update while uploading */
+            hash?: any;
+            /** Files requested for download */
             downloading?: string[];
+            /** Authentication cookie */
+            cookie?: string;
         }
-        interface SourceData {
-            isUpload: boolean;
+        interface UploadEntry {
+            id?: string;
+            max: number;
+            bytesSent: number;
             target: SourceTargetOptions;
-            data: ArrayBuffer;
+            active: boolean;
+            objectURL: string;
+        }
+        interface DownloadHashes {
+            [key: string]: string;
         }
     }
 

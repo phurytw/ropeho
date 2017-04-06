@@ -11,6 +11,7 @@ import * as webpackHotMiddleware from "webpack-hot-middleware";
 import * as webpack from "webpack";
 import { Compiler, Configuration } from "webpack";
 import { adminConfig } from "../../webpack.config";
+import { createServer, Server } from "http";
 
 const app: Express = express();
 // tslint:disable:no-http-string
@@ -34,7 +35,8 @@ if (process.env.NODE_ENV !== "production") {
         },
     }));
     app.use(webpackHotMiddleware(compiler));
-    app.listen(port, (err: Error) => {
+    const server: Server = createServer(app);
+    server.listen(port, (err: Error) => {
         if (err) {
             throw err;
         }

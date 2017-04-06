@@ -20,6 +20,7 @@ export interface SourceInterfaceProps {
     selectSource?: (sourceId: string) => any;
     moveUp?: (sourceId: string) => any;
     moveDown?: (sourceId: string) => any;
+    setFile?: (objectURL: string, file: File) => any;
 }
 
 export class SourceInterface extends React.Component<SourceInterfaceProps, SourceInterfaceState> {
@@ -32,11 +33,12 @@ export class SourceInterface extends React.Component<SourceInterfaceProps, Sourc
     }
     handleFileChange: () => void = (): void => {
         if (this.fileInput.files.length > 0) {
-            const { setSrc, setError, isVideo, source }: SourceInterfaceProps = this.props;
+            const { setSrc, setError, isVideo, source, setFile }: SourceInterfaceProps = this.props;
             const file: File = this.fileInput.files[0];
+            const objectURL: string = URL.createObjectURL(file);
             if (isVideo) {
                 if (document.createElement("video").canPlayType(file.type)) {
-                    setSrc(source, URL.createObjectURL(file));
+                    setSrc(source, objectURL);
                 } else {
                     setError({
                         errorCode: ErrorCodes.InvalidRequest,
@@ -45,8 +47,17 @@ export class SourceInterface extends React.Component<SourceInterfaceProps, Sourc
                     });
                 }
             } else {
-                setSrc(source, URL.createObjectURL(file));
+                if (!file.type.startsWith("image")) {
+                    setError({
+                        errorCode: ErrorCodes.InvalidRequest,
+                        developerMessage: `Invalid image (mime: ${file.type})`,
+                        userMessage: "Ce fichier ne peut pas être utilisé comme image"
+                    });
+                } else {
+                    setSrc(source, objectURL);
+                }
             }
+            setFile(objectURL, file);
         }
     }
     setFileInput: (input: HTMLInputElement) => void = (input: HTMLInputElement): void => {

@@ -28,6 +28,7 @@ export interface MediaEditProps {
     selectSource?: (source: Source) => any;
     deleteSources?: (sourceIds: string[]) => any;
     setSourcePosition?: (mediaId: string, sourceId: string, posiiton: number) => any;
+    setFile?: (objectURL: string, file: File) => any;
 }
 
 export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
@@ -83,7 +84,7 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
         }
     }
     render(): JSX.Element {
-        const { media, publicOnly, sources, setError, setSource, selectSource, source }: MediaEditProps = this.props;
+        const { media, publicOnly, sources, setError, setSource, selectSource, source, setFile }: MediaEditProps = this.props;
         // tslint:disable:react-this-binding-issue
         if (!media) {
             return <div></div>;
@@ -139,7 +140,7 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
             >
                 <p>Il y a actuellement {sources && sources.length} images/vidéo sur ce media. Ils ne seront plus utilisés si le type de media change.</p>
             </Dialog>
-            <SourceSelector media={media} sources={sources} setError={setError} setSource={setSource} setSourcePosition={this.setSourcePosition} selectSource={selectSource} />
+            <SourceSelector media={media} sources={sources} setError={setError} setSource={setSource} setSourcePosition={this.setSourcePosition} selectSource={selectSource} setFile={setFile} />
             <Route
                 path="/productions/:productionId/:mediaId/:sourceId"
                 render={() => {

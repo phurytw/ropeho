@@ -57,20 +57,27 @@ describe("Source interface component", () => {
         });
         it("Should set the src with the new file", () => {
             const setSrcSpy: sinon.SinonSpy = spy();
-            const createObjectURLSpy: sinon.SinonSpy = spy((file: File) => file);
-            const file: File = new File([new ArrayBuffer(100)], "file.jpeg");
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface setSrc={setSrcSpy} />);
+            const setFileSpy: sinon.SinonSpy = spy();
+            const objectURL: string = "blob:http//localhost/aNiceFile";
+            const createObjectURLSpy: sinon.SinonSpy = spy((file: File) => objectURL);
+            const file: File = new File([new ArrayBuffer(100)], "file.jpeg", {
+                type: "image/jpeg"
+            });
+            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface setSrc={setSrcSpy} setFile={setFileSpy} />);
             const instance: SourceInterface = wrapper.instance() as SourceInterface;
             instance.setFileInput({
                 files: [file]
             } as any);
+            const originalCreateObjectURL: any = URL.createObjectURL;
             URL.createObjectURL = createObjectURLSpy;
             instance.handleFileChange();
             setSrcSpy.should.have.been.calledOnce;
-            setSrcSpy.should.have.been.calledWith(undefined, file);
+            setSrcSpy.should.have.been.calledWith(undefined, objectURL);
+            setFileSpy.should.have.been.calledOnce;
+            setFileSpy.should.have.been.calledWith(objectURL, file);
             createObjectURLSpy.should.have.been.calledOnce;
             createObjectURLSpy.should.have.been.calledWith(file);
-            URL.createObjectURL = undefined;
+            URL.createObjectURL = originalCreateObjectURL;
         });
         it("Should set the source to edit", () => {
             const selectSourceSpy: sinon.SinonSpy = spy();

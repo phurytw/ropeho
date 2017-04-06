@@ -6,13 +6,17 @@
 import * as React from "react";
 import { connect } from "react-redux";
 import { RopehoAdminState } from "../../reducer";
-import { getProduction, getHasRendered, getMedias, getSourcesFromSelectedMedia, getSelectedMedia, getSelectedSource } from "../../selectors";
+import { getProduction, getHasRendered, getMedias, getSourcesFromSelectedMedia, getSelectedMedia, getSelectedSource, getUpdatedMedias } from "../../selectors";
 import { Actions } from "../../modules/productionEdit";
 import * as productionModule from "../../modules/productionEdit";
 import { Actions as MediaActions } from "../../modules/mediaEdit";
 import * as mediaModule from "../../modules/mediaEdit";
 import { Actions as SourceActions } from "../../modules/sourceEdit";
+import { Actions as UploadActions } from "../../modules/uploadQueue";
+import { Actions as ObjectURLActions } from "../../modules/objectURL";
+import * as uploadModule from "../../modules/uploadQueue";
 import * as sourceModule from "../../modules/sourceEdit";
+import * as objectURLModule from "../../modules/objectURL";
 import { setError, Actions as ErrorActions } from "../../../common/modules/error";
 import { Dispatch } from "redux";
 import { PartialRouteComponentProps, Redirect, Route } from "react-router-dom";
@@ -35,8 +39,10 @@ export const mapStateToProps: (state: RopehoAdminState, ownProps?: ProductionEdi
         medias: getMedias(state),
         sources: getSourcesFromSelectedMedia(state),
         selectedMedia: getSelectedMedia(state),
-        selectedSource: getSelectedSource(state)
+        selectedSource: getSelectedSource(state),
+        getUpdatedMedia: () => getUpdatedMedias(state)
     });
+
 export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps?: ProductionEditProps) => ProductionEditProps
     = (dispatch: Dispatch<RopehoAdminState>, ownProps?: ProductionEditProps): ProductionEditProps => ({
         fetchProduction: (id: string) => dispatch(productionModule.fetchProductionById(id)),
@@ -54,6 +60,8 @@ export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps
         removeSourcesFromMedia: (sourceIds: string[]) => dispatch(mediaModule.removeSourcesFromMedia(sourceIds)),
         removeSources: (sourceIds: string[]) => dispatch(sourceModule.removeSources(sourceIds)),
         setSourcePosition: (mediaId: string, sourceId: string, posiiton: number) => dispatch(mediaModule.setSourcePosition(mediaId, sourceId, posiiton)),
+        uploadFile: (file: Ropeho.Socket.UploadEntry) => dispatch(uploadModule.setEntryInUploadQueue(file)),
+        setFile: (objectURL: string, file: File) => dispatch(objectURLModule.setFile(objectURL, file)),
         setError: (error?: Ropeho.IErrorResponse) => dispatch(setError(error))
     });
 
@@ -93,6 +101,9 @@ export interface ProductionEditProps extends PartialRouteComponentProps<Producti
     removeSourcesFromMedia?: (sourceIds: string[]) => MediaActions.RemoveSources;
     removeSources?: (sourceIds: string[]) => SourceActions.RemoveSources;
     setSourcePosition?: (mediaId: string, sourceId: string, posiiton: number) => MediaActions.SetSourcePosition;
+    getUpdatedMedia?: () => Media[];
+    uploadFile?: (file: Ropeho.Socket.UploadEntry) => UploadActions.SetEntry;
+    setFile?: (objectURL: string, filen: File) => ObjectURLActions.SetFile;
     setError?: (error?: Ropeho.IErrorResponse) => ErrorActions.SetError;
 }
 
@@ -128,12 +139,54 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
     }
     promptSaveShow: () => void = (): void => this.setState({ promptSave: true });
     promptSaveHide: () => void = (): void => this.setState({ promptSave: false });
-    saveChanges: (confirm: boolean) => void = (confirm: boolean): void => {
+    /**
+     * Save changed made to the production
+     */
+    saveChanges: () => Promise<void> = async (): Promise<void> => {
+        const { updateProduction, production, getUpdatedMedia, history, uploadFile }: ProductionEditProps = this.props;
+        const newProduction: Production = {
+            ...production,
+            medias: []
+        };
+        const medias: Media[] = getUpdatedMedia();
+        let uploadEntries: Ropeho.Socket.UploadEntry[] = [];
+        // data
+        for (const media of medias) {
+            if (media._id === production.banner._id) {
+                newProduction.banner = media;
+            } else if (media._id === production.background._id) {
+                newProduction.background = media;
+            } else {
+                newProduction.medias = [...newProduction.medias, media];
+            }
+
+            // file upload
+            for (const source of media.sources) {
+                if (source.preview.startsWith("blob:")) {
+                    uploadEntries = [...uploadEntries, {
+                        bytesSent: 0,
+                        max: 0,
+                        target: {
+                            mainId: production._id,
+                            mediaId: media._id,
+                            sourceId: source._id
+                        },
+                        active: true,
+                        objectURL: source.preview
+                    }];
+                }
+            }
+        }
+        await updateProduction(newProduction);
+        for (const entry of uploadEntries) {
+            uploadFile(entry);
+        }
+        history.push("/productions");
         this.setState({ promptSave: false });
     }
     promptDeleteShow: () => void = (): void => this.setState({ promptDelete: true });
     promptDeleteHide: () => void = (): void => this.setState({ promptDelete: false });
-    deleteProduction: (confirm: boolean) => void = (confirm: boolean): void => {
+    deleteProduction: () => void = (): void => {
         this.setState({ promptDelete: false });
     }
     setTab: (tab: number) => void = (tab: number): void => {
@@ -198,7 +251,7 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         }
     }
     render(): JSX.Element {
-        const { production, selectedSource, sources, hasRendered, setError, selectedMedia, updateMedia, setSourcePosition }: ProductionEditProps = this.props;
+        const { production, selectedSource, sources, hasRendered, setError, selectedMedia, updateMedia, setSourcePosition, setFile }: ProductionEditProps = this.props;
         const { tab, promptSave, promptDelete }: ProductionEditState = this.state;
         // tslint:disable:react-this-binding-issue
         // if production has not been found
@@ -237,6 +290,7 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                                             deleteSources={this.removeSources}
                                             setSourcePosition={setSourcePosition}
                                             selectSource={this.navigateToSource.bind(this)}
+                                            setFile={setFile}
                                             publicOnly />
                                     </div>;
                                 } else {

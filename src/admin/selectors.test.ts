@@ -14,7 +14,11 @@ import {
     getSources,
     getSelectedMedia,
     getSelectedSource,
-    getSourcesFromSelectedMedia
+    getSourcesFromSelectedMedia,
+    getUploadQueue,
+    getUpdatedMedias,
+    getActiveUploadQueue,
+    getFile
 } from "./selectors";
 import { users, productions } from "../sampleData/testDb";
 import sessionReducer from "../common/modules/session";
@@ -24,10 +28,14 @@ import productionIndexReducer from "../common/modules/productionIndex";
 import productionEditReducer from "./modules/productionEdit";
 import mediaEditReducer from "./modules/mediaEdit";
 import sourceEditReducer from "./modules/sourceEdit";
+import uploadQueueReducer from "./modules/uploadQueue";
+import { ActionTypes as ObjectURLActions, default as objectURLReducer } from "./modules/objectURL";
+import { v4 } from "uuid";
 should();
 
 import Models = Ropeho.Models;
 import IErrorResponse = Ropeho.IErrorResponse;
+import UploadEntry = Ropeho.Socket.UploadEntry;
 
 describe("Redux selectors", () => {
     it("Should get the current user", () => {
@@ -90,12 +98,45 @@ describe("Redux selectors", () => {
         const [sourceA]: Models.Source[] = media.sources;
         getSources({
             sourceEdit: sourceEditReducer({
-                order: [sourceA._id],
                 sources: {
                     [sourceA._id]: sourceA
                 }
             } as any, { type: "" })
         }).should.deep.equal([sourceA]);
+    });
+    it("Should get the medias with the updated sources", () => {
+        const [mediaA, mediaB]: Models.Media[] = productions[0].medias;
+        const newSourceA: Models.Source = {
+            _id: v4()
+        };
+        const newSourceB: Models.Source = {
+            _id: v4()
+        };
+        getUpdatedMedias({
+            mediaEdit: mediaEditReducer({
+                order: [mediaA._id, mediaB._id],
+                medias: {
+                    [mediaA._id]: mediaA,
+                    [mediaB._id]: mediaB
+                },
+                sources: {
+                    [mediaA._id]: [newSourceA._id],
+                    [mediaB._id]: [newSourceB._id]
+                },
+            } as any, { type: "" }),
+            sourceEdit: sourceEditReducer({
+                sources: {
+                    [newSourceA._id]: newSourceA,
+                    [newSourceB._id]: newSourceB
+                }
+            } as any, { type: "" })
+        }).should.deep.equal([{
+            ...mediaA,
+            sources: [newSourceA]
+        }, {
+            ...mediaB,
+            sources: [newSourceB]
+        }]);
     });
     it("Should get the selected media", () => {
         const [media]: Models.Media[] = productions[0].medias;
@@ -169,5 +210,110 @@ describe("Redux selectors", () => {
                 selected: media._id
             } as any, { type: "" })
         }).should.deep.equal([source]);
+    });
+    it("Should get the upload queue", () => {
+        const [entryA, entryB, entryC]: UploadEntry[] = [{
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: true,
+            objectURL: ""
+        }, {
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: false,
+            objectURL: ""
+        }, {
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: true,
+            objectURL: ""
+        }];
+        getUploadQueue({
+            uploadQueue: uploadQueueReducer({
+                order: [entryA.id, entryC.id, entryB.id],
+                uploadQueue: {
+                    [entryA.id]: entryA,
+                    [entryB.id]: entryB,
+                    [entryC.id]: entryC
+                }
+            } as any, { type: "" })
+        }).should.deep.equal([entryA, entryC, entryB]);
+    });
+    it("Should get only the active items from the upload queue", () => {
+        const [entryA, entryB, entryC]: UploadEntry[] = [{
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: true,
+            objectURL: ""
+        }, {
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: false,
+            objectURL: ""
+        }, {
+            id: v4(),
+            bytesSent: 0,
+            max: 0,
+            target: {
+                mainId: v4(),
+                mediaId: v4(),
+                sourceId: v4()
+            },
+            active: true,
+            objectURL: ""
+        }];
+        getActiveUploadQueue({
+            uploadQueue: uploadQueueReducer({
+                order: [entryA.id, entryC.id, entryB.id],
+                uploadQueue: {
+                    [entryA.id]: entryA,
+                    [entryB.id]: entryB,
+                    [entryC.id]: entryC
+                }
+            } as any, { type: "" })
+        }).should.deep.equal([entryA, entryC]);
+    });
+    it("Should get the associated filename from an objectURL", () => {
+        const objectURL: string = "blob:http://localhost/aNiceFile";
+        const file: File = new File([new ArrayBuffer(100)], "file.webp");
+        getFile({
+            objectURL: objectURLReducer({
+                objectURLs: {}
+            } as any, {
+                    type: ObjectURLActions.SET_FILE,
+                    objectURL,
+                    file
+                })
+        }, objectURL).should.equal(file);
     });
 });

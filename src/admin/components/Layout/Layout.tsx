@@ -5,7 +5,7 @@
 /// <reference path="../../typings.d.ts" />
 /// <reference path="../../../../definitions/react-router-config/index.d.ts" />
 import * as React from "react";
-import { AppBar, Navigation, Link, IconMenu, MenuItem, MenuDivider } from "react-toolbox";
+import { AppBar, Navigation, Link, IconMenu, MenuItem, MenuDivider, Snackbar, ProgressBar } from "react-toolbox";
 import Helmet from "react-helmet";
 import * as linkStyles from "./link.css";
 import { title } from "./title.css";
@@ -17,7 +17,7 @@ import { setError, Actions as ErrorActions } from "../../../common/modules/error
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { RopehoAdminState } from "../../reducer";
-import { getCurrentUser, getError, getHasRendered } from "../../selectors";
+import { getCurrentUser, getError, getHasRendered, getActiveUploadQueue } from "../../selectors";
 import { Roles } from "../../../enum";
 import ErrorDialog from "../ErrorDialog";
 import { Redirect } from "react-router";
@@ -28,7 +28,8 @@ export const mapStateToProps: (state: RopehoAdminState, ownProps?: LayoutProps) 
     (state: RopehoAdminState, ownProps?: LayoutProps): LayoutProps => ({
         currentUser: getCurrentUser(state),
         hasRendered: getHasRendered(state),
-        error: getError(state)
+        error: getError(state),
+        uploadQueue: getActiveUploadQueue(state)
     });
 
 export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LayoutProps) => LayoutProps =
@@ -42,6 +43,7 @@ export interface LayoutProps extends PartialRouteComponentProps<void> {
     currentUser?: Ropeho.Models.User;
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;
+    uploadQueue?: Ropeho.Socket.UploadEntry[];
     getCurrentUser?: () => Promise<Actions.SetCurrentUser>;
     logout?: () => Promise<Actions.SetCurrentUser>;
     setError?: (error: Ropeho.IErrorResponse) => void;
@@ -69,7 +71,8 @@ export class Layout extends React.Component<LayoutProps, {}> {
         return dispatch(fetchCurrentUser());
     }
     render(): JSX.Element {
-        const { currentUser, route }: LayoutProps = this.props;
+        const { currentUser, route, uploadQueue }: LayoutProps = this.props;
+        const [currentlyUploading]: Ropeho.Socket.UploadEntry[] = uploadQueue;
         if (currentUser && (!currentUser._id || currentUser.role !== Roles.Administrator)) {
             return <Redirect to="/login" />;
         } else {
@@ -104,6 +107,17 @@ export class Layout extends React.Component<LayoutProps, {}> {
                     </IconMenu>
                 </AppBar>
                 {renderRoutes(route.routes)}
+                {
+                    currentlyUploading ? <Snackbar
+                        active={true}>
+                        <p>Envoie de {uploadQueue.length} fichiers</p>
+                        <ProgressBar
+                            max={currentlyUploading.max}
+                            mode="determinate"
+                            value={currentlyUploading.bytesSent}
+                        />
+                    </Snackbar> : null
+                }
                 <ErrorDialog error={this.props.error} dismiss={this.dismissError} />
             </div>;
         }

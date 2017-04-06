@@ -11,6 +11,8 @@ import { ProductionIndexState, default as productionIndex } from "../common/modu
 import { ProductionEditState, default as productionEdit } from "./modules/productionEdit";
 import { MediaEditState, default as mediaEdit } from "./modules/mediaEdit";
 import { SourceEditState, default as sourceEdit } from "./modules/sourceEdit";
+import { UploadQueueState, default as uploadQueue } from "./modules/uploadQueue";
+import { ObjectURLState, default as objectURL } from "./modules/objectURL";
 
 export interface RopehoAdminState {
     rendering?: RenderingState;
@@ -20,6 +22,8 @@ export interface RopehoAdminState {
     productionEdit?: ProductionEditState;
     mediaEdit?: MediaEditState;
     sourceEdit?: SourceEditState;
+    uploadQueue?: UploadQueueState;
+    objectURL?: ObjectURLState;
 }
 
 export default combineReducers<RopehoAdminState>({
@@ -29,5 +33,7 @@ export default combineReducers<RopehoAdminState>({
     productionIndex,
     productionEdit,
     mediaEdit,
-    sourceEdit
+    sourceEdit,
+    uploadQueue,
+    objectURL
 });
