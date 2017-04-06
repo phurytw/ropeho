@@ -6,7 +6,7 @@
 /// <reference path="../typings.d.ts" />
 import * as sharp from "sharp";
 import ffmpeg = require("fluent-ffmpeg");
-import { getBufferFromFile, bufferToStream } from "./buffer";
+import { bufferToStream } from "./buffer";
 import { Stream } from "stream";
 import config from "../../config";
 import { fileSync, TmpFile } from "tmp";
@@ -23,10 +23,7 @@ const { media: { imageEncoding: { quality }, videoEncoding: { fps, bitrate } } }
  */
 export const createWebp: (src: string | Buffer, dest?: string) => Promise<Buffer | sharp.OutputInfo> =
     async (src: string | Buffer, dest?: string): Promise<Buffer | sharp.OutputInfo> => {
-        if (typeof src === "string") {
-            src = await getBufferFromFile(src as string);
-        }
-        if (!src || src instanceof Buffer === false) {
+        if (typeof src !== "string" && src instanceof Buffer === false) {
             throw new TypeError("Input should be a path or a Buffer");
         }
         const shrp: sharp.SharpInstance = sharp(src)
@@ -57,25 +54,35 @@ export const createWebm: (src: string | Buffer | NodeJS.ReadableStream, options?
                 }
 
                 // Encoding
-                const { offset, duration, dest }: CreateWebMOptions = options;
-                const command: any = ffmpeg(src).fps(fps).videoBitrate(bitrate).noAudio().format("webm");
+                const { offset, duration, dest, setProgress }: CreateWebMOptions = options;
+                const command: any = ffmpeg(src)
+                    .fps(fps)
+                    .videoBitrate(bitrate)
+                    .noAudio()
+                    .format("webm")
+                    .on("error", (err: Error) => reject(err));
                 if (offset) {
                     command.seekInput(offset);
                 }
                 if (duration) {
                     command.duration(duration);
                 }
+                if (typeof setProgress === "function") {
+                    command.on("progress", (progress: any) => {
+                        setProgress(progress.percent);
+                    });
+                }
 
                 // Output
                 if (dest) {
                     // Save to file
-                    command.save(dest);
-                    resolve(null);
+                    command
+                        .save(dest)
+                        .on("end", () => resolve(null));
                 } else {
                     // Save to buffer
                     let data: Buffer = new Buffer(0);
                     command.pipe()
-                        .on("error", (err: Error) => reject(err))
                         .on("data", (chunk: Buffer) => data = Buffer.concat([data, chunk]))
                         .on("end", () => resolve(data));
                 }
@@ -104,23 +111,41 @@ export const createScreenshot: (src: string | Buffer | NodeJS.ReadableStream, de
                     src = bufferToStream(src);
                 }
 
-                // Thumbnail can obly be created in the file system
-                const tmpFile: TmpFile = fileSync({ detachDescriptor: true });
+                if (dest) {
+                    // create as file
+                    ffmpeg(src)
+                        .on("error", (err: Error) => {
+                            reject(err);
+                        })
+                        .on("end", () => resolve(null))
+                        .screenshot({
+                            timestamps: [timestamp],
+                            count: 1,
+                            filename: dest
+                        });
+                } else {
+                    // create as Buffer
 
-                // Ffmpeg command
-                ffmpeg(src)
-                    .on("error", (err: Error) => {
-                        tmpFile.removeCallback();
-                        reject(err);
-                    })
-                    .on("end", () =>
-                        createWebp(tmpFile.name, dest)
-                            .then((thumbnail: Buffer) => resolve(thumbnail), (err: Error) => reject(err)))
-                    .screenshot({
-                        timestamps: [timestamp],
-                        count: 1,
-                        filename: tmpFile.name
-                    });
+                    // Thumbnail can obly be created in the file system
+                    const tmpFile: TmpFile = fileSync();
+
+                    ffmpeg(src)
+                        .on("error", (err: Error) => {
+                            tmpFile.removeCallback();
+                            reject(err);
+                        })
+                        .on("end", () =>
+                            createWebp(tmpFile.name)
+                                .then((thumbnail: Buffer) => {
+                                    tmpFile.removeCallback();
+                                    resolve(thumbnail);
+                                }, (err: Error) => reject(err)))
+                        .screenshot({
+                            timestamps: [timestamp],
+                            count: 1,
+                            filename: tmpFile.name
+                        });
+                }
             });
         } else {
             throw new TypeError("Input must be a string, a Buffer or a readable stream");

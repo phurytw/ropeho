@@ -107,7 +107,46 @@ describe("Local media manager", () => {
             should().throw(statSync.bind(null, (join((mediaManager as MediaManager).baseDirectory, dirname(testFile)))));
         });
     });
+    describe("Filesize", () => {
+        before(async () => await mediaManager.upload(testFile, testFileData));
+        it("Should reject if the file does not exist", () =>
+            mediaManager.filesize(nonExistentFile).should.be.rejected);
+        it("Should get the file size in bytes", () =>
+            mediaManager.filesize(testFile).should.eventually.equal(testFileData.byteLength));
+    });
+    describe("If exists", () => {
+        it("Should return true if file exists", () =>
+            mediaManager.exists(testFile).should.eventually.be.true);
+        it("Should return false if file does not exist", async () => {
+            await mediaManager.delete(testFile);
+            (await mediaManager.exists(testFile)).should.be.false;
+        });
+    });
+    describe("Uploading as a stream", () => {
+        it("Should accept a path to a file, create directories if necessary and return a writable stream", async () => {
+            const stream: NodeJS.WritableStream = mediaManager.startUpload(testFile);
+            (typeof stream.on).should.equal("function");
+            (typeof stream.write).should.equal("function");
+            stream.writable.should.equal(true);
+            statSync(join((mediaManager as MediaManager).baseDirectory, testFile)).isFile().should.be.true;
+        });
+        it("Should reject if the file already exists", () =>
+            mediaManager.upload(testFile, new Buffer("This is a text file", "UTF-8")).should.be.rejected);
+        it("Should reject a path to a directory", () =>
+            mediaManager.upload("/test/sub_test", new Buffer("This is a text file", "UTF-8")).should.be.rejected);
+    });
+    describe("Downloading as a stream", async () => {
+        it("Should reject if the file does not exist", () =>
+            should().throw(mediaManager.startDownload.bind(mediaManager, nonExistentFile)));
+        it("Should return a readable stream", async () => {
+            const stream: NodeJS.ReadableStream = mediaManager.startDownload(testFile);
+            (typeof stream.on).should.equal("function");
+            (typeof stream.read).should.equal("function");
+            stream.readable.should.equal(true);
+        });
+    });
     describe("Utility functions", () => {
+        before(() => mediaManager.delete(testFile));
         it("Should return false if the file does not exist", () =>
             mediaManager.exists(testFile).should.eventually.be.false);
         it("Should return true if the file does exist", async () => {

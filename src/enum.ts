@@ -53,3 +53,16 @@ export enum ErrorCodes {
     NotFound,
     Unavailable
 }
+
+export const SocketEvents: Ropeho.Socket.SocketEvents = {
+    BadRequest: "bad_request",
+    Connection: "connection",
+    Disconnect: "disconnect",
+    Download: "download",
+    DownloadEnd: "download_end",
+    DownloadInit: "download_init",
+    Exception: "exception",
+    Upload: "upload",
+    UploadEnd: "upload_end",
+    UploadInit: "upload_init"
+};

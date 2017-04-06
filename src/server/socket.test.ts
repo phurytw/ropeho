@@ -14,17 +14,18 @@ import GlobalRepository from "./dal/globalRepository";
 import mediaManager from "./media/mediaManager";
 import { filter, isArray, includes, range, head, last, keys, cloneDeep } from "lodash";
 import * as _ from "lodash";
-import { attach, socketEvents, getClients, getLocked, kickClient, getUploading, getDownloading } from "./socket";
+import { attach, getClients, getLocked, kickClient, getUploading, getDownloading, assignCookieToClient } from "./socket";
 import { v4 } from "uuid";
-import { Roles, EntityType, MediaTypes } from "../../src/enum";
+import { Roles, EntityType, MediaTypes, SocketEvents } from "../../src/enum";
 import config from "../../src/config";
 import { productions, categories as cats, presentations } from "../sampleData/testDb";
 import * as authorize from "./accounts/authorize";
-import { basename, join } from "path";
+import { basename } from "path";
 import * as task from "./media/taskQueue";
 import { createHash } from "crypto";
 import { getAllSourceTargetOptionsFromEntity } from "../common/helpers/entityUtilities";
 import { uriFriendlyFormat } from "../common/helpers/uriFriendlyFormat";
+import { bufferToStream } from "./media/buffer";
 should();
 use(sinonChai);
 
@@ -78,7 +79,7 @@ describe("Socket IO Server", () => {
         authenticatedUser: User;
     before(() => {
         sandbox = sinonSandbox.create();
-        serverIo = socketIo.listen(5000);
+        serverIo = socketIo.listen(testPort);
         attach(serverIo);
     });
     beforeEach(() => {
@@ -127,24 +128,27 @@ describe("Socket IO Server", () => {
                 const id: string = authenticatedUser._id;
                 return Promise.resolve<string>(id);
             });
-        sandbox.stub(mediaManager, "download")
-            .callsFake((file: string): Promise<Buffer> =>
-                new Promise<Buffer>((resolve: (value?: Buffer | PromiseLike<Buffer>) => void, reject: (reason?: any) => void) => {
-                    if (_(productions).map<string[]>((p: Production) =>
-                        _([p.banner, p.background, ...p.medias]).map<Source>((m: Media) => m.sources).flatten<Source>().map<string>((s: Source) => s.src).value())
-                        .flatten().includes(file)) {
-                        setTimeout(() => {
-                            resolve(expectedBuffer);
-                        }, throttleTime);
-                    } else {
-                        reject("File not found");
-                    }
-                }));
-        sandbox.stub(mediaManager, "upload")
-            .callsFake((media: string, data: Buffer): Promise<void> =>
-                new Promise<void>((resolve: () => void) => {
+        sandbox.stub(mediaManager, "startDownload")
+            .callsFake((file: string): NodeJS.ReadableStream => {
+                if (_(productions).map<string[]>((p: Production) =>
+                    _([p.banner, p.background, ...p.medias]).map<Source>((m: Media) => m.sources).flatten<Source>().map<string>((s: Source) => s.src).value())
+                    .flatten().includes(file)) {
+                    return bufferToStream(expectedBuffer);
+                } else {
+                    throw new Error("File not found");
+                }
+            });
+        sandbox.stub(mediaManager, "startUpload")
+            .callsFake((media: string): NodeJS.WritableStream => ({
+                writable: true,
+                write: (data: Buffer | string, cb?: Function) => true,
+                end: () => true
+            } as any));
+        sandbox.stub(mediaManager, "filesize")
+            .callsFake((media: string): Promise<number> =>
+                new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void) => {
                     setTimeout(() => {
-                        resolve();
+                        resolve(expectedBuffer.byteLength);
                     }, throttleTime);
                 }));
         sandbox.stub(mediaManager, "newName")
@@ -156,6 +160,9 @@ describe("Socket IO Server", () => {
 
         // reset setup
         clientIo = socketIoClient.connect(socketIoUrl, socketIoOptions);
+        clientIo.on("connect", () => {
+            assignCookieToClient(clientIo.id, "cookie");
+        });
         authenticatedUser = admin;
         entityType = EntityType.Production;
         expectedBuffer = new Buffer(10);
@@ -173,21 +180,17 @@ describe("Socket IO Server", () => {
                 const queue: RS.DownloadOptions[] = [
                     // Cannot be empty
                     {
-                        cookie: "cookie"
                     } as RS.DownloadOptions,
                     // Must be an object
                     {
-                        cookie: "cookie",
                         targets: (0 as any)
                     } as RS.DownloadOptions,
                     // Must be an object
                     {
-                        cookie: "cookie",
                         targets: ("stuff" as any)
                     } as RS.DownloadOptions,
                     // Must be an object with 3 IDs
                     {
-                        cookie: "cookie",
                         targets: [{
                             mainId: v4(),
                             mediaId: v4(),
@@ -195,41 +198,30 @@ describe("Socket IO Server", () => {
                     } as RS.DownloadOptions,
                     // Must be an object with valid UUIDs
                     {
-                        cookie: "cookie",
                         targets: [{
                             mainId: "id",
                             mediaId: "id",
                             sourceId: "id"
                         }]
-                    } as RS.DownloadOptions,
-                    // Must have a cookie
-                    {
-                        cookie: "",
-                        targets: [{
-                            mainId: v4(),
-                            mediaId: v4(),
-                            sourceId: v4()
-                        }]
                     } as RS.DownloadOptions
                 ];
-                clientIo.on(socketEvents.BadRequest, () => {
+                clientIo.on(SocketEvents.BadRequest, () => {
                     const next: RS.DownloadOptions = queue.pop();
                     if (next) {
-                        clientIo.emit(socketEvents.DownloadInit, next);
+                        clientIo.emit(SocketEvents.DownloadInit, next);
                     } else {
                         done();
                     }
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, queue.pop()));
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, queue.pop()));
             });
-            it("Should reject if the user is not logged in (doesn't provide cookie)", (done: MochaDone) => {
+            it("Should reject if the user is not logged in", (done: MochaDone) => {
                 authenticatedUser = { _id: undefined };
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.download.should.have.not.been.called;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startDownload.should.have.not.been.called;
                     done();
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie"
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, {
                 } as RS.DownloadOptions));
             });
             it("Should download a file from the server", (done: MochaDone) => {
@@ -237,19 +229,20 @@ describe("Socket IO Server", () => {
                 let downloadData: RS.DownloadData;
                 const [media]: Media[] = productionA.medias,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.DownloadEnd, () => {
-                    mediaManager.download.should.have.been.calledOnce.and.calledWith(src.src);
+                clientIo.on(SocketEvents.DownloadEnd, (hashes: RS.DownloadHashes) => {
+                    mediaManager.startDownload.should.have.been.calledOnce.and.calledWith(src.src);
                     actualBuffer.should.deep.equal(expectedBuffer);
                     downloadData.should.be.ok;
                     downloadData.should.have.property("file", src.src);
-                    downloadData.should.have.have.property("hash", expectedHash);
+                    hashes.should.have.property(src.src, expectedHash);
                     downloadData.should.have.have.property("fileSize", expectedBuffer.length);
                     done();
                 });
-                clientIo.on(socketEvents.Download, (data: Buffer) => actualBuffer = Buffer.concat([actualBuffer, data]));
-                clientIo.on(socketEvents.DownloadInit, (data: RS.DownloadData) => downloadData = data);
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie",
+                clientIo.on(SocketEvents.Download, (data: Buffer) => {
+                    actualBuffer = Buffer.concat([actualBuffer, data]);
+                });
+                clientIo.on(SocketEvents.DownloadInit, (data: RS.DownloadData) => downloadData = data);
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, {
                     targets: filter<RS.SourceTargetOptions>(getAllSourceTargetOptionsFromEntity(productionA), (sto: RS.SourceTargetOptions) => sto.mediaId === media._id)
                 } as RS.DownloadOptions));
             });
@@ -263,66 +256,62 @@ describe("Socket IO Server", () => {
                     .filter((s: Source) => s.src.length !== 0)
                     .map((s: Source) => s.src)
                     .value();
-                clientIo.on(socketEvents.DownloadEnd, () => {
-                    mediaManager.download.should.have.callCount(paths.length);
+                clientIo.on(SocketEvents.DownloadEnd, (hashes: RS.DownloadHashes) => {
+                    mediaManager.startDownload.should.have.callCount(paths.length);
                     for (const path of paths) {
-                        mediaManager.download.should.have.been.calledWith(path);
+                        mediaManager.startDownload.should.have.been.calledWith(path);
                         downloaded.should.have.property(basename(path)).with.property("data").deep.equal(expectedBuffer);
                         downloaded.should.have.property(basename(path)).with.property("file", path);
-                        downloaded.should.have.property(basename(path)).with.property("hash", expectedHash);
+                        hashes.should.have.property(basename(path), expectedHash);
                         downloaded.should.have.property(basename(path)).with.property("fileSize", expectedBuffer.length);
                     }
                     done();
                 });
-                clientIo.on(socketEvents.Download, (data: Buffer) =>
+                clientIo.on(SocketEvents.Download, (data: Buffer) =>
                     downloaded[currentFile].data = Buffer.concat([downloaded[currentFile].data, data]));
-                clientIo.on(socketEvents.DownloadInit, (data: RS.DownloadData) => {
+                clientIo.on(SocketEvents.DownloadInit, (data: RS.DownloadData) => {
                     currentFile = data.file;
                     downloaded[currentFile] = {
                         ...data,
                         data: new Buffer(0)
                     };
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie",
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, {
                     targets: getAllSourceTargetOptionsFromEntity(productionB)
                 } as RS.DownloadOptions));
             });
             it("Should reject if files are not owned by the user", (done: MochaDone) => {
                 authenticatedUser = user;
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.download.should.have.not.been.called;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startDownload.should.have.not.been.called;
                     done();
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie",
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, {
                     targets: getAllSourceTargetOptionsFromEntity(productionA)
                 } as RS.DownloadOptions));
             });
             it("Should reject if the client is already doing something", (done: MochaDone) => {
                 throttleTime = 1000;
                 const [media]: Media[] = productionA.medias;
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.download.should.have.been.calledOnce;
+                clientIo.on(SocketEvents.BadRequest, (message: string) => {
+                    mediaManager.filesize.should.have.been.calledOnce;
                     clientIo.disconnect();
                     done();
                 });
                 clientIo.on("connect", () => {
                     const options: RS.DownloadOptions = {
-                        cookie: "cookie",
                         targets: filter<RS.SourceTargetOptions>(getAllSourceTargetOptionsFromEntity(productionA), (sto: RS.SourceTargetOptions) => sto.mediaId === media._id)
                     };
-                    clientIo.emit(socketEvents.DownloadInit, options);
-                    clientIo.emit(socketEvents.DownloadInit, options);
+                    clientIo.emit(SocketEvents.DownloadInit, options);
+                    clientIo.emit(SocketEvents.DownloadInit, options);
                 });
             });
             it("Should reject download if any entity is not found", (done: MochaDone) => {
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.download.should.have.not.been.called;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startDownload.should.have.not.been.called;
                     done();
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie",
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.DownloadInit, {
                     targets: _(range(0, 2)).map<RS.SourceTargetOptions>(() => ({ mainId: productionA._id, mediaId: v4(), sourceId: v4() })).value()
                 } as RS.DownloadOptions));
             });
@@ -331,62 +320,41 @@ describe("Socket IO Server", () => {
             const [category]: Category[] = categories,
                 [container]: PresentationContainer[] = presentations;
             it("Should reject if the request is not valid", (done: MochaDone) => {
-                const [media]: Media[] = productionA.medias,
-                    [src]: Source[] = media.sources,
-                    requestedFile: RS.SourceTargetOptions = {
-                        mainId: productionA._id,
-                        mediaId: media._id,
-                        sourceId: src._id
-                    };
                 const queue: RS.UploadOptions[] = [
                     // Cannot be empty
                     {
-                        cookie: "cookie",
-                        hash: expectedHash
                     } as RS.UploadOptions,
                     // Must be an object
                     {
-                        cookie: "cookie",
-                        target: (0 as any),
-                        hash: expectedHash
+                        target: (0 as any)
                     } as RS.UploadOptions,
                     // Must be an object
                     {
-                        cookie: "cookie",
-                        target: ("stuff" as any),
-                        hash: expectedHash
+                        target: ("stuff" as any)
                     } as RS.UploadOptions,
                     // Must be an object with an ID
                     {
-                        cookie: "cookie",
-                        target: ([""] as any),
-                        hash: expectedHash
-                    } as RS.UploadOptions,
-                    // Must provide a MD5 hash
-                    {
-                        cookie: "cookie",
-                        target: requestedFile
+                        target: ([""] as any)
                     } as RS.UploadOptions
                 ];
-                clientIo.on(socketEvents.BadRequest, () => {
+                clientIo.on(SocketEvents.BadRequest, () => {
                     const next: RS.UploadOptions = queue.pop();
                     if (!next) {
                         done();
                     } else {
-                        clientIo.emit(socketEvents.UploadInit, next);
+                        clientIo.emit(SocketEvents.UploadInit, next);
                     }
                 });
-                clientIo.on("connect", () => clientIo.emit(socketEvents.UploadInit, queue.pop()));
+                clientIo.on("connect", () => clientIo.emit(SocketEvents.UploadInit, queue.pop()));
             });
-            it("Should reject if the user is not logged in (doesn't provide cookie)", (done: MochaDone) => {
+            it("Should reject if the user is not logged in", (done: MochaDone) => {
                 authenticatedUser = { _id: undefined };
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.download.should.have.not.been.called;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startUpload.should.have.not.been.called;
                     done();
                 });
                 clientIo.on("connect", () => {
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie"
+                    clientIo.emit(SocketEvents.UploadInit, {
                     } as RS.DownloadOptions);
                 });
             });
@@ -394,70 +362,62 @@ describe("Socket IO Server", () => {
                 authenticatedUser = client;
                 const media: Media = category.banner,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.upload.should.have.not.been.called;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startUpload.should.have.not.been.called;
                     done();
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should upload a file to the server for a production", (done: MochaDone) => {
                 const media: Media = productionA.medias[2],
                     src: Source = media.sources[1];
-                clientIo.on(socketEvents.UploadEnd, () => {
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                     } else {
                         task.createProcessImageTask.should.have.been.calledOnce;
                     }
                     task.createFileUploadTask.should.have.been.calledOnce;
-                    task.createFileUploadTask.should.have.been.calledWith({ data: expectedBuffer, dest: src.src } as Ropeho.Tasks.FileUploadOptions);
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(productionA)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(productionA)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should upload a file to the server for a category", (done: MochaDone) => {
                 entityType = EntityType.Category;
                 const media: Media = category.banner,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.UploadEnd, () => {
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                     } else {
                         task.createProcessImageTask.should.have.been.calledOnce;
                     }
                     task.createFileUploadTask.should.have.been.calledOnce;
-                    task.createFileUploadTask.should.have.been.calledWith({ data: expectedBuffer, dest: src.src } as Ropeho.Tasks.FileUploadOptions);
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should upload a file to the server for a presentation", (done: MochaDone) => {
@@ -465,7 +425,7 @@ describe("Socket IO Server", () => {
                 const [presentation]: Presentation[] = container.presentations,
                     media: Media = presentation.mainMedia,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.UploadEnd, () => {
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                     } else {
@@ -475,81 +435,73 @@ describe("Socket IO Server", () => {
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(container)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(container)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should fail if MD5 check does not pass", (done: MochaDone) => {
                 entityType = EntityType.Category;
                 const media: Media = category.banner,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.Exception, (msg: string) => {
+                clientIo.on(SocketEvents.Exception, (msg: string) => {
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, createHash("md5").update(new Buffer(expectedBuffer.length + 1)).digest("hex"));
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: createHash("md5").update(new Buffer(expectedBuffer.length + 1)).digest("hex")
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should reject if the client is already doing something", (done: MochaDone) => {
                 throttleTime = 1000;
                 const media: Media = category.banner,
                     [src]: Source[] = media.sources;
-                clientIo.on(socketEvents.BadRequest, () => {
+                clientIo.on(SocketEvents.BadRequest, () => {
                     clientIo.disconnect();
                     done();
                 });
                 clientIo.on("connect", () => {
                     const options: RS.UploadOptions = {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     };
-                    clientIo.emit(socketEvents.UploadInit, options);
-                    clientIo.emit(socketEvents.UploadInit, options);
+                    clientIo.emit(SocketEvents.UploadInit, options);
+                    clientIo.emit(SocketEvents.UploadInit, options);
                 });
             });
-            it("Should reject download if any entity is not found", (done: MochaDone) => {
+            it("Should reject upload if any entity is not found", (done: MochaDone) => {
                 const media: Media = category.banner;
-                clientIo.on(socketEvents.BadRequest, () => {
-                    mediaManager.upload.should.have.not.been.calledOnce;
+                clientIo.on(SocketEvents.BadRequest, () => {
+                    mediaManager.startUpload.should.have.not.been.calledOnce;
                     done();
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: { mainId: category._id, mediaId: media._id, sourceId: v4() },
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: { mainId: category._id, mediaId: media._id, sourceId: v4() }
                     } as RS.UploadOptions));
             });
             it("Should reject upload and upload_end if upload_init has not been emitted", (done: MochaDone) => {
                 let firstDone: boolean = false;
-                clientIo.on(socketEvents.BadRequest, () => {
+                clientIo.on(SocketEvents.BadRequest, () => {
                     task.createFileUploadTask.should.have.not.been.called;
                     task.createProcessVideoTask.should.have.not.been.called;
                     task.createProcessImageTask.should.have.not.been.called;
                     firstDone = firstDone ? done() : true;
                 });
                 clientIo.on("connect", () => {
-                    clientIo.emit(socketEvents.Upload);
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.Upload);
+                    clientIo.emit(SocketEvents.UploadEnd);
                 });
             });
             it("Should create a new name if it is its first upload", (done: MochaDone) => {
@@ -558,28 +510,27 @@ describe("Socket IO Server", () => {
                     media: Media = category.banner,
                     [src]: Source[] = media.sources;
                 src.src = "";
-                clientIo.on(socketEvents.UploadEnd, () => {
+                const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}_`)}`;
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                     } else {
                         task.createProcessImageTask.should.have.been.calledOnce;
                     }
                     task.createFileUploadTask.should.have.been.calledOnce;
-                    task.createFileUploadTask.should.have.been.calledWith({ data: expectedBuffer, dest: join(config.media.localDirectory, "categories", uriFriendlyFormat(category.name), uriFriendlyFormat(`${src._id}_`)) } as Ropeho.Tasks.FileUploadOptions);
+                    task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head()
                     } as RS.UploadOptions));
             });
             it("Should create a new name if it is its first upload with an optional filename", (done: MochaDone) => {
@@ -589,26 +540,26 @@ describe("Socket IO Server", () => {
                     [src]: Source[] = media.sources,
                     filename: string = "test.txt";
                 src.src = "";
-                clientIo.on(socketEvents.UploadEnd, () => {
+                const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}_${filename}`)}`;
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                     } else {
                         task.createProcessImageTask.should.have.been.calledOnce;
                     }
                     task.createFileUploadTask.should.have.been.calledOnce;
-                    task.createFileUploadTask.should.have.been.calledWith({ data: expectedBuffer, dest: join(config.media.localDirectory, "categories", uriFriendlyFormat(category.name), uriFriendlyFormat(`${src._id}_${filename}`)) } as Ropeho.Tasks.FileUploadOptions);
+                    task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
                     GlobalRepository.prototype.update.should.have.been.calledOnce;
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
                 clientIo.on("connect", () =>
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
+                    clientIo.emit(SocketEvents.UploadInit, {
                         target: _(getAllSourceTargetOptionsFromEntity(category)).filter((sto: RS.SourceTargetOptions) => sto.sourceId === src._id).head(),
                         hash: expectedHash,
                         filename
@@ -623,19 +574,15 @@ describe("Socket IO Server", () => {
                     anotherClient: SocketIOClient.Socket = socketIoClient.connect(socketIoUrl, socketIoOptions),
                     badSpy: sinon.SinonSpy = spy();
                 const sendStuff: () => boolean = () => {
-                    clientIo.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: sto,
-                        hash: expectedHash
+                    clientIo.emit(SocketEvents.UploadInit, {
+                        target: sto
                     } as RS.UploadOptions);
-                    anotherClient.emit(socketEvents.UploadInit, {
-                        cookie: "cookie",
-                        target: sto,
-                        hash: expectedHash
+                    anotherClient.emit(SocketEvents.UploadInit, {
+                        target: sto
                     } as RS.UploadOptions);
                     return true;
                 };
-                clientIo.on(socketEvents.UploadEnd, () => {
+                clientIo.on(SocketEvents.UploadEnd, () => {
                     if (media.type === MediaTypes.Video) {
                         task.createProcessVideoTask.should.have.been.calledOnce;
                         task.createProcessImageTask.should.have.not.been.calledOnce;
@@ -649,13 +596,13 @@ describe("Socket IO Server", () => {
                     anotherClient.disconnect();
                     done();
                 });
-                clientIo.on(socketEvents.UploadInit, () => {
+                clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
-                        clientIo.emit(socketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
+                        clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));
                     }
-                    clientIo.emit(socketEvents.UploadEnd);
+                    clientIo.emit(SocketEvents.UploadEnd, expectedHash);
                 });
-                anotherClient.on(socketEvents.BadRequest, () => {
+                anotherClient.on(SocketEvents.BadRequest, () => {
                     badSpy();
                 });
                 clientIo.on("connect", () => bothConnected = bothConnected ? sendStuff() : true);
@@ -697,8 +644,7 @@ describe("Socket IO Server", () => {
             }, 250);
             let nConnected: number = 0;
             clientIo.on("connect", () => {
-                clientIo.emit(socketEvents.UploadInit, {
-                    cookie: "cookie",
+                clientIo.emit(SocketEvents.UploadInit, {
                     target: stoC,
                     hash: expectedHash
                 } as RS.UploadOptions);
@@ -708,8 +654,8 @@ describe("Socket IO Server", () => {
                 }
             });
             clientA.on("connect", () => {
-                clientA.emit(socketEvents.UploadInit, {
-                    cookie: "cookie",
+                assignCookieToClient(clientA.id, "cookie");
+                clientA.emit(SocketEvents.UploadInit, {
                     target: stoB,
                     hash: expectedHash
                 } as RS.UploadOptions);
@@ -719,8 +665,8 @@ describe("Socket IO Server", () => {
                 }
             });
             clientB.on("connect", () => {
-                clientB.emit(socketEvents.DownloadInit, {
-                    cookie: "cookie",
+                assignCookieToClient(clientB.id, "cookie");
+                clientB.emit(SocketEvents.DownloadInit, {
                     targets: [stoA]
                 } as RS.DownloadOptions);
                 nConnected++;
@@ -780,6 +726,14 @@ describe("Socket IO Server", () => {
                 if (nConnected === 3) {
                     doneFunc();
                 }
+            });
+        });
+        it("Should set a user to a client", (done: MochaDone) => {
+            const cookie: string = "anicecookie";
+            clientIo.on("connect", () => {
+                assignCookieToClient(clientIo.id, cookie);
+                getClients()[clientIo.id].cookie.should.deep.equal(cookie);
+                done();
             });
         });
     });

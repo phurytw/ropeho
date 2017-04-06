@@ -10,6 +10,8 @@ import { authenticate, AuthenticateOptions } from "passport";
 import config from "../../config";
 import { trim } from "lodash";
 import ErrorResponse from "../helpers/errorResponse";
+import { assignCookieToClient } from "../socket";
+import { parse } from "cookie";
 
 const router: Router = express.Router();
 
@@ -59,6 +61,13 @@ router.get("/facebook", (req: Request, res: Response, next: NextFunction) => {
 
 router.post("/logout", (req: Request, res: Response) => {
     req.logout();
+    res.status(200).send({});
+});
+
+router.post("/socket/:clientId", (req: Request, res: Response) => {
+    const cookie: string = req.header("Cookie");
+    const parsed: { [key: string]: string } = parse(cookie);
+    assignCookieToClient(req.params.clientId, parsed[config.session.name]);
     res.status(200).send({});
 });
 

@@ -5,9 +5,11 @@
 
 /// <reference path="typings.d.ts" />
 import * as socketIo from "socket.io";
-import { Server } from "http";
-import { SocketState, Roles, MediaTypes, EntityType } from "../enum";
+import { Server as HttpsServer } from "https";
+import { Server as HttpServer } from "http";
+import { SocketState, Roles, MediaTypes, EntityType, SocketEvents } from "../enum";
 import mediaManager from "./media/mediaManager";
+import tempMediaManager from "./media/tempMediaManager";
 import GenericRepository from "./dal/genericRepository";
 import GlobalRepository from "./dal/globalRepository";
 import { map, filter, without, sumBy, isArray, isEmpty, cloneDeep, identity, includes } from "lodash";
@@ -15,13 +17,14 @@ import * as _ from "lodash";
 import config from "../config";
 import { deserializeCookie } from "./accounts/authorize";
 import { createFileUploadTask, createProcessImageTask, createProcessVideoTask } from "./media/taskQueue";
-import { createHash } from "crypto";
+import { createHash, Hash } from "crypto";
 import { isMD5, isUUID } from "validator";
 import { getMedias, getMediaFromEntity, getSourceFromMedia, getEntityType, updateMediaInEntity, updateSourceInMedia } from "../common/helpers/entityUtilities";
 import uriFriendlyFormat from "../common/helpers/uriFriendlyFormat";
-import { join, basename, extname } from "path";
+import { basename, extname } from "path";
 
 import DownloadOptions = Ropeho.Socket.DownloadOptions;
+import DownloadHashes = Ropeho.Socket.DownloadHashes;
 import UploadOptions = Ropeho.Socket.UploadOptions;
 import SourceTargetOptions = Ropeho.Socket.SourceTargetOptions;
 import SocketClient = Ropeho.Socket.SocketClient;
@@ -44,21 +47,8 @@ const chunkSize: number = config.media.chunkSize;
 let io: SocketIO.Server;
 const clients: { [key: string]: SocketClient } = {};
 
-export const socketEvents: Ropeho.Socket.SocketEvents = {
-    BadRequest: "bad_request",
-    Connection: "connection",
-    Disconnect: "disconnect",
-    Download: "download",
-    DownloadEnd: "download_end",
-    DownloadInit: "download_init",
-    Exception: "exception",
-    Upload: "upload",
-    UploadEnd: "upload_end",
-    UploadInit: "upload_init"
-};
-
-export const init: (server: Server) => SocketIO.Server =
-    (server: Server): SocketIO.Server => attach(socketIo(server));
+export const init: (server: HttpsServer | HttpServer) => SocketIO.Server =
+    (server: HttpsServer | HttpServer): SocketIO.Server => attach(socketIo(server));
 
 export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
     (incomingIo: SocketIO.Server): SocketIO.Server => {
@@ -70,37 +60,38 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     clients[id].state = state;
                 }
             };
-        io.on(socketEvents.Connection, (client: SocketIO.Socket) => {
+        io.on(SocketEvents.Connection, (client: SocketIO.Socket) => {
             clients[client.id] = {
                 socket: client,
                 state: SocketState.Idle,
                 downloading: []
             };
-            client.on(socketEvents.Exception, () => setState(client, SocketState.Idle));
-            client.on(socketEvents.Disconnect, () => delete clients[client.id]);
-            client.on(socketEvents.DownloadInit, async (downloadOptions: DownloadOptions) => {
+            client.on(SocketEvents.Exception, () => setState(client, SocketState.Idle));
+            client.on(SocketEvents.Disconnect, () => delete clients[client.id]);
+            client.on(SocketEvents.DownloadInit, async (downloadOptions: DownloadOptions) => {
                 try {
                     if (!downloadOptions) {
-                        client.emit(socketEvents.BadRequest, "Empty request");
+                        client.emit(SocketEvents.BadRequest, "Empty request");
                         return;
                     }
-                    const { targets, cookie }: DownloadOptions = downloadOptions;
+                    const { targets }: DownloadOptions = downloadOptions;
 
                     // Client must be authenticated
+                    const cookie: string = clients[client.id].cookie;
                     if (typeof cookie !== "string" || !cookie) {
-                        client.emit(socketEvents.BadRequest, "Authentication is required");
+                        client.emit(SocketEvents.BadRequest, "Authentication is required");
                         return;
                     }
 
                     if (!isArray<SourceTargetOptions>(targets) ||
                         filter<SourceTargetOptions>(targets, (t: SourceTargetOptions) => !t.mainId || !t.mediaId || !t.sourceId || !isUUID(t.mainId) || !isUUID(t.mediaId) || !isUUID(t.sourceId)).length > 0) {
-                        client.emit(socketEvents.BadRequest, "Invalid parameters");
+                        client.emit(SocketEvents.BadRequest, "Invalid parameters");
                         return;
                     }
 
                     // Fobidden if client is already doing something
                     if (clients[client.id].state !== SocketState.Idle) {
-                        client.emit(socketEvents.BadRequest, "Cannot perform download if client is busy");
+                        client.emit(SocketEvents.BadRequest, "Cannot perform download if client is busy");
                         return;
                     }
                     clients[client.id].state = SocketState.Downloading;
@@ -114,7 +105,7 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                             throw new Error(`Failed to authenticate ${userId}`);
                         }
                     } catch (error) {
-                        client.emit(socketEvents.BadRequest, "Failed to authenticate");
+                        client.emit(SocketEvents.BadRequest, "Failed to authenticate");
                         setState(client, SocketState.Idle);
                         return;
                     }
@@ -124,14 +115,14 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     try {
                         productions = await globalRepository.getById(_(targets).map<string>((t: SourceTargetOptions) => `${config.database.productions.namespace}${t.mainId}`).uniq().value()) as Production[];
                     } catch (error) {
-                        client.emit(socketEvents.BadRequest, (error as Error).message);
+                        client.emit(SocketEvents.BadRequest, (error as Error).message);
                         setState(client, SocketState.Idle);
                         return;
                     }
 
                     // Check if user is allowed to download
                     if (user.role !== Roles.Administrator && _(productions).map<string>((p: Production) => p._id).difference(user.productionIds || []).value().length !== 0) {
-                        client.emit(socketEvents.BadRequest, "User is not allowed to download medias of this entity");
+                        client.emit(SocketEvents.BadRequest, "User is not allowed to download medias of this entity");
                         setState(client, SocketState.Idle);
                         return;
                     }
@@ -153,7 +144,7 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                         }
                     }
                     if (isEmpty(sources)) {
-                        client.emit(socketEvents.BadRequest, "No file to download was found");
+                        client.emit(SocketEvents.BadRequest, "No file to download was found");
                         setState(client, SocketState.Idle);
                         return;
                     }
@@ -167,67 +158,78 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     // Getting files
                     let files: {
                         path: string;
-                        data: Buffer;
+                        size: number;
                     }[] = [];
                     for (const path of paths) {
-                        files = [...files, { path, data: await mediaManager.download(path) }];
+                        files = [...files, { path, size: await mediaManager.filesize(path) }];
                     }
 
                     // Calculate total size
                     const totalSize: number = sumBy<{
                         path: string;
-                        data: Buffer;
+                        size: number;
                     }>(files, (file: {
                         path: string;
-                        data: Buffer;
-                    }) => file.data.length);
+                        size: number;
+                    }) => file.size);
+
+                    // MD5 hashes
+                    const md5Hashes: DownloadHashes = {};
 
                     // Sending files
                     for (const file of files) {
-                        client.emit(socketEvents.DownloadInit, {
+                        client.emit(SocketEvents.DownloadInit, {
                             file: file.path,
-                            fileSize: file.data.length,
-                            totalSize,
-                            hash: createHash("md5").update(file.data).digest("hex")
+                            fileSize: file.size,
+                            totalSize
                         });
-                        for (let i: number = 0; i < file.data.length; i += chunkSize) {
-                            if (clients[client.id] && clients[client.id].state === SocketState.Downloading) {
-                                client.emit(socketEvents.Download, file.data.slice(i, i + chunkSize));
-                            } else {
-                                // If client is no longer downloading terminate
-                                client.emit(socketEvents.DownloadEnd);
-                                setState(client, SocketState.Idle);
-                                return;
+                        const stream: NodeJS.ReadableStream = mediaManager.startDownload(file.path);
+                        const hash: Hash = createHash("md5");
+                        let data: Buffer;
+                        do {
+                            data = stream.read(chunkSize) as Buffer;
+                            if (data) {
+                                if (clients[client.id] && clients[client.id].state === SocketState.Downloading) {
+                                    hash.update(data);
+                                    client.emit(SocketEvents.Download, data);
+                                } else {
+                                    // If client is no longer downloading terminate
+                                    client.emit(SocketEvents.DownloadEnd);
+                                    setState(client, SocketState.Idle);
+                                    return;
+                                }
                             }
-                        }
+                        } while (data);
+                        md5Hashes[file.path] = hash.digest("hex");
                     }
 
                     // Notify that download has been successful
                     clients[client.id].downloading = without<string>(clients[client.id].downloading, ...prodToBeLocked);
-                    client.emit(socketEvents.DownloadEnd);
+                    client.emit(SocketEvents.DownloadEnd, md5Hashes);
                     setState(client, SocketState.Idle);
                 } catch (error) {
-                    client.emit(socketEvents.Exception, "An unexpected error has occured");
+                    client.emit(SocketEvents.Exception, "An unexpected error has occured");
                     setState(client, SocketState.Idle);
                 }
             });
-            client.on(socketEvents.UploadInit, async (uploadOptions: UploadOptions) => {
+            client.on(SocketEvents.UploadInit, async (uploadOptions: UploadOptions) => {
                 try {
                     if (!uploadOptions) {
-                        client.emit(socketEvents.BadRequest, "Empty request");
+                        client.emit(SocketEvents.BadRequest, "Empty request");
                         return;
                     }
-                    const { hash, target, cookie, filename }: UploadOptions = uploadOptions;
+                    const { target }: UploadOptions = uploadOptions;
 
                     // Client must be admin
+                    const cookie: string = clients[client.id].cookie;
                     if (typeof cookie !== "string" || !cookie) {
-                        client.emit(socketEvents.BadRequest, "Authentication is required");
+                        client.emit(SocketEvents.BadRequest, "Authentication is required");
                         return;
                     }
 
                     // Fobidden if client is already doing something
                     if (clients[client.id].state !== SocketState.Idle) {
-                        client.emit(socketEvents.BadRequest, "Cannot perform upload if client is busy");
+                        client.emit(SocketEvents.BadRequest, "Cannot perform upload if client is busy");
                         return;
                     }
                     clients[client.id].state = SocketState.Uploading;
@@ -241,156 +243,175 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                             throw new Error(`Failed to authenticate ${userId}`);
                         }
                     } catch (error) {
-                        client.emit(socketEvents.BadRequest, "Failed to authenticate");
+                        client.emit(SocketEvents.BadRequest, "Failed to authenticate");
                         setState(client, SocketState.Idle);
                         return;
                     }
 
                     // Check if user is admin
                     if (!user || user.role !== Roles.Administrator) {
-                        client.emit(socketEvents.BadRequest, "Only administrators can perform this action");
+                        client.emit(SocketEvents.BadRequest, "Only administrators can perform this action");
                         setState(client, SocketState.Idle);
                         return;
                     }
 
                     // Check if request is valid
-                    if (!target || !target.mainId || !target.mediaId || !target.sourceId || !isUUID(target.mainId) || !isUUID(target.mediaId) || !isUUID(target.sourceId) || !hash || !isMD5(hash)) {
-                        client.emit(socketEvents.BadRequest, "Media requested is not valid");
+                    if (!target || !target.mainId || !target.mediaId || !target.sourceId || !isUUID(target.mainId) || !isUUID(target.mediaId) || !isUUID(target.sourceId)) {
+                        client.emit(SocketEvents.BadRequest, "Media requested is not valid");
                         setState(client, SocketState.Idle);
                         return;
                     }
 
                     // Check if resource exist
                     const resource: Production | Category | PresentationContainer = await globalRepository.getById(target.mainId);
+                    let media: Media;
                     let source: Source;
                     if (resource) {
-                        const media: Media = _(getMedias(resource)).filter((m: Media) => m._id === target.mediaId).head();
+                        media = _(getMedias(resource)).filter((m: Media) => m._id === target.mediaId).head();
                         if (media) {
                             source = _(media.sources).filter((s: Source) => s._id === target.sourceId).head();
                         }
                     }
                     if (!resource || !source) {
-                        client.emit(socketEvents.BadRequest, "Requested file could not be found");
+                        client.emit(SocketEvents.BadRequest, "Requested file could not be found");
                         setState(client, SocketState.Idle);
                         return;
                     }
 
                     // Can't upload a file if someone is already uploading to it
                     if (includes<string>(getUploading(), resource._id)) {
-                        client.emit(socketEvents.BadRequest, "Somebody is already uploading a file for that entity");
+                        client.emit(SocketEvents.BadRequest, "Somebody is already uploading a file for that entity");
                         setState(client, SocketState.Idle);
                         return;
                     }
 
+                    // Compute file name
+                    const entityType: EntityType = getEntityType(resource);
+                    let directory: string,
+                        subDir: string = "";
+                    // Find which directory to use
+                    switch (entityType) {
+                        case EntityType.Production:
+                            directory = "productions";
+                            break;
+                        case EntityType.Category:
+                            directory = "categories";
+                            break;
+                        case EntityType.PresentationContainer:
+                            directory = "home";
+                            break;
+                        default:
+                            client.emit(SocketEvents.Exception, "Cannot store media for this type of entity");
+                            break;
+                    }
+                    // Use the name of the Production/Category when possible
+                    if ((resource as Production | Category).name) {
+                        subDir = uriFriendlyFormat((resource as Production | Category).name);
+                    }
+                    // Create a unique filename
+                    const filename: string = uploadOptions.filename || "";
+                    source.src = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${filename}`)}`;
+                    source.preview = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_preview${extname(filename)}`)}`;
+                    source.fallback = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_fallback${extname(filename)}`)}`;
+                    source.src = await mediaManager.newName(source.src);
+                    source.preview = await mediaManager.newName(source.preview);
+                    source.fallback = await mediaManager.newName(source.fallback);
+
                     // Please send the file !!
-                    clients[client.id].filename = filename;
                     clients[client.id].target = target;
-                    clients[client.id].data = new Buffer(0);
-                    clients[client.id].hash = hash;
-                    client.emit(socketEvents.UploadInit);
+                    clients[client.id].uploadStream = tempMediaManager.startUpload(source.src);
+                    clients[client.id].hash = createHash("md5");
+                    clients[client.id].sourceTarget = source;
+                    clients[client.id].entityTarget = resource;
+                    clients[client.id].mediaTarget = media;
+                    client.emit(SocketEvents.UploadInit);
                 } catch (error) {
-                    client.emit(socketEvents.Exception, "An unexpected error has occured");
+                    client.emit(SocketEvents.Exception, "An unexpected error has occured");
                     setState(client, SocketState.Idle);
                 }
             });
-            client.on(socketEvents.Upload, (data: Buffer) => {
-                if (clients[client.id].state !== SocketState.Uploading) {
-                    client.emit(socketEvents.BadRequest, "User must initiate upload first");
-                    return;
-                }
-                clients[client.id].data = Buffer.concat([clients[client.id].data, data]);
-            });
-            client.on(socketEvents.UploadEnd, async () => {
-                if (clients[client.id].state !== SocketState.Uploading) {
-                    client.emit(socketEvents.BadRequest, "User must initiate upload first");
-                    return;
-                }
-                const { data, target, hash }: SocketClient = clients[client.id];
-                clients[client.id].target = undefined;
-                setState(client, SocketState.Idle);
-                // MD5 Check
-                // tslint:disable-next-line:possible-timing-attack
-                if (createHash("md5").update(data).digest("hex") !== hash) {
-                    client.emit(socketEvents.Exception, "A problem occured while receiving data");
-                    return;
-                }
-
-                // Create new name if necessary
-                const entity: Production | Category | PresentationContainer = await globalRepository.getById(target.mainId),
-                    media: Media = getMediaFromEntity(entity, target.mediaId),
-                    source: Source = getSourceFromMedia(media, target.sourceId),
-                    entityType: EntityType = getEntityType(entity);
-                let dest: string,
-                    prevDest: string,
-                    fallbackDest: string,
-                    directory: string,
-                    subDir: string = "";
-                // Find which directory to use
-                switch (entityType) {
-                    case EntityType.Production:
-                        directory = "productions";
-                        break;
-                    case EntityType.Category:
-                        directory = "categories";
-                        break;
-                    case EntityType.PresentationContainer:
-                        directory = "home";
-                        break;
-                    default:
-                        client.emit(socketEvents.Exception, "Cannot store media for this type of entity");
-                        break;
-                }
-                if (!config.media.overwrite) {
-                    if (!source.src) {
-                        const filename: string = clients[client.id].filename || "";
-                        if ((entity as Production | Category).name) {
-                            subDir = uriFriendlyFormat((entity as Production | Category).name);
-                        }
-                        if (process.env.NODE_ENV === "production") {
-                            // Use slashes for AWS
-                            dest = source.src = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${filename}`)}`;
-                            prevDest = source.preview = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_preview${extname(filename)}`)}`;
-                            fallbackDest = source.fallback = `${directory}/${subDir}${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_fallback${extname(filename)}`)}`;
-                        } else {
-                            // Use file system in development
-                            dest = source.src = join(config.media.localDirectory, directory, subDir, uriFriendlyFormat(`${source._id}_${filename}`));
-                            prevDest = source.preview = join(config.media.localDirectory, directory, subDir, uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_preview${extname(filename)}`));
-                            fallbackDest = source.fallback = join(config.media.localDirectory, directory, subDir, uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_fallback${extname(filename)}`));
-                        }
-                    }
-                    dest = source.src = await mediaManager.newName(source.src);
-                    prevDest = source.preview = await mediaManager.newName(source.preview);
-                    fallbackDest = source.fallback = await mediaManager.newName(source.fallback);
-                } else {
-                    dest = source.src;
-                    prevDest = source.preview;
-                    fallbackDest = source.fallback;
-                }
-                // Update the entity
-                await globalRepository.update(updateMediaInEntity(entity, updateSourceInMedia(media, source)));
-                // Fallback media only used in videos
-                if (media.type !== MediaTypes.Video) {
-                    fallbackDest = source.fallback = "";
-                }
-                // Upload / create WebM WebP
-                switch (media.type) {
-                    case MediaTypes.Video:
-                        createProcessVideoTask({ data, dest: prevDest, fallbackDest });
-                        break;
-                    case MediaTypes.Slideshow:
-                    case MediaTypes.Image:
-                        createProcessImageTask({ data, dest: prevDest });
-                        break;
-                    default:
-                        client.emit(socketEvents.Exception, "Unknown media type");
-                        setState(client, SocketState.Idle);
+            client.on(SocketEvents.Upload, (data: ArrayBuffer) => {
+                try {
+                    if (clients[client.id].state !== SocketState.Uploading) {
+                        client.emit(SocketEvents.BadRequest, "User must initiate upload first");
                         return;
+                    }
+                    const buffer: Buffer = Buffer.from(data);
+                    clients[client.id].uploadStream.write(buffer);
+                    (clients[client.id].hash as Hash).update(buffer);
+                } catch (error) {
+                    client.emit(SocketEvents.Exception, "An unexpected error has occured");
+                    setState(client, SocketState.Idle);
                 }
-                createFileUploadTask({
-                    data,
-                    dest
-                });
-                client.emit(socketEvents.UploadEnd);
+            });
+            client.on(SocketEvents.UploadEnd, async (expectedHash: string) => {
+                try {
+                    if (clients[client.id].state !== SocketState.Uploading) {
+                        client.emit(SocketEvents.BadRequest, "User must initiate upload first");
+                        return;
+                    }
+                    const { uploadStream, hash, sourceTarget, entityTarget, mediaTarget }: SocketClient = clients[client.id];
+                    clients[client.id].target = undefined;
+                    setState(client, SocketState.Idle);
+                    // MD5 Check
+                    // tslint:disable-next-line:possible-timing-attack
+                    if (!expectedHash || !isMD5(expectedHash) || (hash as Hash).digest("hex") !== expectedHash) {
+                        client.emit(SocketEvents.Exception, "A problem occured while receiving data");
+                        return;
+                    }
+
+                    // Close the stream
+                    uploadStream.end();
+
+                    // File size
+                    sourceTarget.fileSize = await tempMediaManager.filesize(sourceTarget.src);
+
+                    // Start converting tasks
+                    createFileUploadTask({
+                        source: sourceTarget.src,
+                        dest: sourceTarget.src
+                    });
+
+                    // Upload / create WebM WebP
+                    switch (mediaTarget.type) {
+                        case MediaTypes.Video:
+                            createProcessVideoTask({
+                                source: sourceTarget.src,
+                                dest: sourceTarget.preview,
+                                fallbackDest: sourceTarget.fallback
+                            });
+                            break;
+                        case MediaTypes.Slideshow:
+                        case MediaTypes.Image:
+                            createProcessImageTask({
+                                source: sourceTarget.src,
+                                dest: sourceTarget.preview
+                            });
+                            break;
+                        default:
+                            client.emit(SocketEvents.Exception, "Unknown media type");
+                            setState(client, SocketState.Idle);
+                            return;
+                    }
+
+                    // Update source with the real paths
+                    sourceTarget.src = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.src}`;
+                    sourceTarget.preview = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.preview}`;
+                    sourceTarget.fallback = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.fallback}`;
+
+                    // Fallback media only used in videos
+                    if (mediaTarget.type !== MediaTypes.Video) {
+                        sourceTarget.fallback = "";
+                    }
+
+                    // Update the entity
+                    await globalRepository.update(updateMediaInEntity(entityTarget, updateSourceInMedia(mediaTarget, sourceTarget)));
+
+                    client.emit(SocketEvents.UploadEnd);
+                } catch (error) {
+                    client.emit(SocketEvents.Exception, "An unexpected error has occured");
+                    setState(client, SocketState.Idle);
+                }
             });
         });
         return io;
@@ -414,5 +435,12 @@ export const kickClient: (clientId: string) => void =
             delete clients[clientId];
         } else {
             throw new Error(`Client with ID ${clientId} could not be found`);
+        }
+    };
+
+export const assignCookieToClient: (clientId: string, cookie?: string) => void =
+    (clientId: string, cookie?: string): void => {
+        if (clients[clientId]) {
+            clients[clientId].cookie = cookie;
         }
     };

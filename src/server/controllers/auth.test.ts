@@ -6,10 +6,11 @@
 /// <reference path="../../test.d.ts" />
 import { should, use } from "chai";
 import * as chaiAsPromised from "chai-as-promised";
+import * as sinonChai from "sinon-chai";
 import * as supertest from "supertest";
 import app from "../app";
 import { Server } from "http";
-import { Express, Request, Response, NextFunction } from "express-serve-static-core";
+import { Express, Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import * as express from "express";
 import { stub, sandbox as sinonSandbox } from "sinon";
 import { head, filter, isArray, includes, keys } from "lodash";
@@ -23,9 +24,11 @@ import GenericRepository from "../dal/genericRepository";
 import * as passport from "passport";
 import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import * as detect from "detect-port";
+import * as socketServer from "../socket";
 
 should();
 use(chaiAsPromised);
+use(sinonChai);
 
 import User = Ropeho.Models.User;
 
@@ -62,11 +65,20 @@ describe("Auth controller", () => {
     let server: Server,
         port: number,
         agent: supertest.SuperTest<supertest.Test>,
-        sandbox: sinon.SinonSandbox;
+        sandbox: sinon.SinonSandbox,
+        middleware: RequestHandler,
+        reqUser: User = undefined;
     before(async () => {
         // Setting up the server
         port = await detect(config.endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
+            middleware = (req: Request, res: Response, next: NextFunction) => {
+                req.user = reqUser;
+                reqUser = undefined;
+                next();
+            };
+            // Use middleware to create session data
+            testApp.use(middleware);
             testApp.use(app);
             server = testApp.listen(port, (err: Error) => err ? reject(err) : resolve());
         });
@@ -128,13 +140,26 @@ describe("Auth controller", () => {
                 agent.post("/api/auth")
                     .send({ email: newUser.email, password: testPassword })
                     .should.eventually.have.property("status", 400));
+            it("Should accept and create a session otherwise", async () => {
+                const response: supertest.Response = await agent.post("/api/auth")
+                    .send({ email: user.email, password: testPassword });
+                response.should.have.property("status", 200);
+                response.should.have.property("header").with.property("set-cookie").with.deep.property("[0]").that.contain("ropeho.sid");
+            });
         });
-        it("Should accept and create a session otherwise", async () => {
-            const response: supertest.Response = await agent.post("/api/auth")
-                .send({ email: user.email, password: testPassword });
-            response.should.have.property("status", 200);
-            response.should.have.property("header").with.property("set-cookie").with.deep.property("[0]").that.contain("ropeho.sid");
-        });
+    });
+    it("Should return an empty object if the user is not logged in", async () => {
+        const response: supertest.Response = await agent.get("/api/auth")
+            .send();
+        response.should.have.property("status", 200);
+        response.should.have.property("body").deep.equal({});
+    });
+    it("Should return the current user is the user is logged in", async () => {
+        reqUser = user;
+        const response: supertest.Response = await agent.get("/api/auth")
+            .send();
+        response.should.have.property("status", 200);
+        response.should.have.property("body").deep.equal(user);
     });
     it("Should log in using Facebook authentication", async () => {
         const response: supertest.Response = await agent.get("/api/auth/facebook");
@@ -159,5 +184,17 @@ describe("Auth controller", () => {
         response.should.have.property("status", 302);
         response.should.have.property("header").with.property("location").that.contains(config.endPoints.client.host);
         authenticateStub.restore();
+    });
+    it("Should authenticate the user in the socket server from a cookie", async () => {
+        reqUser = user;
+        const setUserStub: sinon.SinonStub = stub(socketServer, "assignCookieToClient");
+        const clientId: string = "12345";
+        const cookieValue: string = "cookieYo";
+        const cookie: string = `${config.session.name}=${cookieValue}`;
+        const response: supertest.Response = await agent.post(`/api/auth/socket/${clientId}`).set("Cookie", cookie);
+        response.should.have.property("status", 200);
+        setUserStub.should.have.been.calledOnce;
+        setUserStub.should.have.been.calledWith(clientId, cookieValue);
+        setUserStub.restore();
     });
 });

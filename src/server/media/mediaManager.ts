@@ -4,14 +4,14 @@
  */
 
 /// <reference path="../typings.d.ts" />
-import localMediaManager from "./localMediaManager";
+import LocalMediaManager from "./localMediaManager";
 
 let mediaManager: Ropeho.Media.IMediaManager;
 
 if (process.env.NODE_ENV === "production") {
-    mediaManager = new localMediaManager();
+    mediaManager = new LocalMediaManager();
 } else {
-    mediaManager = new localMediaManager();
+    mediaManager = new LocalMediaManager();
 }
 
 export default mediaManager;

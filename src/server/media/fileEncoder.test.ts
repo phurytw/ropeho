@@ -155,15 +155,18 @@ describe("Media encoder", () => {
             durationSpy.restore();
             seekInputSpy.restore();
         });
+        it("Should update progress", async () => {
+            const onSpy: sinon.SinonSpy = spy(ffmpeg.prototype, "on");
+            const setProgress: any = () => ({});
+            await createWebm(testVideo, { setProgress });
+            onSpy.should.have.been.calledWithMatch("progress");
+            onSpy.restore();
+        });
     });
     describe("Creating thumbnails from a video", () => {
         let ffmpegScreenshotStub: sinon.SinonStub;
         let createWebpStub: sinon.SinonStub;
-        before(() => {
-            // tslint:disable-next-line:only-arrow-functions
-            ffmpegScreenshotStub = stub(ffmpeg.prototype, "screenshot").callsFake(function (): void {
-                this.emit("end");
-            });
+        beforeEach(() => {
             createWebpStub = stub(fileEncoder, "createWebp").callsFake((src: string, dest: string): Promise<Buffer> => {
                 if (dest) {
                     const stream: NodeJS.WritableStream = fs.createWriteStream(dest);
@@ -175,16 +178,26 @@ describe("Media encoder", () => {
                 }
             });
         });
-        after(() => {
+        afterEach(() => {
             ffmpegScreenshotStub.restore();
             createWebpStub.restore();
         });
         it("Should create a thumbnail in the file system", async () => {
-            await createScreenshot(testVideo, "video.png");
+            const dest: string = "video.png";
+            // tslint:disable-next-line:only-arrow-functions
+            ffmpegScreenshotStub = stub(ffmpeg.prototype, "screenshot").callsFake(function (): void {
+                fakeFs.writeFileSync(dest, video);
+                this.emit("end");
+            });
+            await createScreenshot(testVideo, dest);
             should().not.throw(accessSync.bind(null, "video.png", constants.F_OK));
             fakeFs.unlink("video.png");
         });
         it("Should create a thumbnail in memory", async () => {
+            // tslint:disable-next-line:only-arrow-functions
+            ffmpegScreenshotStub = stub(ffmpeg.prototype, "screenshot").callsFake(function (): void {
+                this.emit("end");
+            });
             const data: Buffer = await createScreenshot(testVideo);
             data.should.deep.equal(testImage);
         });

@@ -5,9 +5,9 @@
 
 /// <reference path="../typings.d.ts" />
 import { dirname, basename, join } from "path";
-import { constants, access, accessSync, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync } from "fs";
+import { constants, access, accessSync, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync, stat, Stats } from "fs";
 import config from "../../config";
-import * as rimraf from "rimraf";
+// import * as rimraf from "rimraf";
 import * as mkdirp from "mkdirp";
 import * as _ from "lodash";
 import { includes } from "lodash";
@@ -18,7 +18,7 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
     constructor(public baseDirectory: string = config.media.localDirectory) {
         this.baseDirectory = join(process.cwd(), dirname(baseDirectory), basename(baseDirectory));
         mkdirp.sync(this.baseDirectory);
-        rimraf.sync(join(this.baseDirectory, "**", "*"));
+        // rimraf.sync(join(this.baseDirectory, "**", "*"));
     }
     /**
      * Create a readable stream to a file at the specified path
@@ -65,7 +65,9 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
                             reject(err);
                         }
                         const stream: NodeJS.WritableStream = createWriteStream(path)
-                            .on("error", (err: Error) => reject(err));
+                            .on("error", (err: Error) => {
+                                reject(err);
+                            });
                         stream.write(data);
                         stream.end();
                         resolve();
@@ -141,7 +143,7 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
     /**
      * Checks if file exists
      * @param {string} path path to the file
-     * @return {Promise<boolean>} a promise that return
+     * @return {Promise<boolean>} a promise that fulfills with true if the file exists
      */
     exists(path: string): Promise<boolean> {
         return new Promise<boolean>((resolve: (value?: boolean | PromiseLike<boolean>) => void, reject: (reason?: any) => void) => {
@@ -151,6 +153,23 @@ export default class MediaManager implements Ropeho.Media.IMediaManager {
                     resolve(false);
                 } else {
                     resolve(true);
+                }
+            });
+        });
+    }
+    /**
+     * Gets the size of a file
+     * @param {string} media path to the file
+     * @return {Promise<number>} a promise that fulfills with the size of the file in bytes
+     */
+    filesize(media: string): Promise<number> {
+        return new Promise<number>((resolve: (value?: number | PromiseLike<number>) => void, reject: (reason?: any) => void) => {
+            media = join(this.baseDirectory, media);
+            stat(media, (err: NodeJS.ErrnoException, stats: Stats) => {
+                if (err) {
+                    reject(new Error("File not found"));
+                } else {
+                    resolve(stats.size);
                 }
             });
         });
