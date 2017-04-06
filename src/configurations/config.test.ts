@@ -138,6 +138,7 @@ const config: Ropeho.Configuration.ConfigurationObject = {
     },
     media: {
         localDirectory: "/test/media",
+        tempDirectory: "/temp",
         s3Bucket: "/ropeho",
         imageEncoding: {
             quality: 1

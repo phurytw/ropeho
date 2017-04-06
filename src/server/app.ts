@@ -20,6 +20,7 @@ import { normalizeEmail, isEmail } from "validator";
 import { renderFile } from "ejs";
 import { uriFriendlyFormat } from "../common/helpers/uriFriendlyFormat";
 import * as connectRedis from "connect-redis";
+import { join } from "path";
 
 // Routes
 import homeRoutes from "./controllers/home";
@@ -135,6 +136,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(passport.initialize());
 app.use(passport.session());
+
+// serve local medias
+app.use(express.static(join(process.cwd(), config.media.localDirectory)));
+
 // Routes
 app.use("/", homeRoutes);
 app.use("/api", apiRoutes);

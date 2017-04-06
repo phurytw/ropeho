@@ -3,6 +3,7 @@
 /// <reference path="../../definitions/http-proxy/index.d.ts" />
 /// <reference path="../../definitions/react-router-config/index.d.ts" />
 /// <reference path="../../definitions/react-helmet/index.d.ts" />
+/// <reference path="../../definitions/spark-md5/index.d.ts" />
 /// <reference path="../ropeho.d.ts" />
 
 interface Window {

@@ -56,11 +56,17 @@ export const logout: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionS
     };
 export const fetchCurrentUser: () => ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> =
     (): ThunkAction<Promise<Actions.SetCurrentUser>, SessionState, {}> => {
-        return fetchThunk<Actions.SetCurrentUser, Production[], SessionState>(`/api/auth`, { credentials: "include" },
+        return fetchThunk<Actions.SetCurrentUser, Production[], SessionState>(`/api/auth`,
             (dispatch: Dispatch<SessionState>, user: User) => dispatch<Actions.SetCurrentUser>({
                 type: ActionTypes.SET_CURRENT_USER,
                 user
             }));
+    };
+export const socketAuthentication: (clientId: string) => ThunkAction<Promise<void>, SessionState, {}> =
+    (clientId: string): ThunkAction<Promise<void>, SessionState, {}> => {
+        return fetchThunk<void, Production[], SessionState>(`/api/auth/socket/${clientId}`, {
+            method: "POST"
+        }, () => ({}));
     };
 
 // reducer

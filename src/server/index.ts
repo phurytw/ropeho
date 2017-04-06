@@ -11,6 +11,8 @@ import GenericRepository from "./dal/genericRepository";
 import { computeHashSync } from "./accounts/password";
 import { computeToken } from "./accounts/token";
 import { Roles } from "../enum";
+import { init } from "./socket";
+import { Server, createServer } from "http";
 
 /**
  * Starts the application
@@ -21,7 +23,9 @@ const startApp: () => void =
             if (err) {
                 throw err;
             }
-            app.listen(port, (err: Error) => {
+            const server: Server = createServer(app);
+            init(server);
+            server.listen(port, (err: Error) => {
                 if (err) {
                     console.error(err);
                 }
