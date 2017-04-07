@@ -27,7 +27,7 @@ describe("MediaPreviewPointer component", () => {
                     _id: "sourceId",
                     posX: 350,
                     posY: 50,
-                    zoom: 0,
+                    zoom: 1,
                     preview: `data:image/png;base64, ${image}`
                 },
                 type: MediaTypes.Image,
@@ -47,16 +47,41 @@ describe("MediaPreviewPointer component", () => {
                 return pointer.type() === Pointer && style && style.top === "50px" && style.left === "50px";
             }).should.have.lengthOf(1);
         });
+        it("Should place the pointer according to the zoom", () => {
+            const props: MediaPreviewPointerProps = {
+                source: {
+                    _id: "sourceId",
+                    posX: 400,
+                    posY: 50,
+                    zoom: 2,
+                    preview: `data:image/png;base64, ${image}`
+                },
+                type: MediaTypes.Image,
+                width: 800,
+                height: 600,
+                offsetX: 750,
+                offsetY: 50
+            };
+            const wrapper: ReactWrapper<MediaPreviewPointerProps, {}> = mount(<MediaPreviewPointer {...props} />);
+            const instance: MediaPreviewPointer = wrapper.instance() as MediaPreviewPointer;
+            (instance as any).element = {
+                clientHeight: 100,
+                clientWidth: 100
+            };
+            wrapper.findWhere((pointer: ReactWrapper<any, any>) => {
+                const style: React.CSSProperties = pointer.prop("style");
+                return pointer.type() === Pointer && style && style.top === "50px" && style.left === "50px";
+            }).should.have.lengthOf(1);
+        });
     });
     describe("Source handler", () => {
-        it("Should set a source's dimensions from an image", () => {
-            const setDimensionsSpy: sinon.SinonSpy = spy();
+        it("Should set a source's dimensions from an image", (done: MochaDone) => {
+            const setDimensionsSpy: sinon.SinonSpy = spy(() => done());
             shallow(<MediaPreviewPointer
-                source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 0, preview: `data:image/png;base64, ${image}` }}
+                source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 1, preview: `data:image/png;base64, ${image}` }}
                 setDimensions={setDimensionsSpy}
                 type={MediaTypes.Image}
             />);
-            setDimensionsSpy.should.have.been.calledOnce;
         });
         it("Should set a source's dimensions from a video", (done: MochaDone) => {
             const setDimensionsSpy: sinon.SinonSpy = spy(() => {
@@ -71,7 +96,7 @@ describe("MediaPreviewPointer component", () => {
                     }
                 });
             shallow(<MediaPreviewPointer
-                source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 0, preview: `data:image/png;base64, ${video}` }}
+                source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 1, preview: `data:image/png;base64, ${video}` }}
                 setDimensions={setDimensionsSpy}
                 type={MediaTypes.Video}
             />);
@@ -83,7 +108,7 @@ describe("MediaPreviewPointer component", () => {
                 _id: "sourceId",
                 posX: 350,
                 posY: 50,
-                zoom: 0,
+                zoom: 1,
                 preview: `data:image/png;base64, ${image}`
             }} />);
             const instance: MediaPreviewPointer = wrapper.instance() as MediaPreviewPointer;
@@ -92,9 +117,9 @@ describe("MediaPreviewPointer component", () => {
         it("Should clicking should update the source with the new POI", () => {
             const source: Source = {
                 _id: "sourceId",
-                posX: 350,
+                posX: 400,
                 posY: 50,
-                zoom: 0,
+                zoom: 2,
                 preview: `data:image/png;base64, ${image}`
             };
             const setSourceSpy: sinon.SinonSpy = spy();
@@ -103,8 +128,8 @@ describe("MediaPreviewPointer component", () => {
                 type: MediaTypes.Image,
                 width: 800,
                 height: 600,
-                offsetX: 300,
-                offsetY: 0,
+                offsetX: 750,
+                offsetY: 50,
                 setSource: setSourceSpy
             };
             const wrapper: ReactWrapper<MediaPreviewPointerProps, {}> = mount(<MediaPreviewPointer {...props} />);
@@ -118,13 +143,13 @@ describe("MediaPreviewPointer component", () => {
                 })
             };
             wrapper.simulate("click", {
-                clientX: 50,
+                clientX: 100,
                 clientY: 50
             });
             setSourceSpy.should.have.been.calledOnce;
             setSourceSpy.should.have.been.calledWith({
                 ...source,
-                posX: 350,
+                posX: 425,
                 posY: 50
             });
         });

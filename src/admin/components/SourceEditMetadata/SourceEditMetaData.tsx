@@ -21,22 +21,25 @@ export class SourceEditMetaData extends React.Component<SourceEditMetaDataProps,
     shouldComponentUpdate(nextProps: SourceEditMetaDataProps): boolean {
         return !isEqual(nextProps.source, this.props.source);
     }
-    setPosX: (posX: number) => void = (posX: number): void => {
+    setPosX: (posXinput: string) => void = (posXinput: string): void => {
         const { source, setSource }: SourceEditMetaDataProps = this.props;
+        const posX: number = parseFloat(posXinput);
         setSource({
             ...source,
             posX
         });
     }
-    setPosY: (posY: number) => void = (posY: number): void => {
+    setPosY: (posYInput: string) => void = (posYinput: string): void => {
         const { source, setSource }: SourceEditMetaDataProps = this.props;
+        const posY: number = parseFloat(posYinput);
         setSource({
             ...source,
             posY
         });
     }
-    setZoom: (zoom: number) => void = (zoom: number): void => {
+    setZoom: (zoomInput: string) => void = (zoomInput: string): void => {
         const { source, setSource }: SourceEditMetaDataProps = this.props;
+        const zoom: number = parseFloat(zoomInput);
         setSource({
             ...source,
             zoom

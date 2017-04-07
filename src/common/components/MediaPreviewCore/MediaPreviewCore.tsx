@@ -25,6 +25,10 @@ export interface MediaPreviewCoreState {
      */
     offsetY?: number;
     /**
+     * element specific zoom
+     */
+    scale?: number;
+    /**
      * media's final width
      */
     computedWidth?: number;
@@ -32,6 +36,10 @@ export interface MediaPreviewCoreState {
      * media's final height
      */
     computedHeight?: number;
+    /**
+     * automatically zooms the media to fit the container
+     */
+    fit?: boolean;
 }
 
 export interface MediaPreviewCoreProps {
@@ -51,9 +59,17 @@ export interface MediaPreview<P, S> {
 
 export interface MediaPreviewProps extends MediaPreviewCoreState, MediaPreviewCoreProps {
     /**
-     * prop that will be passed down
+     * sets the media real dimensions in pixels
      */
     setDimensions?: (width: number, height: number) => void;
+    /**
+     * sets element specific zoom
+     */
+    setScale?: (scale: number) => void;
+    /**
+     * sets the auto zoom feature
+     */
+    shouldFit?: (fit: boolean) => void;
 }
 
 export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) => MediaPreviewCore<P> =
@@ -62,7 +78,10 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
             element: HTMLDivElement;
             constructor(props?: P & MediaPreviewCoreProps) {
                 super(props);
-                this.state = {};
+                this.state = {
+                    scale: 1,
+                    fit: true
+                };
             }
             componentDidMount(): void {
                 this.handleSource();
@@ -81,9 +100,10 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
             }
             handleSource: () => void = (): void => {
                 const { source }: MediaPreviewCoreProps = this.props;
-                const { height, width }: MediaPreviewCoreState = this.state;
+                const { height, width, scale, fit }: MediaPreviewCoreState = this.state;
                 if (source && this.element) {
-                    const { posX, posY, zoom }: Source = source;
+                    let { posX, posY, zoom }: Source = source;
+                    zoom = typeof scale === "number" && !isNaN(scale) && isFinite(scale) ? zoom * scale : zoom;
                     const { clientHeight, clientWidth }: HTMLDivElement = this.element;
                     let offsetX: number,
                         offsetY: number,
@@ -93,11 +113,16 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                         halfHeight: number = clientHeight / 2;
 
                     // must not have empty space
-                    if (computedHeight < clientHeight || computedWidth < clientWidth) {
-                        const newZoom: number = Math.max(clientWidth / width, clientHeight / height);
+                    let newZoom: number = zoom;
+                    if (fit && (computedHeight < clientHeight || computedWidth < clientWidth)) {
+                        newZoom = Math.max(clientWidth / width, clientHeight / height);
                         computedHeight = height * newZoom;
                         computedWidth = width * newZoom;
                     }
+
+                    // scale posX and posY according to the zoom
+                    posX = posX * newZoom;
+                    posY = posY * newZoom;
 
                     // POI must be at the center
                     // but must not leave any blank space
@@ -118,6 +143,13 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                 });
                 this.handleSource();
             }
+            setScale: (scale: number) => void = (scale: number): void => {
+                this.setState({ scale });
+                this.handleSource();
+            }
+            shouldFit: (fit: boolean) => void = (fit: boolean): void => {
+                this.setState({ fit });
+            }
             setElement: (element: HTMLDivElement) => any = (element: HTMLDivElement): any => {
                 if (element) {
                     this.element = element;
@@ -127,7 +159,7 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
             }
             render(): JSX.Element {
                 return <div ref={this.setElement} style={{ width: "100%", height: "100%", overflow: "hidden" }}>
-                    <Comp {...this.props } {...this.state} setDimensions={this.setDimensions} />
+                    <Comp {...this.props } {...this.state} setDimensions={this.setDimensions} setScale={this.setScale} shouldFit={this.shouldFit} />
                 </div>;
             }
         };

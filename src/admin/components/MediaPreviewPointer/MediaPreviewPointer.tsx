@@ -69,8 +69,8 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
         const { top, left }: ClientRect = this.element.getBoundingClientRect();
         setSource({
             ...source,
-            posX: clientX + offsetX - left,
-            posY: clientY + offsetY - top
+            posX: (clientX - left + offsetX) / source.zoom,
+            posY: (clientY - top + offsetY) / source.zoom
         });
     }
     setZoom: (event: React.WheelEvent<HTMLDivElement>) => void = (event: React.WheelEvent<HTMLDivElement>): void => {
@@ -78,12 +78,13 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
         const { setSource, source }: MediaPreviewPointerProps = this.props;
         setSource({
             ...source,
-            zoom: source.zoom += event.deltaY < 0 ? .10 : (event.deltaY > 0 ? -.10 : 0)
+            zoom: source.zoom + (event.deltaY < 0 ? .10 : (event.deltaY > 0 ? -.10 : 0))
         });
     }
     render(): JSX.Element {
         const { source, offsetX, offsetY }: MediaPreviewPointerProps = this.props;
         if (source) {
+            const { posX, posY, zoom }: Source = source;
             return <div ref={this.setRef}
                 style={{
                     width: "100%",
@@ -95,8 +96,8 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
                 role="main">
                 <Pointer style={{
                     position: "absolute",
-                    top: `${source.posY - offsetY}px`,
-                    left: `${source.posX - offsetX}px`
+                    top: `${posY * zoom - offsetY}px`,
+                    left: `${posX * zoom - offsetX}px`
                 }} />
             </div>;
         } else {

@@ -31,65 +31,192 @@ describe("MediaPreviewCore HOC", () => {
     };
     describe("Source handler", () => {
         describe("POI placement", () => {
-            it("Should place the POI at the center", () => {
-                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
-                    ...source,
-                    posX: 210,
-                    posY: 210
-                }} />);
-                const instance: Component = wrapper.instance() as Component;
-                (instance as any).element = {
-                    clientHeight: 100,
-                    clientWidth: 100
-                };
-                wrapper.setState({
-                    width: 800,
-                    height: 600
+            describe("Default behavior", () => {
+                it("Should place the POI at the center", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 210,
+                        posY: 210
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(160);
+                    wrapper.state("offsetY").should.equal(160);
                 });
-                (instance as any).handleSource();
-                wrapper.state("offsetX").should.equal(160);
-                wrapper.state("offsetY").should.equal(160);
+                it("Should place the POI on the top left area if posX and posY are too short", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 10,
+                        posY: 10
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(0);
+                    wrapper.state("offsetY").should.equal(0);
+                });
+                it("Should place the POI on the bottom right area if posX and posY are too big", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 770,
+                        posY: 590
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(700);
+                    wrapper.state("offsetY").should.equal(500);
+                });
             });
-            it("Should place the POI on the top left area if posX and posY are too short", () => {
-                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
-                    ...source,
-                    posX: 10,
-                    posY: 10
-                }} />);
-                const instance: Component = wrapper.instance() as Component;
-                (instance as any).element = {
-                    clientHeight: 100,
-                    clientWidth: 100
-                };
-                wrapper.setState({
-                    width: 800,
-                    height: 600
+            describe("Source zooming", () => {
+                it("Should place the POI at the center", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 210,
+                        posY: 210,
+                        zoom: 2
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(370);
+                    wrapper.state("offsetY").should.equal(370);
                 });
-                (instance as any).handleSource();
-                wrapper.state("offsetX").should.equal(0);
-                wrapper.state("offsetY").should.equal(0);
+                it("Should place the POI on the top left area if posX and posY are too short", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 10,
+                        posY: 10,
+                        zoom: 2
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600,
+                        zoom: 2
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(0);
+                    wrapper.state("offsetY").should.equal(0);
+                });
+                it("Should place the POI on the bottom right area if posX and posY are too big", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 770,
+                        posY: 590,
+                        zoom: 2
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(1490);
+                    wrapper.state("offsetY").should.equal(1100);
+                });
             });
-            it("Should place the POI on the bottom right area if posX and posY are too big", () => {
-                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
-                    ...source,
-                    posX: 770,
-                    posY: 590
-                }} />);
-                const instance: Component = wrapper.instance() as Component;
-                (instance as any).element = {
-                    clientHeight: 100,
-                    clientWidth: 100
-                };
-                wrapper.setState({
-                    width: 800,
-                    height: 600
+            describe("Element zooming", () => {
+                it("Should place the POI at the center", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 210,
+                        posY: 210
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600,
+                        scale: 2
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(370);
+                    wrapper.state("offsetY").should.equal(370);
                 });
-                (instance as any).handleSource();
-                wrapper.state("offsetX").should.equal(700);
-                wrapper.state("offsetY").should.equal(500);
+                it("Should place the POI on the top left area if posX and posY are too short", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 10,
+                        posY: 10
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600,
+                        scale: 2
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(0);
+                    wrapper.state("offsetY").should.equal(0);
+                });
+                it("Should place the POI on the bottom right area if posX and posY are too big", () => {
+                    const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={{
+                        ...source,
+                        posX: 770,
+                        posY: 590
+                    }} />);
+                    const instance: Component = wrapper.instance() as Component;
+                    (instance as any).element = {
+                        clientHeight: 100,
+                        clientWidth: 100
+                    };
+                    wrapper.setState({
+                        width: 800,
+                        height: 600,
+                        scale: 2
+                    });
+                    (instance as any).handleSource();
+                    wrapper.state("offsetX").should.equal(1490);
+                    wrapper.state("offsetY").should.equal(1100);
+                });
             });
         });
-        describe("Pre-zooming", () => {
+        describe("Auto zooming", () => {
             it("Should set the source zoom to fit horizontally if the content is too small", () => {
                 const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={source} />);
                 const instance: Component = wrapper.instance() as Component;
@@ -134,6 +261,56 @@ describe("MediaPreviewCore HOC", () => {
                 (instance as any).handleSource();
                 wrapper.state("computedWidth").should.equal(600);
                 wrapper.state("computedHeight").should.equal(300);
+            });
+            it("Should not fit in the container", () => {
+                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={source} />);
+                const instance: Component = wrapper.instance() as Component;
+                (instance as any).element = {
+                    clientHeight: 300,
+                    clientWidth: 300
+                };
+                wrapper.setState({
+                    width: 200,
+                    height: 100,
+                    fit: false
+                });
+                (instance as any).handleSource();
+                wrapper.state("computedWidth").should.equal(200);
+                wrapper.state("computedHeight").should.equal(100);
+            });
+        });
+        describe("Element specific zooming", () => {
+            it("Should be able multiply the source's zoom only for this element", () => {
+                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={source} />);
+                const instance: Component = wrapper.instance() as Component;
+                (instance as any).element = {
+                    clientHeight: 100,
+                    clientWidth: 300
+                };
+                wrapper.setState({
+                    width: 200,
+                    height: 100,
+                    scale: 4
+                });
+                (instance as any).handleSource();
+                wrapper.state("computedWidth").should.equal(800);
+                wrapper.state("computedHeight").should.equal(400);
+            });
+            it("Should let auto zooming do the job if it's still too small", () => {
+                const wrapper: ReactWrapper<MediaPreviewCoreProps, {}> = mount(<MediaPreview source={source} />);
+                const instance: Component = wrapper.instance() as Component;
+                (instance as any).element = {
+                    clientHeight: 100,
+                    clientWidth: 300
+                };
+                wrapper.setState({
+                    width: 200,
+                    height: 100,
+                    scale: 1.1
+                });
+                (instance as any).handleSource();
+                wrapper.state("computedWidth").should.equal(300);
+                wrapper.state("computedHeight").should.equal(150);
             });
         });
         describe("POI check", () => {
@@ -222,13 +399,25 @@ describe("MediaPreviewCore HOC", () => {
                 handleSourceStub.should.have.been.calledOnce;
             });
         });
-        describe("Updating dimensions", () => {
+        describe("Methods", () => {
             it("Should update the media's dimensions", () => {
                 const wrapper: ShallowWrapper<MediaPreviewCoreProps, {}> = shallow(<MediaPreview />);
                 const instance: Component = wrapper.instance() as Component;
                 (instance as any).setDimensions(50, 100);
                 wrapper.state("width").should.equal(50);
                 wrapper.state("height").should.equal(100);
+            });
+            it("Should set element specific zoom", () => {
+                const wrapper: ShallowWrapper<MediaPreviewCoreProps, {}> = shallow(<MediaPreview />);
+                const instance: Component = wrapper.instance() as Component;
+                (instance as any).setScale(2);
+                wrapper.state("scale").should.equal(2);
+            });
+            it("Should set the auto zoom", () => {
+                const wrapper: ShallowWrapper<MediaPreviewCoreProps, {}> = shallow(<MediaPreview />);
+                const instance: Component = wrapper.instance() as Component;
+                (instance as any).shouldFit(false);
+                wrapper.state("fit").should.equal(false);
             });
         });
     });
