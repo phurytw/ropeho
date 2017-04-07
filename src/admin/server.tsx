@@ -28,6 +28,16 @@ import hook from "../common/helpers/cssModulesHook";
 hook();
 import routeConfig from "./routes";
 
+// jsdom for document
+import { jsdom } from "jsdom";
+
+global.document = jsdom("");
+global.window = document.defaultView;
+global.Image = window.Image;
+global.navigator = {
+    userAgent: "node.js"
+};
+
 const app: Express = express();
 
 // serving files
