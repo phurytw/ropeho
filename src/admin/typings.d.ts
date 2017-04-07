@@ -9,6 +9,8 @@
 interface Window {
     __REDUX_STATE__: any;
     __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any;
+    File: typeof File;
+    Image: typeof Image;
 }
 
 // Remove those when type definitions are available
@@ -16,6 +18,13 @@ interface NodeModule {
     hot: {
         accept: (pathToRootComponent: string, callback: () => void) => void
     };
+}
+
+declare namespace NodeJS {
+    interface Global {
+        [key: string]: any;
+        document: Document;
+    }
 }
 
 declare module "react-hot-loader" {

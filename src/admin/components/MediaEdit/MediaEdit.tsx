@@ -9,6 +9,7 @@ import { MediaTypes, MediaPermissions } from "../../../enum";
 import { Route } from "react-router-dom";
 import SourceEdit from "../SourceEdit";
 import SourceSelector from "../SourceSelector";
+import { isEqual } from "lodash";
 
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
@@ -37,6 +38,12 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
         this.state = {
             promptTypeChange: false
         };
+    }
+    shouldComponentUpdate(nextProps: MediaEditProps, nextState: MediaEditState): boolean {
+        return !isEqual(nextProps.media, this.props.media) ||
+            !isEqual(nextProps.source, this.props.source) ||
+            !isEqual(nextProps.sources, this.props.sources) ||
+            nextState.promptTypeChange !== this.state.promptTypeChange;
     }
     setDelay: (delay: number) => void = (delay: number): void => {
         const { media, setMedia }: MediaEditProps = this.props;

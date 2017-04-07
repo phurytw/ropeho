@@ -8,6 +8,7 @@ import SourceInterface from "../SourceInterface";
 import { MediaTypes } from "../../../enum";
 import { v4 } from "uuid";
 import { container } from "./styles.css";
+import { isEqual } from "lodash";
 
 import Source = Ropeho.Models.Source;
 import Media = Ropeho.Models.Media;
@@ -25,6 +26,9 @@ export interface SourceSelectorProps {
 export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
     constructor(props: SourceSelectorProps) {
         super(props);
+    }
+    shouldComponentUpdate(nextProps: SourceSelectorProps): boolean {
+        return !isEqual(nextProps.sources, this.props.sources);
     }
     setFromUrl: (source: Source, preview: string) => void = (source: Source, preview: string): void => {
         const targetSource: Source = source || {
@@ -65,6 +69,8 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
                 isVideo = true;
                 if (sources.length > 0) {
                     addNew = undefined;
+                } else {
+                    addNew = <SourceInterface setError={setError} setSrc={this.setFromUrl} setFile={setFile} isVideo={true} />;
                 }
                 break;
             case MediaTypes.Slideshow:

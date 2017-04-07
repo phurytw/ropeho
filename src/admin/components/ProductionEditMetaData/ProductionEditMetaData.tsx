@@ -7,6 +7,7 @@ import * as React from "react";
 import { MediaPermissions } from "../../../enum";
 import { productionMetaForm } from "./productionMetaForm.css";
 import { Input, Dropdown } from "react-toolbox";
+import { isEqual } from "lodash";
 
 export class ProductionEditMetaDataProps {
     setProduction: (production: Ropeho.Models.Production) => any;
@@ -16,6 +17,9 @@ export class ProductionEditMetaDataProps {
 export class ProductionEditMetaData extends React.Component<ProductionEditMetaDataProps, {}> {
     constructor(props: ProductionEditMetaDataProps) {
         super(props);
+    }
+    shouldComponentUpdate(nextProps: ProductionEditMetaDataProps): boolean {
+        return !isEqual(nextProps.production, this.props.production);
     }
     setName: (name: string) => void = (name: string): void => {
         const { production, setProduction }: ProductionEditMetaDataProps = this.props;

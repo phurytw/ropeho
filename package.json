@@ -10,6 +10,7 @@
     "build:admin:app": "cross-env NODE_ENV=development ts-node scripts/build.ts",
     "build:server": "tsc -p tsconfig.server.json",
     "test": "cross-env NODE_ENV=test run-s test:*",
+    "test:common": "cross-env NODE_ENV=test mocha src/common/**/*.test.ts* --compilers ts:./ts-node-register,tsx:./ts-node-register --require jsdom.setup.js",
     "test:admin": "cross-env NODE_ENV=test mocha src/admin/**/*.test.ts* --compilers ts:./ts-node-register,tsx:./ts-node-register --require jsdom.setup.js",
     "test:api": "cross-env NODE_ENV=test mocha src/server/**/*.test.ts --compilers ts:./ts-node-register",
     "coverage:server": "nyc --reporter=html --reporter=lcov --reporter=text npm run test:api",

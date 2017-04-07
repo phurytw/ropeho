@@ -7,10 +7,7 @@ import * as React from "react";
 import { container, preview } from "./styles.css";
 import { ErrorCodes } from "../../../enum";
 import SourceInterfaceButtons from "../SourceInterfaceButtons";
-
-export interface SourceInterfaceState {
-    showForm?: boolean;
-}
+import { isEqual } from "lodash";
 
 export interface SourceInterfaceProps {
     source?: Ropeho.Models.Source;
@@ -23,13 +20,13 @@ export interface SourceInterfaceProps {
     setFile?: (objectURL: string, file: File) => any;
 }
 
-export class SourceInterface extends React.Component<SourceInterfaceProps, SourceInterfaceState> {
+export class SourceInterface extends React.Component<SourceInterfaceProps, {}> {
     fileInput: HTMLInputElement;
     constructor(props: SourceInterfaceProps) {
         super(props);
-        this.state = {
-            showForm: false
-        };
+    }
+    shouldComponentUpdate(nextProps: SourceInterfaceProps): boolean {
+        return !isEqual(nextProps.source, this.props.source);
     }
     handleFileChange: () => void = (): void => {
         if (this.fileInput.files.length > 0) {

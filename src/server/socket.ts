@@ -372,7 +372,6 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                         dest: sourceTarget.src
                     });
 
-
                     // Upload / create WebM WebP
                     switch (mediaTarget.type) {
                         case MediaTypes.Video:

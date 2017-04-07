@@ -40,6 +40,9 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
             this.assignSource(media);
         }
     }
+    shouldComponentUpdate(nextProps: MediaPreviewProps, nextState: MediaPreviewState): boolean {
+        return !isEqual(nextProps.media, this.props.media) || !isEqual(nextState, this.state);
+    }
     componentWillUnmount(): void {
         if (this.interval) {
             clearInterval(this.interval);
@@ -58,6 +61,8 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
             case MediaTypes.Slideshow:
                 if (this.interval) {
                     clearInterval(this.interval);
+                } else {
+                    this.cycleSource();
                 }
                 // 1 second default in case the delay is 0
                 this.interval = setInterval(this.cycleSource, (delay || 1) * 1000) as any;

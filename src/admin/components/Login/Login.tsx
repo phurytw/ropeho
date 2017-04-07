@@ -49,7 +49,7 @@ export interface LoginState {
     passwordErrorMessage?: string;
 }
 
-export class Login extends React.Component<LoginProps, LoginState> {
+export class Login extends React.PureComponent<LoginProps, LoginState> {
     email: string = "";
     password: string = "";
     constructor(props: LoginProps) {

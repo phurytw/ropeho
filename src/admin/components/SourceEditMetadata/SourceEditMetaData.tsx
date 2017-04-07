@@ -6,6 +6,7 @@
 import * as React from "react";
 import { sourceEdit } from "./styles.css";
 import { Input } from "react-toolbox";
+import { isEqual } from "lodash";
 
 export class SourceEditMetaDataProps {
     setSource: (production: Ropeho.Models.Source) => any;
@@ -15,6 +16,9 @@ export class SourceEditMetaDataProps {
 export class SourceEditMetaData extends React.Component<SourceEditMetaDataProps, {}> {
     constructor(props: SourceEditMetaDataProps) {
         super(props);
+    }
+    shouldComponentUpdate(nextProps: SourceEditMetaDataProps): boolean {
+        return !isEqual(nextProps.source, this.props.source);
     }
     setPosX: (posX: number) => void = (posX: number): void => {
         const { source, setSource }: SourceEditMetaDataProps = this.props;

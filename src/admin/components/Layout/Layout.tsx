@@ -90,7 +90,7 @@ export class Layout extends React.Component<LayoutProps, {}> {
                     <h1 className={title}><a href="/">Ropeho Administration</a></h1>
                     <Navigation type="horizontal" theme={topLinkStyles}>
                         <Link theme={linkStyles} onClick={this.goToProductions} label="Productions" icon="photo_camera" />
-                        <Link theme={linkStyles} onClick={this.goToCategories} label="Category" icon="photo_album" />
+                        <Link theme={linkStyles} onClick={this.goToCategories} label="Categories" icon="photo_album" />
                         <Link theme={linkStyles} onClick={this.goToPresentations} label="Page d'acceuil" icon="home" />
                         <Link theme={linkStyles} onClick={this.goToUsers} label="Comptes utilisateurs" icon="person" />
                         <Link theme={linkStyles} onClick={this.goToTasks} label="Gestionnaire" icon="storage" />
@@ -98,7 +98,7 @@ export class Layout extends React.Component<LayoutProps, {}> {
                     </Navigation>
                     <IconMenu icon="menu" theme={iconMenuStyles}>
                         <MenuItem theme={iconMenuStyles} icon="photo_camera" caption="Productions" onClick={this.goToProductions} />
-                        <MenuItem theme={iconMenuStyles} icon="photo_album" caption="Category" onClick={this.goToCategories} />
+                        <MenuItem theme={iconMenuStyles} icon="photo_album" caption="Categories" onClick={this.goToCategories} />
                         <MenuItem theme={iconMenuStyles} icon="home" caption="Page d'acceuil" onClick={this.goToPresentations} />
                         <MenuItem theme={iconMenuStyles} icon="person" caption="Comptes utilisateurs" onClick={this.goToUsers} />
                         <MenuItem theme={iconMenuStyles} icon="storage" caption="Gestionnaire" onClick={this.goToTasks} />

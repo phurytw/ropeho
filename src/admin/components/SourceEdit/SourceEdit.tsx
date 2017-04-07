@@ -10,6 +10,7 @@ import MediaPreviewVideo from "../../../common/components/MediaPreviewVideo";
 import MediaPreviewPointer from "../MediaPreviewPointer";
 import { MediaTypes } from "../../../enum";
 import { sourcePreview } from "./styles.css";
+import { isEqual } from "lodash";
 
 import Source = Ropeho.Models.Source;
 
@@ -22,6 +23,9 @@ export interface SourceEditProps {
 export class SourceEdit extends React.Component<SourceEditProps, {}> {
     constructor(props: SourceEditProps) {
         super(props);
+    }
+    shouldComponentUpdate(nextProps: SourceEditProps): boolean {
+        return !isEqual(nextProps.source, this.props.source) || nextProps.type !== this.props.type;
     }
     render(): JSX.Element {
         const { source, setSource, type }: SourceEditProps = this.props;

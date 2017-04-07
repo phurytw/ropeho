@@ -4,6 +4,7 @@
  */
 import * as React from "react";
 import { MediaPreviewProps, mediaPreview } from "../MediaPreviewCore";
+import { isEqual } from "lodash";
 
 export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
     constructor(props?: MediaPreviewProps) {
@@ -16,6 +17,9 @@ export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
         if (this.props.source !== nextProps.source) {
             this.loadSource();
         }
+    }
+    shouldComponentUpdate(nextProps: MediaPreviewProps): boolean {
+        return !isEqual(nextProps, this.props);
     }
     loadSource: () => void = (): void => {
         const { source, setDimensions }: MediaPreviewProps = this.props;

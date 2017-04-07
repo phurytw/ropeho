@@ -117,7 +117,9 @@ describe("MediaPreview", () => {
             const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
             const instance: MediaPreview = wrapper.instance() as MediaPreview;
             const [sourceA, sourceB]: Source[] = slideshowMedia.sources;
-            wrapper.setState({});
+            wrapper.setState({
+                source: sourceB
+            });
             instance.cycleSource();
             wrapper.state("source").should.deep.equal(sourceA);
             instance.cycleSource();

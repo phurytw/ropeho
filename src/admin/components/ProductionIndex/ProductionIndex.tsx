@@ -12,9 +12,9 @@ import { fetchProductions, createProduction, Actions } from "../../../common/mod
 import { Tabs, Tab } from "react-toolbox";
 import { PartialRouteComponentProps } from "react-router-dom";
 import ProductionNew from "../ProductionNew";
-import { Location } from "history";
 import { map } from "lodash";
 import PreviewCard from "../PreviewCard";
+import { isEqual } from "lodash";
 
 import Production = Ropeho.Models.Production;
 const productionFields: string[] = ["_id", "name", "banner", "description", "state"];
@@ -36,10 +36,6 @@ export interface ProductionIndexProps extends PartialRouteComponentProps<void> {
     productions?: Production[];
     fetchProductions?: () => Promise<Actions.SetProductions>;
     createProduction?: (production: Production) => Promise<Actions.SetProductions>;
-
-    // Do this instead of importing RouteComponentProps because someone changed it and made it non-optional
-    // Definitely a great idea
-    location?: Location;
 }
 
 export interface ProductionIndexState {
@@ -53,6 +49,9 @@ export class ProductionIndex extends React.Component<ProductionIndexProps, Produ
         this.state = {
             index: location && location.query && location.query.tab === "1" ? 1 : 0
         };
+    }
+    shouldComponentUpdate(nextProps: ProductionIndexProps): boolean {
+        return !isEqual(nextProps.productions, this.props.productions);
     }
     handleTabChange: (index: number) => void = (index: number): void => {
         this.setState({ index });

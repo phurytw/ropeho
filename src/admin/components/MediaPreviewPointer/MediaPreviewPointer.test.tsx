@@ -58,14 +58,23 @@ describe("MediaPreviewPointer component", () => {
             />);
             setDimensionsSpy.should.have.been.calledOnce;
         });
-        it("Should set a source's dimensions from a video", () => {
-            const setDimensionsSpy: sinon.SinonSpy = spy();
+        it("Should set a source's dimensions from a video", (done: MochaDone) => {
+            const setDimensionsSpy: sinon.SinonSpy = spy(() => {
+                addEventListenerStub.restore();
+                done();
+            });
+            const videoElement: HTMLVideoElement = document.createElement("video");
+            const addEventListenerStub: sinon.SinonStub = stub(videoElement.constructor.prototype, "addEventListener")
+                .callsFake((event: string, handler: Function) => {
+                    if (event === "loadedmetadata") {
+                        handler();
+                    }
+                });
             shallow(<MediaPreviewPointer
                 source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 0, preview: `data:image/png;base64, ${video}` }}
                 setDimensions={setDimensionsSpy}
                 type={MediaTypes.Video}
             />);
-            setDimensionsSpy.should.have.been.calledOnce;
         });
     });
     describe("Setting POI", () => {

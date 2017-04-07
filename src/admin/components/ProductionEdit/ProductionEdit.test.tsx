@@ -23,7 +23,7 @@ import { middlewares } from "../../store";
 import { fromJS } from "immutable";
 import hook from "../../../common/helpers/cssModulesHook";
 hook();
-import { ProductionEdit, ProductionEditProps, mapStateToProps, mapDispatchToProps } from "./ProductionEdit";
+import { ProductionEdit, ProductionEditProps, ProductionEditParams, mapStateToProps, mapDispatchToProps } from "./ProductionEdit";
 import { ProductionEditMetaData } from "../ProductionEditMetaData";
 import { MediaEdit } from "../MediaEdit";
 import { Button, Tab, Tabs, Dialog } from "react-toolbox";
@@ -63,7 +63,14 @@ describe("Production Edit component", () => {
     };
     before(() => {
         store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
-        dispatchStub = stub(store, "dispatch").returnsArg(0);
+        dispatchStub = stub(store, "dispatch")
+            .callsFake((...args: any[]) => {
+                if (args[0] && typeof args[0].then === "function") {
+                    return Promise.resolve(args[0]);
+                } else {
+                    return args[0];
+                }
+            });
     });
     afterEach(() => store.clearActions());
     describe("Element", () => {
@@ -262,6 +269,58 @@ describe("Production Edit component", () => {
             />).instance() as ProductionEdit;
             instance.saveChanges();
         });
+        it("Should select the banner", () => {
+            const selectMediaSpy: sinon.SinonSpy = spy();
+            const selectSourceSpy: sinon.SinonSpy = spy();
+            const instance: ProductionEdit = shallow(<ProductionEdit
+                {...props}
+                selectMedia={selectMediaSpy}
+                selectSource={selectSourceSpy}
+            />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { mediaId: "banniere" });
+            selectMediaSpy.should.have.been.calledOnce;
+            selectMediaSpy.should.have.been.calledWith(production.banner._id);
+            selectSourceSpy.should.not.have.been.called;
+        });
+        it("Should select the background", () => {
+            const selectMediaSpy: sinon.SinonSpy = spy();
+            const selectSourceSpy: sinon.SinonSpy = spy();
+            const instance: ProductionEdit = shallow(<ProductionEdit
+                {...props}
+                selectMedia={selectMediaSpy}
+                selectSource={selectSourceSpy}
+            />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { mediaId: "fond" });
+            selectMediaSpy.should.have.been.calledOnce;
+            selectMediaSpy.should.have.been.calledWith(production.background._id);
+            selectSourceSpy.should.not.have.been.called;
+        });
+        it("Should select the media", () => {
+            const selectMediaSpy: sinon.SinonSpy = spy();
+            const selectSourceSpy: sinon.SinonSpy = spy();
+            const instance: ProductionEdit = shallow(<ProductionEdit
+                {...props}
+                selectMedia={selectMediaSpy}
+                selectSource={selectSourceSpy}
+            />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { mediaId: production.medias[0]._id });
+            selectMediaSpy.should.have.been.calledOnce;
+            selectMediaSpy.should.have.been.calledWith(production.medias[0]._id);
+            selectSourceSpy.should.not.have.been.called;
+        });
+        it("Should select the source", () => {
+            const selectMediaSpy: sinon.SinonSpy = spy();
+            const selectSourceSpy: sinon.SinonSpy = spy();
+            const instance: ProductionEdit = shallow(<ProductionEdit
+                {...props}
+                selectMedia={selectMediaSpy}
+                selectSource={selectSourceSpy}
+            />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { sourceId: production.banner.sources[0]._id });
+            selectMediaSpy.should.not.have.been.called;
+            selectSourceSpy.should.have.been.calledOnce;
+            selectSourceSpy.should.have.been.calledWith(production.banner.sources[0]._id);
+        });
     });
     describe("Props", () => {
         it("Should get the production being edited from the state", () => {
@@ -447,10 +506,11 @@ describe("Production Edit component", () => {
         });
     });
     describe("Lifecycle", () => {
-        it("Should fetch the production, medias and sources on initial render", (done: MochaDone) => {
+        it("Should fetch the production, medias and sources and select the chosen media/source on initial render", (done: MochaDone) => {
             const getProductionSpy: sinon.SinonSpy = spy();
             const setMediasSpy: sinon.SinonSpy = spy();
             const setSourcesSpy: sinon.SinonSpy = spy();
+            const selectMediaSpy: sinon.SinonSpy = spy();
             const props: ProductionEditProps = {
                 fetchProduction: (id: string): Promise<productionEditModule.Actions.SetProduction> => {
                     getProductionSpy(id);
@@ -458,88 +518,70 @@ describe("Production Edit component", () => {
                 },
                 match: {
                     params: {
-                        productionId: "id"
+                        productionId: production._id,
+                        mediaId: production.banner._id,
+                        sourceId: production.background._id
                     }
                 },
                 setMedias: setMediasSpy,
-                setSources: (sources: Source[]) => {
-                    setSourcesSpy(sources);
+                setSources: setSourcesSpy,
+                selectMedia: selectMediaSpy,
+                selectSource: (sourceId: string) => {
                     getProductionSpy.should.have.been.calledOnce;
-                    getProductionSpy.should.have.been.calledWith("id");
+                    getProductionSpy.should.have.been.calledWith(production._id);
                     setMediasSpy.should.have.been.calledOnce;
                     setSourcesSpy.should.have.been.calledOnce;
+                    selectMediaSpy.should.have.been.calledOnce;
                     return done();
                 }
             };
             shallow(<ProductionEdit {...props} />);
         });
-        it("Should set the selected media and source to the ID specified by the URL on update", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const customProps: ProductionEditProps = {
-                ...props,
-                selectMedia: selectMediaSpy,
-                selectSource: selectSourceSpy
-            };
-            const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
-            instance.componentWillUpdate({
-                ...customProps,
+        it("Should fetch the new production and update the state", () => {
+            const wrapper: ShallowWrapper<ProductionEditProps, any> = shallow(<ProductionEdit
+                {...props}
+                match={{
+                    params: {
+                        productionId: "id"
+                    }
+                }}
+            />);
+            const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
+            const fetchStub: sinon.SinonStub = stub(instance, "fetchProduction");
+            instance.componentWillReceiveProps({
                 match: {
                     params: {
-                        productionId: production._id,
-                        mediaId: production.banner._id,
-                        sourceId: production.banner.sources[0]._id
+                        productionId: production._id
                     }
                 }
             });
-            selectMediaSpy.should.have.been.calledOnce;
-            selectMediaSpy.should.have.been.calledWith(production.banner._id);
-            selectSourceSpy.should.have.been.calledOnce;
-            selectSourceSpy.should.have.been.calledWith(production.banner.sources[0]._id);
+            fetchStub.should.have.been.calledOnce;
+            fetchStub.should.have.been.calledWith(production._id);
         });
-        it("Should set the selected media to the banner on update", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const customProps: ProductionEditProps = {
-                ...props,
-                selectMedia: selectMediaSpy,
-                selectSource: selectSourceSpy
-            };
-            const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
-            instance.componentWillUpdate({
-                ...customProps,
-                match: {
+        it("Should select the medias and sources when the URL changes", () => {
+            const wrapper: ShallowWrapper<ProductionEditProps, any> = shallow(<ProductionEdit
+                {...props}
+                match={{
                     params: {
-                        productionId: production._id,
-                        mediaId: "banniere"
+                        productionId: production._id
                     }
+                }}
+            />);
+            const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
+            const selectStub: sinon.SinonStub = stub(instance, "selectFromParams");
+            const params: ProductionEditParams = {
+                productionId: production._id,
+                mediaId: production.banner._id,
+                sourceId: production.banner.sources[0]._id
+            };
+            instance.componentWillReceiveProps({
+                production,
+                match: {
+                    params
                 }
             });
-            selectMediaSpy.should.have.been.calledOnce;
-            selectMediaSpy.should.have.been.calledWith(production.banner._id);
-            selectSourceSpy.should.have.been.calledOnce;
-        });
-        it("Should set the selected media to the background on update", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const customProps: ProductionEditProps = {
-                ...props,
-                selectMedia: selectMediaSpy,
-                selectSource: selectSourceSpy
-            };
-            const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
-            instance.componentWillUpdate({
-                ...customProps,
-                match: {
-                    params: {
-                        productionId: production._id,
-                        mediaId: "fond"
-                    }
-                }
-            });
-            selectMediaSpy.should.have.been.calledOnce;
-            selectMediaSpy.should.have.been.calledWith(production.background._id);
-            selectSourceSpy.should.have.been.calledOnce;
+            selectStub.should.have.been.calledOnce;
+            selectStub.should.have.been.calledWith(production, params);
         });
         it("Should set the active tab to production metadata", () => {
             shallow(<ProductionEdit {...props} />).state<number>("tab").should.equal(0);
@@ -588,17 +630,17 @@ describe("Production Edit component", () => {
         });
     });
     describe("Server side fetching", () => {
-        it("Should fetch productions using the static fetch", () => {
+        it("Should fetch productions and select the banner using the static fetch", async () => {
             const fetchProductionsStub: sinon.SinonStub = stub(productionEditModule, "fetchProductionById")
                 .callsFake(() => (dispatch: any) => dispatch({
                     type: productionEditModule.ActionTypes.SET_PRODUCTION,
                     production
                 }));
-            ProductionEdit.fetchData(dispatchStub, {
-                productionId: "id"
+            await ProductionEdit.fetchData(dispatchStub, {
+                productionId: production._id
             });
             fetchProductionsStub.should.have.been.calledOnce;
-            fetchProductionsStub.should.have.been.calledWith("id");
+            fetchProductionsStub.should.have.been.calledWith(production._id);
             fetchProductionsStub.restore();
         });
     });

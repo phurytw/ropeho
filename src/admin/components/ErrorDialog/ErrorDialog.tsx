@@ -6,6 +6,7 @@
 import * as React from "react";
 import { Dialog } from "react-toolbox";
 import { ErrorCodes } from "../../../enum";
+import { isEqual } from "lodash";
 
 export interface ErrorDialogProps {
     error?: Ropeho.IErrorResponse;
@@ -15,6 +16,9 @@ export interface ErrorDialogProps {
 export class ErrorDialog extends React.Component<ErrorDialogProps, {}> {
     constructor(props: ErrorDialogProps) {
         super(props);
+    }
+    shouldComponentUpdate(nextProps: ErrorDialogProps): boolean {
+        return !isEqual(nextProps.error, this.props.error);
     }
     dismiss: () => void = () => this.props.dismiss();
     render(): JSX.Element {

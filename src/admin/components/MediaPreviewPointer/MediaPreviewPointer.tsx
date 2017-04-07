@@ -6,6 +6,7 @@ import * as React from "react";
 import { MediaPreviewProps, mediaPreview } from "../../../common/components/MediaPreviewCore";
 import { MediaTypes } from "../../../enum";
 import Pointer from "../Pointer";
+import { isEqual } from "lodash";
 
 import Source = Ropeho.Models.Source;
 
@@ -26,6 +27,9 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
         if (this.props.source !== nextProps.source) {
             this.loadSource();
         }
+    }
+    shouldComponentUpdate(nextProps: MediaPreviewPointerProps): boolean {
+        return !isEqual(nextProps, this.props);
     }
     componentDidMount(): void {
         this.element.parentElement.style.position = "absolute";
@@ -53,10 +57,9 @@ export class MediaPreviewPointer extends React.Component<MediaPreviewPointerProp
                 case MediaTypes.Video:
                     const videoElement: HTMLVideoElement = document.createElement("video");
                     videoElement.src = source.preview;
-                    setDimensions(videoElement.videoWidth, videoElement.videoHeight);
-                    break;
-
-                default:
+                    videoElement.addEventListener("loadedmetadata", () => {
+                        setDimensions(videoElement.videoWidth, videoElement.videoHeight);
+                    });
                     break;
             }
         }

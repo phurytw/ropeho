@@ -3,6 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 import * as React from "react";
+import { isEqual } from "lodash";
 
 import Source = Ropeho.Models.Source;
 
@@ -70,6 +71,9 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                 if (this.props.source !== nextProps.source) {
                     this.handleSource();
                 }
+            }
+            shouldComponentUpdate(nextProps: MediaPreviewCoreProps, nextState: MediaPreviewCoreProps): boolean {
+                return !isEqual(nextProps.source, this.props.source) || !isEqual(nextState, this.state);
             }
             componentWillUnmount(): void {
                 this.element.removeEventListener("resize", this.handleSource);

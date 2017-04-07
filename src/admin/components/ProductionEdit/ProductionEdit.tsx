@@ -27,6 +27,8 @@ import * as entityUtils from "../../../common/helpers/entityUtilities";
 import MediaPreview from "../../../common/components/MediaPreview";
 import ProductionEditMetaData from "../ProductionEditMetaData";
 import MediaEdit from "../MediaEdit";
+import { isEqual } from "lodash";
+import * as isUUID from "validator/lib/isUUID";
 
 import Production = Ropeho.Models.Production;
 import Media = Ropeho.Models.Media;
@@ -119,6 +121,15 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                     mediaId ? 3 : 0
         };
     }
+    shouldComponentUpdate(nextProps: ProductionEditProps, nextState: ProductionEditState): boolean {
+        const { medias, production, selectMedia, selectSource, sources }: ProductionEditProps = this.props;
+        return !isEqual(medias, nextProps.medias) ||
+            !isEqual(production, nextProps.production) ||
+            !isEqual(selectMedia, nextProps.selectMedia) ||
+            !isEqual(selectSource, nextProps.selectSource) ||
+            !isEqual(sources, nextProps.sources) ||
+            !isEqual(nextState, this.state);
+    }
     updateSource: (source: Source) => void = (source: Source): void => {
         const { updateSource, selectedMedia, addSourceToMedia }: ProductionEditProps = this.props;
         if (selectedMedia && selectedMedia._id) {
@@ -200,24 +211,19 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         this.props.history.push(`/productions/${productionId}/${mediaId}/${sourceId}`);
     }
     fetchProduction: (productionId: string) => Promise<void> = async (productionId: string): Promise<void> => {
-        const { fetchProduction, setMedias, setSources }: ProductionEditProps = this.props;
+        const { fetchProduction, setMedias, setSources, match: { params }, history }: ProductionEditProps = this.props;
         try {
             const { production }: Actions.SetProduction = await fetchProduction(productionId);
             setMedias(entityUtils.getMedias(production));
             setSources(entityUtils.getSources(production));
+            this.selectFromParams(production, params);
         } catch (error) {
-            window.location.replace("/productions");
+            history.replace("/productions");
         }
     }
-    async componentWillMount(): Promise<void> {
-        const { hasRendered, match: { params: { productionId } } }: ProductionEditProps = this.props;
-        if (!hasRendered) {
-            this.fetchProduction(productionId);
-        }
-    }
-    componentWillUpdate(nextProps: ProductionEditProps): void {
-        const { production, selectMedia, selectSource }: ProductionEditProps = this.props;
-        const { match: { params: { mediaId, sourceId } } }: ProductionEditProps = nextProps;
+    selectFromParams: (production: Production, params: ProductionEditParams) => void = (production: Production, params: ProductionEditParams): void => {
+        const { selectMedia, selectSource }: ProductionEditProps = this.props;
+        const { mediaId, sourceId }: ProductionEditParams = params;
         if (production) {
             switch (mediaId) {
                 case "banniere":
@@ -227,17 +233,32 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                     selectMedia(production.background._id);
                     break;
                 default:
-                    selectMedia(mediaId);
+                    if (typeof mediaId === "string" && isUUID(mediaId, 4)) {
+                        selectMedia(mediaId);
+                    }
                     break;
             }
+        }
+        if (typeof sourceId === "string" && isUUID(sourceId, 4)) {
             selectSource(sourceId);
         }
     }
+    async componentWillMount(): Promise<void> {
+        const { hasRendered, match: { params: { productionId } } }: ProductionEditProps = this.props;
+        if (!hasRendered) {
+            this.fetchProduction(productionId);
+        }
+    }
     componentWillReceiveProps(nextProps: ProductionEditProps): void {
-        const { match: { params: { productionId } } }: ProductionEditProps = this.props;
+        const { match: { params: { productionId, mediaId, sourceId } } }: ProductionEditProps = this.props;
         const nextParams: ProductionEditParams = nextProps.match.params;
+        // reset when production changes
         if (productionId !== nextParams.productionId) {
             this.fetchProduction(nextParams.productionId);
+        }
+        // when URL has changed
+        if (mediaId !== nextParams.mediaId || sourceId !== nextParams.sourceId) {
+            this.selectFromParams(nextProps.production, nextProps.match.params);
         }
     }
     static async fetchData(dispatch: Dispatch<RopehoAdminState>, params: ProductionEditParams): Promise<void> {
@@ -246,7 +267,19 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         if (production) {
             dispatch(mediaModule.replaceMedias(entityUtils.getMedias(production)));
             dispatch(sourceModule.replaceSources(entityUtils.getSources(production)));
-            dispatch(mediaModule.selectMedia(mediaId));
+            switch (mediaId) {
+                case "banniere":
+                    dispatch(mediaModule.selectMedia(production.banner._id));
+                    break;
+                case "fond":
+                    dispatch(mediaModule.selectMedia(production.background._id));
+                    break;
+                default:
+                    if (typeof mediaId === "string" && isUUID(mediaId, 4)) {
+                        dispatch(mediaModule.selectMedia(mediaId));
+                    }
+                    break;
+            }
             dispatch(sourceModule.selectSource(sourceId));
         }
     }
