@@ -161,5 +161,13 @@ describe("MediaEdit component", () => {
             setSourcePositionSpy.should.have.been.calledOnce;
             setSourcePositionSpy.should.have.been.calledWith(media._id, "sourceId", 10);
         });
+        it("Should delete a single source", () => {
+            const deleteSourcesSpy: sinon.SinonSpy = spy();
+            const wrapper: ShallowWrapper<MediaEditProps, MediaEditState> = shallow(<MediaEdit {...props} deleteSources={deleteSourcesSpy} />);
+            const instance: MediaEdit = wrapper.instance() as MediaEdit;
+            instance.removeSource("sourceId");
+            deleteSourcesSpy.should.have.been.calledOnce;
+            deleteSourcesSpy.should.have.been.calledWith(["sourceId"]);
+        });
     });
 });

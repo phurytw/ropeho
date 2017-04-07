@@ -1,8 +1,4 @@
 .sourceEdit {
-    lost-center: 840px;
+    lost-center: 480px;
     width: 100%;
-}
-
-.sourceEdit > *:last-child {
-    max-width: 400px;
 }

@@ -18,6 +18,7 @@ export interface SourceEditProps {
     source?: Source;
     setSource?: (source: Source) => any;
     type?: MediaTypes;
+    removeSource?: (sourceId: string) => any;
 }
 
 export class SourceEdit extends React.Component<SourceEditProps, {}> {
@@ -28,7 +29,7 @@ export class SourceEdit extends React.Component<SourceEditProps, {}> {
         return !isEqual(nextProps.source, this.props.source) || nextProps.type !== this.props.type;
     }
     render(): JSX.Element {
-        const { source, setSource, type }: SourceEditProps = this.props;
+        const { source, setSource, type, removeSource }: SourceEditProps = this.props;
         if (source && source._id) {
             let mediaPreview: JSX.Element;
             switch (type) {
@@ -46,7 +47,7 @@ export class SourceEdit extends React.Component<SourceEditProps, {}> {
                 return <div className={sourcePreview}>
                     {mediaPreview}
                     <MediaPreviewPointer source={source} type={type} setSource={setSource} />
-                    <SourceEditMetaData source={source} setSource={setSource} />
+                    <SourceEditMetaData source={source} setSource={setSource} removeSource={removeSource} />
                 </div>;
             } else {
                 return null;

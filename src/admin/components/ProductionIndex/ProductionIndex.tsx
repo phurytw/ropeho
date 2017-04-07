@@ -12,7 +12,6 @@ import { fetchProductions, createProduction, Actions } from "../../../common/mod
 import { Tabs, Tab } from "react-toolbox";
 import { PartialRouteComponentProps } from "react-router-dom";
 import ProductionNew from "../ProductionNew";
-import { map } from "lodash";
 import PreviewCard from "../PreviewCard";
 import { isEqual } from "lodash";
 
@@ -74,7 +73,8 @@ export class ProductionIndex extends React.Component<ProductionIndexProps, Produ
         return <nav>
             <Tabs index={this.state.index} onChange={this.handleTabChange}>
                 <Tab label="Parcourir">
-                    {map<Production, JSX.Element>(productions, (p: Production) => <PreviewCard onClick={this.goToProduction.bind(this, p)} name={p.name} key={p._id} />)}
+                    {!productions || productions.length === 0 ? <b>Aucune production</b> :
+                        productions.map((p: Production) => <PreviewCard onClick={this.goToProduction.bind(this, p)} name={p.name} key={p._id} />)}
                 </Tab>
                 <Tab label="Créer">
                     <ProductionNew createProduction={createProduction} />

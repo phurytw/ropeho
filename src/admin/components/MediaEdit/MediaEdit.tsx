@@ -90,8 +90,18 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
             setSourcePosition(media._id, sourceId, position);
         }
     }
+    removeSource: (sourceId: string) => void = (sourceId: string): void => {
+        this.props.deleteSources([sourceId]);
+    }
     render(): JSX.Element {
         const { media, publicOnly, sources, setError, setSource, selectSource, source, setFile }: MediaEditProps = this.props;
+        const renderSourceEdit: () => JSX.Element = () => {
+            if (source) {
+                return <SourceEdit setSource={setSource} source={source} type={media.type} removeSource={this.removeSource} />;
+            } else {
+                return null;
+            }
+        };
         // tslint:disable:react-this-binding-issue
         if (!media) {
             return <div></div>;
@@ -149,14 +159,12 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
             </Dialog>
             <SourceSelector media={media} sources={sources} setError={setError} setSource={setSource} setSourcePosition={this.setSourcePosition} selectSource={selectSource} setFile={setFile} />
             <Route
-                path="/productions/:productionId/:mediaId/:sourceId"
-                render={() => {
-                    if (source) {
-                        return <SourceEdit setSource={setSource} source={source} type={media.type} />;
-                    } else {
-                        return null;
-                    }
-                }}
+                path="/*/*/:mediaId/:sourceId"
+                render={renderSourceEdit}
+            />
+            <Route
+                path="/*/*/*/:mediaId/:sourceId"
+                render={renderSourceEdit}
             />
         </div>;
     }
