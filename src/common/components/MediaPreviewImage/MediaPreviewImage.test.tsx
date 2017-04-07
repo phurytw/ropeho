@@ -39,5 +39,21 @@ describe("MediaPreviewImage component", () => {
             instance.componentWillReceiveProps({ source: { _id: "anotherSourceId", posX: 0, posY: 0, preview: "", zoom: 1 } });
             loadSourceStub.should.have.been.calledOnce;
         });
+        it("Should disable auto zoom when mounting with noFit", () => {
+            const shouldFitSpy: sinon.SinonSpy = spy();
+            shallow(<MediaPreviewImage shouldFit={shouldFitSpy} noFit />);
+            shouldFitSpy.should.have.been.calledOnce;
+            shouldFitSpy.should.have.been.calledWith(false);
+        });
+        it("Should set auto zoom when updating with a new noFit value", () => {
+            const shouldFitSpy: sinon.SinonSpy = spy();
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewImage shouldFit={shouldFitSpy} noFit />);
+            const instance: MediaPreviewImage = wrapper.instance() as MediaPreviewImage;
+            shouldFitSpy.should.have.been.calledOnce;
+            shouldFitSpy.should.have.been.calledWith(false);
+            instance.componentWillReceiveProps({ noFit: false });
+            shouldFitSpy.should.have.been.calledTwice;
+            shouldFitSpy.should.have.been.calledWith(true);
+        });
     });
 });

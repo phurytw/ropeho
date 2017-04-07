@@ -11,11 +11,19 @@ export class MediaPreviewImage extends React.Component<MediaPreviewProps, {}> {
         super(props);
     }
     componentWillMount(): void {
+        const { noFit, shouldFit }: MediaPreviewProps = this.props;
+        if (noFit) {
+            shouldFit(false);
+        }
         this.loadSource();
     }
     componentWillReceiveProps(nextProps: MediaPreviewProps): void {
-        if (this.props.source !== nextProps.source) {
+        const { noFit, source, shouldFit }: MediaPreviewProps = this.props;
+        if (source !== nextProps.source) {
             this.loadSource();
+        }
+        if (noFit !== nextProps.noFit) {
+            shouldFit(!nextProps.noFit);
         }
     }
     shouldComponentUpdate(nextProps: MediaPreviewProps): boolean {

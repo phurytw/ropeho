@@ -34,13 +34,13 @@ export class SourceEdit extends React.Component<SourceEditProps, {}> {
             let mediaPreview: JSX.Element;
             switch (type) {
                 case MediaTypes.Image:
-                    mediaPreview = <MediaPreviewImage source={source} />;
+                    mediaPreview = <MediaPreviewImage source={source} noFit />;
                     break;
                 case MediaTypes.Video:
-                    mediaPreview = <MediaPreviewVideo source={source} />;
+                    mediaPreview = <MediaPreviewVideo source={source} noFit />;
                     break;
                 case MediaTypes.Slideshow:
-                    mediaPreview = <MediaPreviewImage source={source} />;
+                    mediaPreview = <MediaPreviewImage source={source} noFit />;
                     break;
             }
             if (mediaPreview) {

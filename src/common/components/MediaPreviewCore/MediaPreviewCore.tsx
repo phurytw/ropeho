@@ -59,17 +59,21 @@ export interface MediaPreview<P, S> {
 
 export interface MediaPreviewProps extends MediaPreviewCoreState, MediaPreviewCoreProps {
     /**
-     * sets the media real dimensions in pixels
+     * sets the media real dimensions in pixels (passed by the HOC)
      */
     setDimensions?: (width: number, height: number) => void;
     /**
-     * sets element specific zoom
+     * sets element specific zoom (passed by the HOC)
      */
     setScale?: (scale: number) => void;
     /**
-     * sets the auto zoom feature
+     * sets the auto zoom feature (passed by the HOC)
      */
     shouldFit?: (fit: boolean) => void;
+    /**
+     * disables auto zoom if true
+     */
+    noFit?: boolean;
 }
 
 export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) => MediaPreviewCore<P> =
