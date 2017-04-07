@@ -11,19 +11,25 @@ export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
         super(props);
     }
     componentWillMount(): void {
-        const { noFit, shouldFit }: MediaPreviewProps = this.props;
+        const { noFit, shouldFit, scale, setScale }: MediaPreviewProps = this.props;
         if (noFit) {
             shouldFit(false);
+        }
+        if (typeof scale === "number" && isFinite(scale) && !isNaN(scale)) {
+            setScale(scale);
         }
         this.loadSource();
     }
     componentWillReceiveProps(nextProps: MediaPreviewProps): void {
-        const { noFit, source, shouldFit }: MediaPreviewProps = this.props;
+        const { noFit, source, shouldFit, scale, setScale }: MediaPreviewProps = this.props;
         if (source !== nextProps.source) {
             this.loadSource();
         }
         if (noFit !== nextProps.noFit) {
             shouldFit(!nextProps.noFit);
+        }
+        if (scale !== nextProps.scale && typeof nextProps.scale === "number" && isFinite(nextProps.scale) && !isNaN(nextProps.scale)) {
+            setScale(nextProps.scale);
         }
     }
     shouldComponentUpdate(nextProps: MediaPreviewProps): boolean {

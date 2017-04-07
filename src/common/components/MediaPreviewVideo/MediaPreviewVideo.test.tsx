@@ -57,13 +57,25 @@ describe("MediaPreviewVideo component", () => {
         });
         it("Should set auto zoom when updating with a new noFit value", () => {
             const shouldFitSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo shouldFit={shouldFitSpy} noFit />);
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo shouldFit={shouldFitSpy} />);
             const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
+            instance.componentWillReceiveProps({ noFit: true });
             shouldFitSpy.should.have.been.calledOnce;
             shouldFitSpy.should.have.been.calledWith(false);
-            instance.componentWillReceiveProps({ noFit: false });
-            shouldFitSpy.should.have.been.calledTwice;
-            shouldFitSpy.should.have.been.calledWith(true);
+        });
+        it("Should set the element zoom when mounting", () => {
+            const setScaleSpy: sinon.SinonSpy = spy();
+            shallow(<MediaPreviewVideo setScale={setScaleSpy} scale={0.5} />);
+            setScaleSpy.should.have.been.calledOnce;
+            setScaleSpy.should.have.been.calledWith(0.5);
+        });
+        it("Should set the element zoom value when updating with a new scale value", () => {
+            const setScaleSpy: sinon.SinonSpy = spy();
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo setScale={setScaleSpy} />);
+            const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
+            instance.componentWillReceiveProps({ scale: 0.5 });
+            setScaleSpy.should.have.been.calledOnce;
+            setScaleSpy.should.have.been.calledWith(0.5);
         });
     });
 });
