@@ -10,36 +10,45 @@ import { shallow, ShallowWrapper } from "enzyme";
 import * as React from "react";
 import hook from "../../../common/helpers/cssModulesHook";
 hook();
-import { SourceInterfaceProps, SourceInterfaceState, default as SourceInterface } from "./SourceInterface";
+import { SourceInterfaceProps, default as SourceInterface } from "./SourceInterface";
 import SourceInterfaceButtons from "../SourceInterfaceButtons";
+import MediaPreviewImage from "../../../common/components/MediaPreviewImage";
+import MediaPreviewVideo from "../../../common/components/MediaPreviewVideo";
 should();
 use(sinonChai);
 
 describe("Source interface component", () => {
     describe("Main element", () => {
-        it("Should display the source passed as props");
+        it("Should display the image source passed as props", () => {
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface source={{ _id: "sourceId" }} />);
+            wrapper.find(MediaPreviewImage).should.have.lengthOf(1);
+        });
+        it("Should display the video source passed as props", () => {
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface source={{ _id: "sourceId" }} isVideo />);
+            wrapper.find(MediaPreviewVideo).should.have.lengthOf(1);
+        });
         it("Should have a file input", () => {
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
             wrapper.find("input").find({ type: "file" }).should.have.lengthOf(1);
         });
         it("Should have an onClick handler", () => {
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
             const instance: SourceInterface = wrapper.instance() as SourceInterface;
             wrapper.find("div").find({ onClick: instance.showFileBrowser }).should.have.lengthOf(1);
         });
         it("Should show buttons to edit the source", () => {
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface source={{ _id: "sourceId" }} />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface source={{ _id: "sourceId" }} />);
             wrapper.find(SourceInterfaceButtons).should.have.lengthOf(1);
         });
         it("Should not show buttons to edit the source if there is no source", () => {
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface source={undefined} />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface source={undefined} />);
             wrapper.find(SourceInterfaceButtons).should.have.lengthOf(0);
         });
         it("Should have be a drop target");
     });
     describe("Methods", () => {
         it("Should set the input property", () => {
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
             const instance: SourceInterface = wrapper.instance() as SourceInterface;
             const input: HTMLInputElement = document.createElement("input");
             instance.setFileInput(input);
@@ -47,7 +56,7 @@ describe("Source interface component", () => {
         });
         it("Should show the file browser", () => {
             const clickSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
             const instance: SourceInterface = wrapper.instance() as SourceInterface;
             instance.setFileInput({
                 click: clickSpy
@@ -63,7 +72,7 @@ describe("Source interface component", () => {
             const file: File = new File([new ArrayBuffer(100)], "file.jpeg", {
                 type: "image/jpeg"
             });
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface setSrc={setSrcSpy} setFile={setFileSpy} />);
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface setSrc={setSrcSpy} setFile={setFileSpy} />);
             const instance: SourceInterface = wrapper.instance() as SourceInterface;
             instance.setFileInput({
                 files: [file]
@@ -81,7 +90,7 @@ describe("Source interface component", () => {
         });
         it("Should set the source to edit", () => {
             const selectSourceSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface
                 selectSource={selectSourceSpy}
                 source={{ _id: "sourceId" }}
             />);
@@ -92,7 +101,7 @@ describe("Source interface component", () => {
         });
         it("Should move the source up a position", () => {
             const moveUpSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface
                 moveUp={moveUpSpy}
                 source={{ _id: "sourceId" }}
             />);
@@ -103,7 +112,7 @@ describe("Source interface component", () => {
         });
         it("Should move the source down a position", () => {
             const moveDownSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface
+            const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface
                 moveDown={moveDownSpy}
                 source={{ _id: "sourceId" }}
             />);
@@ -115,7 +124,7 @@ describe("Source interface component", () => {
         describe("Lifecycle", () => {
             it("Should add the handler to the file input", () => {
                 const addEventListenerSpy: sinon.SinonSpy = spy();
-                const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+                const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
                 const instance: SourceInterface = wrapper.instance() as SourceInterface;
                 instance.setFileInput({
                     addEventListener: addEventListenerSpy
@@ -126,7 +135,7 @@ describe("Source interface component", () => {
             });
             it("Should remove the handler from the file input", () => {
                 const removeEventListenerSpy: sinon.SinonSpy = spy();
-                const wrapper: ShallowWrapper<SourceInterfaceProps, SourceInterfaceState> = shallow(<SourceInterface />);
+                const wrapper: ShallowWrapper<SourceInterfaceProps, {}> = shallow(<SourceInterface />);
                 const instance: SourceInterface = wrapper.instance() as SourceInterface;
                 instance.setFileInput({
                     removeEventListener: removeEventListenerSpy

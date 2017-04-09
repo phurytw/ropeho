@@ -4,10 +4,12 @@
  */
 /// <reference path="../../typings.d.ts" />
 import * as React from "react";
-import { container, preview } from "./styles.css";
+import { container, preview, selected as selectedStyle } from "./styles.css";
 import { ErrorCodes } from "../../../enum";
 import SourceInterfaceButtons from "../SourceInterfaceButtons";
 import { isEqual } from "lodash";
+import MediaPreviewImage from "../../../common/components/MediaPreviewImage";
+import MediaPreviewVideo from "../../../common/components/MediaPreviewVideo";
 
 export interface SourceInterfaceProps {
     source?: Ropeho.Models.Source;
@@ -18,6 +20,7 @@ export interface SourceInterfaceProps {
     moveUp?: (sourceId: string) => any;
     moveDown?: (sourceId: string) => any;
     setFile?: (objectURL: string, file: File) => any;
+    selected?: boolean;
 }
 
 export class SourceInterface extends React.Component<SourceInterfaceProps, {}> {
@@ -26,7 +29,7 @@ export class SourceInterface extends React.Component<SourceInterfaceProps, {}> {
         super(props);
     }
     shouldComponentUpdate(nextProps: SourceInterfaceProps): boolean {
-        return !isEqual(nextProps.source, this.props.source);
+        return !isEqual(nextProps.source, this.props.source) || nextProps.isVideo !== this.props.isVideo || nextProps.selected !== this.props.selected;
     }
     handleFileChange: () => void = (): void => {
         if (this.fileInput.files.length > 0) {
@@ -82,11 +85,14 @@ export class SourceInterface extends React.Component<SourceInterfaceProps, {}> {
         moveUp(source._id);
     }
     render(): JSX.Element {
-        const { source }: SourceInterfaceProps = this.props;
+        const { source, isVideo, selected }: SourceInterfaceProps = this.props;
         return <div className={container}>
-            <div role="img" onClick={this.showFileBrowser} className={preview}>
+            <div role="img" onClick={this.showFileBrowser} className={selected ? `${preview} ${selectedStyle}` : preview}>
                 <input type="file" style={{ display: "none" }} ref={this.setFileInput} />
-                <p>+</p>
+                {
+                    source ? (isVideo ? <MediaPreviewVideo source={source} scale={0.25} /> : <MediaPreviewImage source={source} scale={0.25} />)
+                        : <p>+</p>
+                }
             </div>
             {
                 source ?

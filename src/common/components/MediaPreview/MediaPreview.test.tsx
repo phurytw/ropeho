@@ -116,6 +116,28 @@ describe("MediaPreview", () => {
         it("Should set the current source to the next slideshow", () => {
             const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
             const instance: MediaPreview = wrapper.instance() as MediaPreview;
+            instance.setCycle(1);
+            instance.interval.should.be.ok;
+        });
+    });
+    describe("Currently used source", () => {
+        it("Should set the source of an image", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={imageMedia} />);
+            const instance: MediaPreview = wrapper.instance() as MediaPreview;
+            const source: Source = imageMedia.sources[0];
+            instance.cycleSource();
+            wrapper.state("source").should.deep.equal(source);
+        });
+        it("Should set the source of a video", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={videoMedia} />);
+            const instance: MediaPreview = wrapper.instance() as MediaPreview;
+            const source: Source = videoMedia.sources[0];
+            instance.cycleSource();
+            wrapper.state("source").should.deep.equal(source);
+        });
+        it("Should set the source to the next image of a slideshow", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
+            const instance: MediaPreview = wrapper.instance() as MediaPreview;
             const [sourceA, sourceB]: Source[] = slideshowMedia.sources;
             wrapper.setState({
                 source: sourceB
@@ -126,44 +148,35 @@ describe("MediaPreview", () => {
             wrapper.state("source").should.deep.equal(sourceB);
         });
     });
-    describe("Currently used source", () => {
-        it("Should set the source of an image in the state", () => {
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={imageMedia} />);
-            const instance: MediaPreview = wrapper.instance() as MediaPreview;
-            const source: Source = imageMedia.sources[0];
-            instance.assignSource(imageMedia);
-            wrapper.state("source").should.deep.equal(source);
-        });
-        it("Should set the source of a video in the state", () => {
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={videoMedia} />);
-            const instance: MediaPreview = wrapper.instance() as MediaPreview;
-            const source: Source = videoMedia.sources[0];
-            instance.assignSource(videoMedia);
-            wrapper.state("source").should.deep.equal(source);
-        });
-        it("Should create an interval that cycle through sources with a slideshow", () => {
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
-            const instance: MediaPreview = wrapper.instance() as MediaPreview;
-            instance.assignSource(slideshowMedia);
-            instance.interval.should.not.equal(0);
-        });
-    });
     describe("Lifecycle", () => {
         it("Should set the source when mounting", () => {
             const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={imageMedia} />);
             const instance: MediaPreview = wrapper.instance() as MediaPreview;
-            const assignSourceStub: sinon.SinonStub = stub(instance, "assignSource");
+            const cycleSourceStub: sinon.SinonStub = stub(instance, "cycleSource");
             instance.componentWillMount();
-            assignSourceStub.should.have.been.calledOnce;
-            assignSourceStub.restore();
+            cycleSourceStub.should.have.been.calledOnce;
+            cycleSourceStub.restore();
         });
-        it("Should set the source when receiving props", () => {
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={imageMedia} />);
+        it("Should set interval after mounting", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
             const instance: MediaPreview = wrapper.instance() as MediaPreview;
-            const assignSourceStub: sinon.SinonStub = stub(instance, "assignSource");
-            instance.componentWillReceiveProps({});
-            assignSourceStub.should.have.been.calledOnce;
-            assignSourceStub.restore();
+            const setCycleStub: sinon.SinonStub = stub(instance, "setCycle");
+            instance.componentDidMount();
+            setCycleStub.should.have.been.calledOnce;
+            setCycleStub.restore();
+        });
+        it("Should set the source and interval when receiving props", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
+            const instance: MediaPreview = wrapper.instance() as MediaPreview;
+            const cycleSourceStub: sinon.SinonStub = stub(instance, "cycleSource");
+            instance.componentWillReceiveProps({
+                media: {
+                    type: MediaTypes.Slideshow,
+                    sources: slideshowMedia.sources
+                }
+            });
+            cycleSourceStub.should.have.been.calledOnce;
+            cycleSourceStub.restore();
         });
         it("Should clear the interval when unmounting", () => {
             const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);

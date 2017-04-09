@@ -99,7 +99,6 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                 return !isEqual(nextProps.source, this.props.source) || !isEqual(nextState, this.state);
             }
             componentWillUnmount(): void {
-                this.element.removeEventListener("resize", this.handleSource);
                 window.removeEventListener("resize", this.handleSource);
             }
             handleSource: () => void = (): void => {
@@ -157,7 +156,6 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
             setElement: (element: HTMLDivElement) => any = (element: HTMLDivElement): any => {
                 if (element) {
                     this.element = element;
-                    this.element.addEventListener("resize", this.handleSource);
                     window.addEventListener("resize", this.handleSource);
                 }
             }

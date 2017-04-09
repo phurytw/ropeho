@@ -16,6 +16,7 @@ import Media = Ropeho.Models.Media;
 export interface SourceSelectorProps {
     sources?: Source[];
     media?: Media;
+    selectedSource?: Source;
     setError?: (error?: Ropeho.IErrorResponse) => any;
     setSource?: (source: Source) => any;
     selectSource?: (sourceId: string) => any;
@@ -28,7 +29,7 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
         super(props);
     }
     shouldComponentUpdate(nextProps: SourceSelectorProps): boolean {
-        return !isEqual(nextProps.sources, this.props.sources);
+        return !isEqual(nextProps.sources, this.props.sources) || !isEqual(nextProps.media, this.props.media) || !isEqual(nextProps.selectedSource, this.props.selectedSource);
     }
     setFromUrl: (source: Source, preview: string) => void = (source: Source, preview: string): void => {
         const targetSource: Source = source || {
@@ -55,7 +56,7 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
         setSourcePosition(sourceId, sources.map((s: Source) => s._id).indexOf(sourceId) + 1);
     }
     render(): JSX.Element {
-        const { sources, media, setError, selectSource, setFile }: SourceSelectorProps = this.props;
+        const { sources, media, setError, selectSource, setFile, selectedSource }: SourceSelectorProps = this.props;
         let addNew: JSX.Element = <SourceInterface setError={setError} setSrc={this.setFromUrl} setFile={setFile} />;
         let isVideo: boolean = false;
         // tslint:disable:react-this-binding-issue
@@ -92,6 +93,7 @@ export class SourceSelector extends React.Component<SourceSelectorProps, {}> {
                     moveDown={this.moveSourceDown}
                     moveUp={this.moveSourceUp}
                     setFile={setFile}
+                    selected={selectedSource && selectedSource._id === s._id}
                 />) : ""
             }
             {addNew}

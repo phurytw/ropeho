@@ -20,6 +20,7 @@ export interface MediaPreviewState {
 export interface MediaPreviewProps {
     media?: Media;
     textStyles?: string;
+    scale?: number;
 }
 
 export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
@@ -29,15 +30,18 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
         this.state = {};
     }
     componentWillMount(): void {
-        const { media }: MediaPreviewProps = this.props;
-        if (media) {
-            this.assignSource(media);
+        this.cycleSource();
+    }
+    componentDidMount(): void {
+        const { media: { type, delay } }: MediaPreviewProps = this.props;
+        if (type === MediaTypes.Slideshow) {
+            this.setCycle(delay);
         }
     }
-    componentWillReceiveProps(nextProps: MediaPreviewProps): void {
-        const { media }: MediaPreviewProps = nextProps;
-        if (!isEqual(media, this.props.media)) {
-            this.assignSource(media);
+    componentWillReceiveProps({ media: { type, delay, sources } }: MediaPreviewProps): void {
+        this.cycleSource(sources);
+        if (type === MediaTypes.Slideshow && delay !== this.props.media.delay) {
+            this.setCycle(delay);
         }
     }
     shouldComponentUpdate(nextProps: MediaPreviewProps, nextState: MediaPreviewState): boolean {
@@ -49,30 +53,15 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
             this.interval = undefined;
         }
     }
-    assignSource: (media: Media) => void = (media: Media): void => {
-        const { sources, type, delay }: Media = media;
-        switch (type) {
-            case MediaTypes.Image:
-            case MediaTypes.Video:
-                if (sources.length > 0) {
-                    this.setState({ source: sources[0] });
-                }
-                break;
-            case MediaTypes.Slideshow:
-                if (this.interval) {
-                    clearInterval(this.interval);
-                } else {
-                    this.cycleSource();
-                }
-                // 1 second default in case the delay is 0
-                this.interval = setInterval(this.cycleSource, (delay || 1) * 1000) as any;
-                break;
-            default:
-                break;
+    setCycle: (delay: number) => void = (delay: number): void => {
+        delay = typeof delay === "number" && !isNaN(delay) && isFinite(delay) ? Math.max(delay, 1) * 1000 : 1000;
+        if (this.interval) {
+            clearInterval(this.interval);
         }
+        this.interval = setInterval(this.cycleSource, delay) as any;
     }
-    cycleSource: () => void = (): void => {
-        const { media: { sources } }: MediaPreviewProps = this.props;
+    cycleSource: (sourcesToUse?: Source[]) => void = (sourcesToUse?: Source[]): void => {
+        const sources: Source[] = sourcesToUse || this.props.media.sources;
         const { source }: MediaPreviewState = this.state;
         const index: number = sources.indexOf(source);
         const next: number = sources[index + 1] ? index + 1 : 0;
@@ -83,7 +72,7 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
         }
     }
     render(): JSX.Element {
-        const { media, textStyles }: MediaPreviewProps = this.props;
+        const { media, textStyles, scale }: MediaPreviewProps = this.props;
         const { source }: MediaPreviewState = this.state;
         const fadeTransition: (Component: JSX.Element) => JSX.Element = (Component: JSX.Element) => <ReactCSSTransitionGroup
             transitionName={{
@@ -101,9 +90,9 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
         switch (media && media.type) {
             case MediaTypes.Image:
             case MediaTypes.Slideshow:
-                return fadeTransition(<MediaPreviewImage source={source} key={source && source._id} />);
+                return fadeTransition(<MediaPreviewImage source={source} key={source && source._id} scale={scale} />);
             case MediaTypes.Video:
-                return fadeTransition(<MediaPreviewVideo source={source} key={source && source._id} />);
+                return fadeTransition(<MediaPreviewVideo source={source} key={source && source._id} scale={scale} />);
             case MediaTypes.Text:
                 return fadeTransition(<div className={textStyles} key={media._id}>
                     <p>{media.description}</p>
