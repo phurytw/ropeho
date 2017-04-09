@@ -7,15 +7,13 @@ import { should, use } from "chai";
 import { spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import * as React from "react";
-import { StaticRouter } from "react-router-dom";
-import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
+import { shallow, ShallowWrapper } from "enzyme";
 import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import { Dropdown, Input, Dialog } from "react-toolbox";
 import { MediaEdit, MediaEditProps, MediaEditState } from "./MediaEdit";
 import { MediaTypes } from "../../../enum";
 import SourceSelector from "../SourceSelector";
-import SourceEdit from "../SourceEdit";
 should();
 use(sinonChai);
 
@@ -83,17 +81,11 @@ describe("MediaEdit component", () => {
             const wrapper: ShallowWrapper<MediaEditProps, {}> = shallow(<MediaEdit {...props} />);
             wrapper.find(SourceSelector).should.have.lengthOf(1);
         });
-        it("Should have the source editor when a source is selected", () => {
-            const wrapper: ReactWrapper<MediaEditProps, {}> = mount(<StaticRouter context={{}} history={undefined} location="/productions/prodId/mediaId/sourceId">
-                <MediaEdit {...props} source={{ _id: "sourceId" }} />
-            </StaticRouter>);
-            wrapper.find(SourceEdit).should.have.lengthOf(1);
-        });
     });
     describe("Methods", () => {
         it("Should call setMedia with the updated delay", () => {
             const mediaEdit: MediaEdit = shallow(<MediaEdit {...props} />).instance() as MediaEdit;
-            mediaEdit.setDelay(10);
+            mediaEdit.setDelay("10");
             setMediaSpy.should.have.been.calledOnce;
             setMediaSpy.should.have.been.calledWith({
                 ...media,

@@ -6,8 +6,6 @@
 import * as React from "react";
 import { Dropdown, Input, Dialog } from "react-toolbox";
 import { MediaTypes, MediaPermissions } from "../../../enum";
-import { Route } from "react-router-dom";
-import SourceEdit from "../SourceEdit";
 import SourceSelector from "../SourceSelector";
 import { isEqual } from "lodash";
 
@@ -45,11 +43,11 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
             !isEqual(nextProps.sources, this.props.sources) ||
             nextState.promptTypeChange !== this.state.promptTypeChange;
     }
-    setDelay: (delay: number) => void = (delay: number): void => {
+    setDelay: (delay: string) => void = (delay: string): void => {
         const { media, setMedia }: MediaEditProps = this.props;
         setMedia({
             ...media,
-            delay
+            delay: parseFloat(delay)
         });
     }
     setDescription: (description: string) => void = (description: string): void => {
@@ -94,14 +92,7 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
         this.props.deleteSources([sourceId]);
     }
     render(): JSX.Element {
-        const { media, publicOnly, sources, setError, setSource, selectSource, source, setFile }: MediaEditProps = this.props;
-        const renderSourceEdit: () => JSX.Element = () => {
-            if (source) {
-                return <SourceEdit setSource={setSource} source={source} type={media.type} removeSource={this.removeSource} />;
-            } else {
-                return null;
-            }
-        };
+        const { media, publicOnly, sources, source, setError, setSource, selectSource, setFile }: MediaEditProps = this.props;
         // tslint:disable:react-this-binding-issue
         if (!media) {
             return <div></div>;
@@ -157,14 +148,15 @@ export class MediaEdit extends React.Component<MediaEditProps, MediaEditState> {
             >
                 <p>Il y a actuellement {sources && sources.length} images/vidéo sur ce media. Ils ne seront plus utilisés si le type de media change.</p>
             </Dialog>
-            <SourceSelector media={media} sources={sources} setError={setError} setSource={setSource} setSourcePosition={this.setSourcePosition} selectSource={selectSource} setFile={setFile} />
-            <Route
-                path="/*/*/:mediaId/:sourceId"
-                render={renderSourceEdit}
-            />
-            <Route
-                path="/*/*/*/:mediaId/:sourceId"
-                render={renderSourceEdit}
+            <SourceSelector
+                media={media}
+                sources={sources}
+                selectedSource={source}
+                setError={setError}
+                setSource={setSource}
+                setSourcePosition={this.setSourcePosition}
+                selectSource={selectSource}
+                setFile={setFile}
             />
         </div>;
     }

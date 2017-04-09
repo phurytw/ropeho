@@ -6,7 +6,7 @@
 import * as React from "react";
 import { connect } from "react-redux";
 import { RopehoAdminState } from "../../reducer";
-import { getProduction, getHasRendered, getMedias, getSourcesFromSelectedMedia, getSelectedMedia, getSelectedSource, getUpdatedMedias } from "../../selectors";
+import { getProduction, getHasRendered, getSourcesFromSelectedMedia, getSelectedMedia, getSelectedSource, getUpdatedMedias } from "../../selectors";
 import { Actions } from "../../modules/productionEdit";
 import * as productionModule from "../../modules/productionEdit";
 import { Actions as MediaActions } from "../../modules/mediaEdit";
@@ -28,7 +28,8 @@ import MediaPreview from "../../../common/components/MediaPreview";
 import ProductionEditMetaData from "../ProductionEditMetaData";
 import MediaEdit from "../MediaEdit";
 import { isEqual } from "lodash";
-import * as isUUID from "validator/lib/isUUID";
+import SourceEdit from "../SourceEdit";
+import MediaSelector from "../MediaSelector";
 
 import Production = Ropeho.Models.Production;
 import Media = Ropeho.Models.Media;
@@ -38,11 +39,10 @@ export const mapStateToProps: (state: RopehoAdminState, ownProps?: ProductionEdi
     = (state: RopehoAdminState, ownProps?: ProductionEditProps): ProductionEditProps => ({
         production: getProduction(state),
         hasRendered: getHasRendered(state),
-        medias: getMedias(state),
+        medias: getUpdatedMedias(state),
         sources: getSourcesFromSelectedMedia(state),
         selectedMedia: getSelectedMedia(state),
-        selectedSource: getSelectedSource(state),
-        getUpdatedMedia: () => getUpdatedMedias(state)
+        selectedSource: getSelectedSource(state)
     });
 
 export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps?: ProductionEditProps) => ProductionEditProps
@@ -61,6 +61,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps
         removeMedia: (mediaId: string) => dispatch(mediaModule.removeMedia(mediaId)),
         removeSourcesFromMedia: (sourceIds: string[]) => dispatch(mediaModule.removeSourcesFromMedia(sourceIds)),
         removeSources: (sourceIds: string[]) => dispatch(sourceModule.removeSources(sourceIds)),
+        setMediaPosition: (mediaId: string, posiiton: number) => dispatch(mediaModule.setMediaPosition(mediaId, posiiton)),
         setSourcePosition: (mediaId: string, sourceId: string, posiiton: number) => dispatch(mediaModule.setSourcePosition(mediaId, sourceId, posiiton)),
         uploadFile: (file: Ropeho.Socket.UploadEntry) => dispatch(uploadModule.setEntryInUploadQueue(file)),
         setFile: (objectURL: string, file: File) => dispatch(objectURLModule.setFile(objectURL, file)),
@@ -103,7 +104,7 @@ export interface ProductionEditProps extends PartialRouteComponentProps<Producti
     removeSourcesFromMedia?: (sourceIds: string[]) => MediaActions.RemoveSources;
     removeSources?: (sourceIds: string[]) => SourceActions.RemoveSources;
     setSourcePosition?: (mediaId: string, sourceId: string, posiiton: number) => MediaActions.SetSourcePosition;
-    getUpdatedMedia?: () => Media[];
+    setMediaPosition?: (mediaId: string, posiiton: number) => MediaActions.SetMediaPosition;
     uploadFile?: (file: Ropeho.Socket.UploadEntry) => UploadActions.SetEntry;
     setFile?: (objectURL: string, filen: File) => ObjectURLActions.SetFile;
     setError?: (error?: Ropeho.IErrorResponse) => ErrorActions.SetError;
@@ -138,28 +139,31 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         updateSource(source);
     }
     removeSelectedMedia: () => void = (): void => {
-        const { selectedMedia, sources, removeMedia, removeSources, removeSourcesFromMedia }: ProductionEditProps = this.props;
+        const { selectedMedia, sources, removeMedia, removeSources, removeSourcesFromMedia, history: { replace }, match: { params: { productionId } } }: ProductionEditProps = this.props;
         removeMedia(selectedMedia._id);
         removeSources(sources.map((s: Source) => s._id));
         removeSourcesFromMedia(sources.map((s: Source) => s._id));
+        replace(`/productions/${productionId}/medias`);
     }
     removeSources: (sourceIds: string[]) => void = (sourceIds: string[]): void => {
         const { removeSources, removeSourcesFromMedia }: ProductionEditProps = this.props;
         removeSources(sourceIds);
         removeSourcesFromMedia(sourceIds);
     }
+    removeSource: (sourceId: string) => void = (sourceId: string): void => {
+        this.removeSources([sourceId]);
+    }
     promptSaveShow: () => void = (): void => this.setState({ promptSave: true });
     promptSaveHide: () => void = (): void => this.setState({ promptSave: false });
     /**
-     * Save changed made to the production
+     * Save changes made to the production
      */
     saveChanges: () => Promise<void> = async (): Promise<void> => {
-        const { updateProduction, production, getUpdatedMedia, history, uploadFile }: ProductionEditProps = this.props;
+        const { updateProduction, production, medias, history: { push }, uploadFile }: ProductionEditProps = this.props;
         const newProduction: Production = {
             ...production,
             medias: []
         };
-        const medias: Media[] = getUpdatedMedia();
         let uploadEntries: Ropeho.Socket.UploadEntry[] = [];
         // data
         for (const media of medias) {
@@ -192,8 +196,8 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         for (const entry of uploadEntries) {
             uploadFile(entry);
         }
-        history.push("/productions");
         this.setState({ promptSave: false });
+        push("/productions");
     }
     promptDeleteShow: () => void = (): void => this.setState({ promptDelete: true });
     promptDeleteHide: () => void = (): void => this.setState({ promptDelete: false });
@@ -206,24 +210,31 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
     navigateTo(path: string): void {
         this.props.history.push(path);
     }
-    navigateToSource(sourceId: string): void {
-        const { match: { params: { productionId, mediaId } } }: ProductionEditProps = this.props;
-        this.props.history.push(`/productions/${productionId}/${mediaId}/${sourceId}`);
+    navigateToMedia: (mediaId: string) => void = (mediaId: string): void => {
+        const { match: { params: { productionId } }, history: { push } }: ProductionEditProps = this.props;
+        push(`/productions/${productionId}/${mediaId}`);
+    }
+    navigateToSource: (sourceId: string) => void = (sourceId: string): void => {
+        const { match: { params: { productionId, mediaId } }, history: { push } }: ProductionEditProps = this.props;
+        push(`/productions/${productionId}/${mediaId}/${sourceId}`);
     }
     fetchProduction: (productionId: string) => Promise<void> = async (productionId: string): Promise<void> => {
-        const { fetchProduction, setMedias, setSources, match: { params }, history }: ProductionEditProps = this.props;
+        const { fetchProduction, setMedias, setSources, match: { params }, history: { replace } }: ProductionEditProps = this.props;
         try {
             const { production }: Actions.SetProduction = await fetchProduction(productionId);
             setMedias(entityUtils.getMedias(production));
             setSources(entityUtils.getSources(production));
-            this.selectFromParams(production, params);
+            this.selectFromParams(production, params, production.medias);
         } catch (error) {
-            history.replace("/productions");
+            replace("/productions");
         }
     }
-    selectFromParams: (production: Production, params: ProductionEditParams) => void = (production: Production, params: ProductionEditParams): void => {
-        const { selectMedia, selectSource }: ProductionEditProps = this.props;
-        const { mediaId, sourceId }: ProductionEditParams = params;
+    selectFromParams: (production: Production, params: ProductionEditParams, mediasToUse?: Media[], sourcesToUse?: Source[]) => void =
+    (production: Production, params: ProductionEditParams, mediasToUse?: Media[], sourcesToUse?: Source[]): void => {
+        const { selectMedia, selectSource, history: { replace } }: ProductionEditProps = this.props;
+        const { mediaId, sourceId, productionId }: ProductionEditParams = params;
+        const medias: Media[] = mediasToUse || this.props.medias;
+        const sources: Source[] = sourcesToUse || this.props.sources;
         if (production) {
             switch (mediaId) {
                 case "banniere":
@@ -233,16 +244,29 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                     selectMedia(production.background._id);
                     break;
                 default:
-                    if (typeof mediaId === "string" && isUUID(mediaId, 4)) {
+                    if (medias.map((m: Media) => m._id).indexOf(mediaId) >= 0) {
                         selectMedia(mediaId);
+                    } else {
+                        selectMedia("");
+                        if (mediaId && mediaId !== "medias") {
+                            replace(`/productions/${productionId}`);
+                            return;
+                        }
                     }
                     break;
             }
         }
-        if (typeof sourceId === "string" && isUUID(sourceId, 4)) {
+        if (sources.map((s: Source) => s._id).indexOf(sourceId) >= 0) {
             selectSource(sourceId);
+        } else {
+            selectSource("");
+            if (sourceId) {
+                replace(`/productions/${productionId}/${mediaId}`);
+                return;
+            }
         }
     }
+
     async componentWillMount(): Promise<void> {
         const { hasRendered, match: { params: { productionId } } }: ProductionEditProps = this.props;
         if (!hasRendered) {
@@ -275,7 +299,7 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                     dispatch(mediaModule.selectMedia(production.background._id));
                     break;
                 default:
-                    if (typeof mediaId === "string" && isUUID(mediaId, 4)) {
+                    if (production.medias.map((m: Media) => m._id).indexOf(mediaId) >= 0) {
                         dispatch(mediaModule.selectMedia(mediaId));
                     }
                     break;
@@ -283,30 +307,141 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
             dispatch(sourceModule.selectSource(sourceId));
         }
     }
+    shouldRedirect: () => JSX.Element = (): JSX.Element => {
+        const { hasRendered, production, selectedMedia, selectedSource, match: { params: { productionId, mediaId, sourceId } } }: ProductionEditProps = this.props;
+        if (hasRendered) {
+            // production not found
+            if (!production) {
+                return <Redirect to="/productions" />;
+            }
+            // media not found
+            if ((!selectedMedia && mediaId) && mediaId !== "medias") {
+                return <Redirect to={`/productions/${productionId}`} />;
+            }
+            // source not found
+            if (!selectedSource && sourceId) {
+                return <Redirect to={`/productions/${productionId}/${mediaId}`} />;
+            }
+        }
+    }
     render(): JSX.Element {
-        const { production, selectedSource, sources, hasRendered, setError, selectedMedia, updateMedia, setSourcePosition, setFile }: ProductionEditProps = this.props;
+        const { production, selectedSource, sources, setError, selectedMedia, updateMedia, setSourcePosition, setFile, updateSource, medias, setMediaPosition }: ProductionEditProps = this.props;
         const { tab, promptSave, promptDelete }: ProductionEditState = this.state;
         // tslint:disable:react-this-binding-issue
-        // if production has not been found
-        if ((production && !production._id) || (!production && hasRendered)) {
-            return <Redirect to="/productions" />;
-        } else if (production) {
-            return <div>
-                <section className={headerBar}>
-                    <h2>{production.name}</h2>
-                    <Button primary={true} onClick={this.promptSaveShow} icon="done">Enregistrer</Button>
-                    <Button accent={true} inverse={true} onClick={this.promptDeleteShow} icon="delete">Supprimer</Button>
-                </section>
-                <Tabs index={tab} onChange={this.setTab}>
-                    <Tab label="Production" onClick={this.navigateTo.bind(this, `/productions/${production._id}`)}>
-                        <ProductionEditMetaData {...this.props} />
-                    </Tab>
-                    <Tab label="Bannière" onClick={this.navigateTo.bind(this, `/productions/${production._id}/banniere`)}>
-                        <Route
-                            path="/productions/:productionId/banniere"
-                            render={() => {
-                                if (selectedMedia) {
-                                    return <div>
+        // server side redirections
+        const redirect: JSX.Element = this.shouldRedirect();
+        if (redirect) {
+            return redirect;
+        }
+        if (!production) {
+            return null;
+        }
+        return <div>
+            <section className={headerBar}>
+                <h2>{production.name}</h2>
+                <Button primary={true} onClick={this.promptSaveShow} icon="done">Enregistrer</Button>
+                <Button accent={true} inverse={true} onClick={this.promptDeleteShow} icon="delete">Supprimer</Button>
+            </section>
+            <Tabs index={tab} onChange={this.setTab}>
+                <Tab label="Production" onClick={this.navigateTo.bind(this, `/productions/${production._id}`)}>
+                    <ProductionEditMetaData {...this.props} />
+                </Tab>
+                <Tab label="Bannière" onClick={this.navigateTo.bind(this, `/productions/${production._id}/banniere`)}>
+                    <Route
+                        path="/productions/:productionId/banniere"
+                        render={() => {
+                            if (selectedMedia) {
+                                return <div>
+                                    <div style={{ height: "300px" }}>
+                                        <MediaPreview media={{
+                                            ...selectedMedia,
+                                            sources
+                                        }} />
+                                    </div>
+                                    <MediaEdit
+                                        media={selectedMedia}
+                                        setMedia={updateMedia}
+                                        sources={sources}
+                                        setError={setError}
+                                        setSource={this.updateSource}
+                                        source={selectedSource}
+                                        deleteSources={this.removeSources}
+                                        setSourcePosition={setSourcePosition}
+                                        selectSource={this.navigateToSource}
+                                        setFile={setFile}
+                                        publicOnly />
+                                    <Route
+                                        path="/productions/:productionId/:mediaId/:sourceId"
+                                        render={() => <SourceEdit
+                                            setSource={updateSource}
+                                            source={selectedSource}
+                                            type={selectedMedia.type}
+                                            removeSource={this.removeSource}
+                                        />}
+                                    />
+                                </div>;
+                            } else {
+                                return null;
+                            }
+                        }}
+                    />
+                </Tab>
+                <Tab label="Fond" onClick={this.navigateTo.bind(this, `/productions/${production._id}/fond`)}>
+                    <Route
+                        path="/productions/:productionId/fond"
+                        render={() => {
+                            if (selectedMedia) {
+                                return <div>
+                                    <div style={{ height: "300px" }}>
+                                        <MediaPreview media={{
+                                            ...selectedMedia,
+                                            sources
+                                        }} />
+                                    </div>
+                                    <MediaEdit
+                                        media={selectedMedia}
+                                        setMedia={updateMedia}
+                                        sources={sources}
+                                        setError={setError}
+                                        setSource={this.updateSource}
+                                        source={selectedSource}
+                                        deleteSources={this.removeSources}
+                                        setSourcePosition={setSourcePosition}
+                                        selectSource={this.navigateToSource}
+                                        setFile={setFile}
+                                        publicOnly />
+                                    <Route
+                                        path="/productions/:productionId/:mediaId/:sourceId"
+                                        render={() => <SourceEdit
+                                            setSource={updateSource}
+                                            source={selectedSource}
+                                            type={selectedMedia.type}
+                                            removeSource={this.removeSource}
+                                        />}
+                                    />
+                                </div>;
+                            } else {
+                                return null;
+                            }
+                        }}
+                    />
+                </Tab>
+                <Tab label="Medias" onClick={this.navigateTo.bind(this, `/productions/${production._id}/medias`)}>
+                    <Route
+                        path="/productions/:productionId/:mediaId/:sourceId?"
+                        render={() => {
+                            const prodMedias: Media[] = medias.filter((m: Media) => m._id !== production.background._id && m._id !== production.banner._id);
+                            return <div>
+                                <MediaSelector
+                                    medias={prodMedias}
+                                    selectMedia={this.navigateToMedia}
+                                    selectedMedia={selectedMedia}
+                                    setMedia={updateMedia}
+                                    setMediaPosition={setMediaPosition}
+                                    removeSelected={this.removeSelectedMedia}
+                                />
+                                {
+                                    selectedMedia ? <div>
                                         <div style={{ height: "300px" }}>
                                             <MediaPreview media={{
                                                 ...selectedMedia,
@@ -322,56 +457,58 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
                                             source={selectedSource}
                                             deleteSources={this.removeSources}
                                             setSourcePosition={setSourcePosition}
-                                            selectSource={this.navigateToSource.bind(this)}
-                                            setFile={setFile}
-                                            publicOnly />
-                                    </div>;
-                                } else {
-                                    return null;
+                                            selectSource={this.navigateToSource}
+                                            setFile={setFile} />
+                                        <Route
+                                            path="/productions/:productionId/:mediaId/:sourceId"
+                                            render={() => <SourceEdit
+                                                setSource={updateSource}
+                                                source={selectedSource}
+                                                type={selectedMedia.type}
+                                                removeSource={this.removeSource}
+                                            />}
+                                        />
+                                    </div> : null
                                 }
-                            }}
-                        />
-                    </Tab>
-                    <Tab label="Fond" />
-                    <Tab label="Medias" />
-                </Tabs>
-                <Dialog
-                    active={promptSave}
-                    title="Enregistrer les modifications"
-                    actions={[{
-                        label: "Annuler",
-                        icon: "cancel",
-                        onClick: this.promptSaveHide
-                    }, {
-                        label: "Enregister",
-                        icon: "done",
-                        primary: true,
-                        onClick: this.saveChanges
-                    }]}
-                >
-                    <p>Cette action va enregistrer toutes les modifications apportés à la production et mettre {} medias à la file d'attente</p>
-                </Dialog>
-                <Dialog
-                    className={deleteDialog}
-                    active={promptDelete}
-                    title="Supprimer la production"
-                    actions={[{
-                        label: "Annuler",
-                        icon: "cancel",
-                        onClick: this.promptDeleteHide
-                    }, {
-                        label: "Supprimer",
-                        icon: "delete",
-                        accent: true,
-                        onClick: this.deleteProduction
-                    }]}
-                >
-                    <p>Cette action va supprimer cette production de la base de données. Les {} medias resteront sur le serveur.</p>
-                </Dialog>
-            </div>;
-        } else {
-            return <div></div>;
-        }
+                            </div>;
+                        }}
+                    />
+                </Tab>
+            </Tabs>
+            <Dialog
+                active={promptSave}
+                title="Enregistrer les modifications"
+                actions={[{
+                    label: "Annuler",
+                    icon: "cancel",
+                    onClick: this.promptSaveHide
+                }, {
+                    label: "Enregister",
+                    icon: "done",
+                    primary: true,
+                    onClick: this.saveChanges
+                }]}
+            >
+                <p>Cette action va enregistrer toutes les modifications apportés à la production et mettre {} medias à la file d'attente</p>
+            </Dialog>
+            <Dialog
+                className={deleteDialog}
+                active={promptDelete}
+                title="Supprimer la production"
+                actions={[{
+                    label: "Annuler",
+                    icon: "cancel",
+                    onClick: this.promptDeleteHide
+                }, {
+                    label: "Supprimer",
+                    icon: "delete",
+                    accent: true,
+                    onClick: this.deleteProduction
+                }]}
+            >
+                <p>Cette action va supprimer cette production de la base de données. Les {} medias resteront sur le serveur.</p>
+            </Dialog>
+        </div>;
     }
 }
 

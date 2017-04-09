@@ -1,0 +1,35 @@
+:root {
+    --size-xs: 80px;
+    --size-xs: 80px;
+}
+
+.mediaSelector {
+    display: flex;
+    flex-direction: row;
+    overflow-x: scroll;
+}
+
+.mediaSelector > * {
+    width: var(--size-xs);
+    height: var(--size-xs);
+    border: 4px solid black;
+    border-radius: 4px;
+    margin: 1em;
+    flex-shrink: 0;
+}
+
+.mediaSelector > *.selected {
+    border: 4px solid red;
+}
+
+.mediaSelector > *.addNew {
+    border: 4px dashed black;
+    display: flex;
+    align-items: center;
+}
+
+.mediaSelector > *.addNew > p {
+    width: 100%;
+    text-align: center;
+    font-size: 3rem;
+}

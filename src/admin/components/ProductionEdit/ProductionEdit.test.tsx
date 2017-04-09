@@ -6,7 +6,7 @@
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import * as chaiEnzyme from "chai-enzyme";
-import { shallow, ShallowWrapper, mount } from "enzyme";
+import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
 import { stub, spy } from "sinon";
 import * as React from "react";
 import { productions } from "../../../sampleData/testDb";
@@ -26,8 +26,10 @@ hook();
 import { ProductionEdit, ProductionEditProps, ProductionEditParams, mapStateToProps, mapDispatchToProps } from "./ProductionEdit";
 import { ProductionEditMetaData } from "../ProductionEditMetaData";
 import { MediaEdit } from "../MediaEdit";
+import SourceEdit from "../SourceEdit";
+import MediaSelector from "../MediaSelector";
 import { Button, Tab, Tabs, Dialog } from "react-toolbox";
-import { StaticRouter } from "react-router";
+import { StaticRouter, Redirect } from "react-router";
 should();
 use(sinonChai);
 use(chaiEnzyme);
@@ -39,28 +41,20 @@ import Production = Ropeho.Models.Production;
 describe("Production Edit component", () => {
     const production: Production = productions[0];
     let store: IStore<RopehoAdminState>;
-    let dispatchStub: sinon.SinonStub;
-    const props: ProductionEditProps = {
-        fetchProduction: (): Promise<productionEditModule.Actions.SetProduction> => Promise.resolve<productionEditModule.Actions.SetProduction>({
-            type: productionEditModule.ActionTypes.SET_PRODUCTION,
-            production
-        }),
-        production,
-        match: {
-            params: {
-                productionId: "id"
-            }
-        },
-        setMedias: () => ({}) as any,
-        setSources: () => ({}) as any,
-        medias: [],
-        sources: [],
-        history: {} as any,
-        updateMedia: () => ({}) as any,
-        updateSource: () => ({}) as any,
-        selectMedia: () => ({}) as any,
-        selectSource: () => ({}) as any
-    };
+    let dispatchStub: sinon.SinonStub,
+        pushSpy: sinon.SinonSpy,
+        updateSourceSpy: sinon.SinonSpy,
+        addToMediaSpy: sinon.SinonSpy,
+        removeMediaSpy: sinon.SinonSpy,
+        removeSourcesFromMediaSpy: sinon.SinonSpy,
+        removeSourcesSpy: sinon.SinonSpy,
+        uploadSpy: sinon.SinonSpy,
+        selectMediaSpy: sinon.SinonSpy,
+        replaceSpy: sinon.SinonSpy,
+        selectSourceSpy: sinon.SinonSpy,
+        setMediasSpy: sinon.SinonSpy,
+        setSourcesSpy: sinon.SinonSpy,
+        props: ProductionEditProps;
     before(() => {
         store = mockStore<RopehoAdminState>(middlewares())(rootReducer(undefined, { type: "" }));
         dispatchStub = stub(store, "dispatch")
@@ -72,11 +66,71 @@ describe("Production Edit component", () => {
                 }
             });
     });
-    afterEach(() => store.clearActions());
+    beforeEach(() => {
+        pushSpy = spy();
+        updateSourceSpy = spy();
+        addToMediaSpy = spy();
+        removeMediaSpy = spy();
+        removeSourcesFromMediaSpy = spy();
+        removeSourcesSpy = spy();
+        uploadSpy = spy();
+        selectMediaSpy = spy();
+        replaceSpy = spy();
+        selectSourceSpy = spy();
+        setMediasSpy = spy();
+        setSourcesSpy = spy();
+        props = {
+            fetchProduction: (): Promise<productionEditModule.Actions.SetProduction> => Promise.resolve<productionEditModule.Actions.SetProduction>({
+                type: productionEditModule.ActionTypes.SET_PRODUCTION,
+                production
+            }),
+            production,
+            match: {
+                params: {
+                    productionId: production._id
+                }
+            },
+            medias: [production.banner, production.background, ...production.medias],
+            sources: production.banner.sources,
+            setMedias: setMediasSpy,
+            setSources: setSourcesSpy,
+            history: {
+                push: pushSpy,
+                replace: replaceSpy
+            } as any,
+            updateMedia: () => ({}) as any,
+            updateSource: updateSourceSpy,
+            selectMedia: selectMediaSpy,
+            selectSource: selectSourceSpy,
+            addSourceToMedia: addToMediaSpy,
+            removeMedia: removeMediaSpy,
+            removeSourcesFromMedia: removeSourcesFromMediaSpy,
+            removeSources: removeSourcesSpy,
+            uploadFile: uploadSpy
+        };
+    });
+    afterEach(() => {
+        store.clearActions();
+        pushSpy.reset();
+        updateSourceSpy.reset();
+        addToMediaSpy.reset();
+        removeMediaSpy.reset();
+        removeSourcesFromMediaSpy.reset();
+        removeSourcesSpy.reset();
+        uploadSpy.reset();
+        selectMediaSpy.reset();
+        replaceSpy.reset();
+        selectSourceSpy.reset();
+        setMediasSpy.reset();
+        setSourcesSpy.reset();
+    });
     describe("Element", () => {
         describe("Header", () => {
-            it("Should display the production title", () =>
-                shallow(<ProductionEdit {...props} />).findWhere((node: ShallowWrapper<any, {}>) => node.type() === "h2" && node.text() === production.name).should.have.lengthOf(1));
+            it("Should display the production title", () => {
+                shallow(<ProductionEdit {...props} />)
+                    .findWhere((node: ShallowWrapper<any, {}>) => node.type() === "h2" && node.text() === production.name)
+                    .should.have.lengthOf(1);
+            });
             it("Should display an save changes button", () => {
                 const wrapper: ShallowWrapper<any, {}> = shallow(<ProductionEdit {...props} />);
                 const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
@@ -122,11 +176,90 @@ describe("Production Edit component", () => {
                     history={undefined}>
                     <ProductionEdit
                         {...props}
-                        match={{ params: { productionId: "id", mediaId: "banniere" } }}
-                        selectedMedia={production.banner}
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "banniere"
+                            }
+                        }}
+                        selectedMedia={production.banner._id}
                     />
                 </StaticRouter>)
                     .find(MediaEdit).should.have.lengthOf(1);
+            });
+            it("Should have a tab showing a the media editor for the background", () => {
+                mount(<StaticRouter
+                    location="/productions/id/fond"
+                    context={{}}
+                    history={undefined}>
+                    <ProductionEdit
+                        {...props}
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "fond"
+                            }
+                        }}
+                        selectedMedia={production.background._id}
+                    />
+                </StaticRouter>)
+                    .find(MediaEdit).should.have.lengthOf(1);
+            });
+            it("Should have a tab showing a the source editor for the banner", () => {
+                mount(<StaticRouter
+                    location="/productions/id/banniere/sourceId"
+                    context={{}}
+                    history={undefined}>
+                    <ProductionEdit
+                        {...props}
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "banniere",
+                                sourceId: "sourceId"
+                            }
+                        }}
+                        selectedMedia={production.banner._id}
+                    />
+                </StaticRouter>)
+                    .find(SourceEdit).should.have.lengthOf(1);
+            });
+            it("Should have a tab showing a the source editor for the background", () => {
+                mount(<StaticRouter
+                    location="/productions/id/fond/sourceId"
+                    context={{}}
+                    history={undefined}>
+                    <ProductionEdit
+                        {...props}
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "fond",
+                                sourceId: "sourceId"
+                            }
+                        }}
+                        selectedMedia={production.background._id}
+                    />
+                </StaticRouter>)
+                    .find(SourceEdit).should.have.lengthOf(1);
+            });
+            it("Should have a tab showing a the media selector", () => {
+                mount(<StaticRouter
+                    location="/productions/id/medias"
+                    context={{}}
+                    history={undefined}>
+                    <ProductionEdit
+                        {...props}
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "medias"
+                            }
+                        }}
+                        selectedMedia={production.background._id}
+                    />
+                </StaticRouter>)
+                    .find(MediaSelector).should.have.lengthOf(1);
             });
         });
         describe("Action notifications", () => {
@@ -165,30 +298,37 @@ describe("Production Edit component", () => {
             instance.state.tab.should.equal(1000);
         });
         it("Should go to page specified by the URL", () => {
-            const pushSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit {...props} history={{ push: pushSpy } as any} />).instance() as ProductionEdit;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
             const url: string = "/awholenewworld";
             instance.navigateTo(url);
             pushSpy.should.have.been.calledOnce;
             pushSpy.should.have.been.calledWith(url);
         });
         it("Should go to page specified by the source", () => {
-            const pushSpy: sinon.SinonSpy = spy();
             const instance: ProductionEdit = shallow(<ProductionEdit {...props} match={{
                 params: {
                     productionId: production._id,
                     mediaId: "banniere",
                     sourceId: production.banner.sources[0]._id
                 }
-            }} history={{ push: pushSpy } as any} />).instance() as ProductionEdit;
+            }} />).instance() as ProductionEdit;
             instance.navigateToSource(production.banner.sources[0]._id);
             pushSpy.should.have.been.calledOnce;
             pushSpy.should.have.been.calledWith(`/productions/${production._id}/banniere/${production.banner.sources[0]._id}`);
         });
+        it("Should go to page specified by the media", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} match={{
+                params: {
+                    productionId: production._id,
+                    mediaId: production.medias[0]._id
+                }
+            }} />).instance() as ProductionEdit;
+            instance.navigateToMedia(production.banner._id);
+            pushSpy.should.have.been.calledOnce;
+            pushSpy.should.have.been.calledWith(`/productions/${production._id}/${production.banner._id}`);
+        });
         it("Should update a source and add it to the media", () => {
-            const updateSourceSpy: sinon.SinonSpy = spy();
-            const addToMediaSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit {...props} updateSource={updateSourceSpy} addSourceToMedia={addToMediaSpy} selectedMedia={production.banner} />).instance() as ProductionEdit;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} selectedMedia={production.banner} />).instance() as ProductionEdit;
             const source: Source = {
                 _id: "sourceId"
             };
@@ -197,16 +337,10 @@ describe("Production Edit component", () => {
             addToMediaSpy.should.have.been.calledOnce;
         });
         it("Should remove a media and associated sources", () => {
-            const removeMediaSpy: sinon.SinonSpy = spy();
-            const removeSourcesFromMediaSpy: sinon.SinonSpy = spy();
-            const removeSourcesSpy: sinon.SinonSpy = spy();
             const customProps: ProductionEditProps = {
                 ...props,
                 selectedMedia: production.banner,
-                sources: production.banner.sources,
-                removeMedia: removeMediaSpy,
-                removeSourcesFromMedia: removeSourcesFromMediaSpy,
-                removeSources: removeSourcesSpy
+                sources: production.banner.sources
             };
             const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
             instance.removeSelectedMedia();
@@ -216,16 +350,14 @@ describe("Production Edit component", () => {
             removeSourcesFromMediaSpy.should.have.been.calledWith(production.banner.sources.map((s: Source) => s._id));
             removeSourcesSpy.should.have.been.calledOnce;
             removeSourcesSpy.should.have.been.calledWith(production.banner.sources.map((s: Source) => s._id));
+            replaceSpy.should.have.been.calledOnce;
+            replaceSpy.should.have.been.calledWith(`/productions/${production._id}/medias`);
         });
         it("Should remove sources from the source state and the media state", () => {
-            const removeSourcesFromMediaSpy: sinon.SinonSpy = spy();
-            const removeSourcesSpy: sinon.SinonSpy = spy();
             const customProps: ProductionEditProps = {
                 ...props,
                 selectedMedia: production.banner,
                 sources: production.banner.sources,
-                removeSourcesFromMedia: removeSourcesFromMediaSpy,
-                removeSources: removeSourcesSpy
             };
             const instance: ProductionEdit = shallow(<ProductionEdit {...customProps} />).instance() as ProductionEdit;
             const sourceIds: string[] = production.banner.sources.map((s: Source) => s._id);
@@ -235,16 +367,22 @@ describe("Production Edit component", () => {
             removeSourcesSpy.should.have.been.calledOnce;
             removeSourcesSpy.should.have.been.calledWith(sourceIds);
         });
+        it("Should remove a single source", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            const removeSourcesStub: sinon.SinonStub = stub(instance, "removeSources");
+            const sourceId: string = "sourceId";
+            instance.removeSource(sourceId);
+            removeSourcesStub.should.have.been.calledOnce;
+            removeSourcesStub.should.have.been.calledWith([sourceId]);
+        });
         it("Should update the production with the changes made and redirect to the productions list", (done: MochaDone) => {
             const pushSpy: sinon.SinonSpy = spy(() => {
                 updateProductionSpy.should.have.been.calledOnce;
                 uploadSpy.should.have.been.calledOnce;
                 updateProductionSpy.should.have.been.calledWithExactly(updatedProduction);
-                getUpdatedMedias.should.have.been.calledOnce;
                 pushSpy.should.have.been.calledOnce;
                 done();
             });
-            const uploadSpy: sinon.SinonSpy = spy();
             const newSource: Source = {
                 _id: "newSourceBaby",
                 preview: "blob:http://localhost/something"
@@ -258,68 +396,54 @@ describe("Production Edit component", () => {
                 banner: newMedia
             };
             const updateProductionSpy: sinon.SinonSpy = spy(() => Promise.resolve(updatedProduction));
-            const getUpdatedMedias: sinon.SinonSpy = spy(() => [newMedia, production.background, ...production.medias]);
             const instance: ProductionEdit = shallow(<ProductionEdit
                 {...props}
+                history={{
+                    push: pushSpy
+                } as any}
                 production={production}
-                getUpdatedMedia={getUpdatedMedias}
                 updateProduction={updateProductionSpy}
-                history={{ push: pushSpy } as any}
-                uploadFile={uploadSpy}
+                medias={[newMedia, production.background, ...production.medias]}
             />).instance() as ProductionEdit;
             instance.saveChanges();
         });
         it("Should select the banner", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit
-                {...props}
-                selectMedia={selectMediaSpy}
-                selectSource={selectSourceSpy}
-            />).instance() as ProductionEdit;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
             instance.selectFromParams(production, { mediaId: "banniere" });
             selectMediaSpy.should.have.been.calledOnce;
             selectMediaSpy.should.have.been.calledWith(production.banner._id);
-            selectSourceSpy.should.not.have.been.called;
         });
         it("Should select the background", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit
-                {...props}
-                selectMedia={selectMediaSpy}
-                selectSource={selectSourceSpy}
-            />).instance() as ProductionEdit;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
             instance.selectFromParams(production, { mediaId: "fond" });
             selectMediaSpy.should.have.been.calledOnce;
             selectMediaSpy.should.have.been.calledWith(production.background._id);
-            selectSourceSpy.should.not.have.been.called;
         });
         it("Should select the media", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit
-                {...props}
-                selectMedia={selectMediaSpy}
-                selectSource={selectSourceSpy}
-            />).instance() as ProductionEdit;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
             instance.selectFromParams(production, { mediaId: production.medias[0]._id });
             selectMediaSpy.should.have.been.calledOnce;
             selectMediaSpy.should.have.been.calledWith(production.medias[0]._id);
-            selectSourceSpy.should.not.have.been.called;
+        });
+        it("Should redirect if the media has not been found", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { productionId: "id", mediaId: "lubba dubba dub dub" });
+            selectMediaSpy.should.have.been.calledOnce;
+            selectMediaSpy.should.have.been.calledWith("");
+            replaceSpy.should.have.been.calledOnce;
+            replaceSpy.should.have.been.calledWith("/productions/id");
         });
         it("Should select the source", () => {
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const selectSourceSpy: sinon.SinonSpy = spy();
-            const instance: ProductionEdit = shallow(<ProductionEdit
-                {...props}
-                selectMedia={selectMediaSpy}
-                selectSource={selectSourceSpy}
-            />).instance() as ProductionEdit;
-            instance.selectFromParams(production, { sourceId: production.banner.sources[0]._id });
-            selectMediaSpy.should.not.have.been.called;
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { productionId: production._id, mediaId: production.banner._id, sourceId: production.banner.sources[0]._id });
             selectSourceSpy.should.have.been.calledOnce;
             selectSourceSpy.should.have.been.calledWith(production.banner.sources[0]._id);
+        });
+        it("Should redirect if the source has not been found", () => {
+            const instance: ProductionEdit = shallow(<ProductionEdit {...props} />).instance() as ProductionEdit;
+            instance.selectFromParams(production, { productionId: production._id, mediaId: production.banner._id, sourceId: "notASource" });
+            replaceSpy.should.have.been.calledOnce;
+            replaceSpy.should.have.been.calledWith(`/productions/${production._id}/${production.banner._id}`);
         });
     });
     describe("Props", () => {
@@ -340,11 +464,11 @@ describe("Production Edit component", () => {
             getHasRenderedSpy.should.have.been.calledOnce;
             getHasRenderedSpy.restore();
         });
-        it("Should get the medias from the state", () => {
-            const getMediasSpy: sinon.SinonSpy = spy(selectors, "getMedias");
+        it("Should get the updated medias from the state", () => {
+            const getUpdatedMediasSpy: sinon.SinonSpy = spy(selectors, "getUpdatedMedias");
             mapStateToProps(store.getState());
-            getMediasSpy.should.have.been.calledOnce;
-            getMediasSpy.restore();
+            getUpdatedMediasSpy.should.have.been.calledOnce;
+            getUpdatedMediasSpy.restore();
         });
         it("Should get the sources selected by the media from the state", () => {
             const getSourcesFromSelectedMediaSpy: sinon.SinonSpy = spy(selectors, "getSourcesFromSelectedMedia");
@@ -363,12 +487,6 @@ describe("Production Edit component", () => {
             mapStateToProps(store.getState());
             getSelectedSourceSpy.should.have.been.calledOnce;
             getSelectedSourceSpy.restore();
-        });
-        it("Should get the updated medias", () => {
-            const getUpdatedMediasSpy: sinon.SinonSpy = spy(selectors, "getUpdatedMedias");
-            mapStateToProps(store.getState()).getUpdatedMedia();
-            getUpdatedMediasSpy.should.have.been.calledOnce;
-            getUpdatedMediasSpy.restore();
         });
         it("Should fetch a single production", () => {
             const fetchStub: sinon.SinonStub = stub(productionEditModule, "fetchProductionById");
@@ -504,28 +622,23 @@ describe("Production Edit component", () => {
             setFilenameStub.should.have.been.calledWith(objectURL, file);
             setFilenameStub.restore();
         });
+        it("Should set media's position", () => {
+            const setMediaPositionStub: sinon.SinonStub = stub(mediaEditModule, "setMediaPosition");
+            mapDispatchToProps(dispatchStub).setMediaPosition("mediaId", 10);
+            setMediaPositionStub.should.have.been.calledOnce;
+            setMediaPositionStub.should.have.been.calledWith("mediaId", 10);
+            setMediaPositionStub.restore();
+        });
     });
     describe("Lifecycle", () => {
         it("Should fetch the production, medias and sources and select the chosen media/source on initial render", (done: MochaDone) => {
             const getProductionSpy: sinon.SinonSpy = spy();
-            const setMediasSpy: sinon.SinonSpy = spy();
-            const setSourcesSpy: sinon.SinonSpy = spy();
-            const selectMediaSpy: sinon.SinonSpy = spy();
-            const props: ProductionEditProps = {
+            const customProps: ProductionEditProps = {
+                ...props,
                 fetchProduction: (id: string): Promise<productionEditModule.Actions.SetProduction> => {
                     getProductionSpy(id);
                     return Promise.resolve({ type: productionEditModule.ActionTypes.SET_PRODUCTION, production });
                 },
-                match: {
-                    params: {
-                        productionId: production._id,
-                        mediaId: production.banner._id,
-                        sourceId: production.background._id
-                    }
-                },
-                setMedias: setMediasSpy,
-                setSources: setSourcesSpy,
-                selectMedia: selectMediaSpy,
                 selectSource: (sourceId: string) => {
                     getProductionSpy.should.have.been.calledOnce;
                     getProductionSpy.should.have.been.calledWith(production._id);
@@ -535,7 +648,7 @@ describe("Production Edit component", () => {
                     return done();
                 }
             };
-            shallow(<ProductionEdit {...props} />);
+            shallow(<ProductionEdit {...customProps} />);
         });
         it("Should fetch the new production and update the state", () => {
             const wrapper: ShallowWrapper<ProductionEditProps, any> = shallow(<ProductionEdit
@@ -642,6 +755,132 @@ describe("Production Edit component", () => {
             fetchProductionsStub.should.have.been.calledOnce;
             fetchProductionsStub.should.have.been.calledWith(production._id);
             fetchProductionsStub.restore();
+        });
+    });
+    describe("Server side redirections", () => {
+        describe("Matching production ID", () => {
+            it("Should redirect to production index if there's no production", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id
+                            }
+                        }}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === "/productions").should.have.lengthOf(1);
+            });
+            it("Should load the production if the production is found", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id
+                            }
+                        }}
+                        production={production}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect).should.have.lengthOf(0);
+                wrapper.find(ProductionEdit).should.have.lengthOf(1);
+            });
+        });
+        describe("Matching media ID", () => {
+            it("Should redirect to the production if the media could not be found", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "someMedia"
+                            }
+                        }}
+                        production={production}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}`).should.have.lengthOf(1);
+            });
+            it("Should load the production if a the media and production are found", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: production.medias[0]._id
+                            }
+                        }}
+                        production={production}
+                        medias={[production.banner, production.background, ...production.medias]}
+                        selectedMedia={production.medias[0]}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}`).should.have.lengthOf(0);
+                wrapper.find(ProductionEdit).should.have.lengthOf(1);
+            });
+            it("Should load the production the media ID is medias", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "medias"
+                            }
+                        }}
+                        production={production}
+                        medias={[production.banner, production.background, ...production.medias]}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}`).should.have.lengthOf(0);
+                wrapper.find(ProductionEdit).should.have.lengthOf(1);
+            });
+        });
+        describe("Matching source ID", () => {
+            it("Should redirect to the media if the source was not found", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: "banniere",
+                                sourceId: "someSource"
+                            }
+                        }}
+                        production={production}
+                        medias={[production.banner, production.background, ...production.medias]}
+                        sources={production.banner.sources}
+                        selectedMedia={production.banner}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}/banniere`).should.have.lengthOf(1);
+            });
+            it("Should load the production if a the media, source and production are found", () => {
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                    <ProductionEdit
+                        hasRendered
+                        match={{
+                            params: {
+                                productionId: production._id,
+                                mediaId: production.medias[0]._id,
+                                sourceId: production.medias[0].sources[0]._id
+                            }
+                        }}
+                        production={production}
+                        medias={[production.banner, production.background, ...production.medias]}
+                        sources={production.medias[0].sources}
+                        selectedMedia={production.medias[0]}
+                        selectedSource={production.medias[0].sources[0]}
+                    />
+                </StaticRouter>);
+                wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}`).should.have.lengthOf(0);
+                wrapper.find(ProductionEdit).should.have.lengthOf(1);
+            });
         });
     });
 });
