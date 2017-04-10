@@ -27,6 +27,7 @@ export const queue: kue.Queue = kue.createQueue({
         auth: config.redis.password
     }
 });
+queue.watchStuckJobs(10000);
 const { taskQueue: { retriesOnFailure, imageProcessingConcurrency, videoProcessingConcurrency, fileUploadConcurrency } }: Ropeho.Configuration.ConfigurationObject = config;
 
 // Export the tasks for unit testing
@@ -59,7 +60,9 @@ export const processImageTask: (jobData: JobData<ProcessImageOptions>, cb: Funct
                 reject(new Error("Source does not exist"));
             }
         } catch (error) {
-            reject(new Error(error.message));
+            Job.get(jobData.id, async (err: any, job: Job) => {
+                job.failed();
+            });
         }
     });
 
@@ -126,7 +129,9 @@ export const processVideoTask: (jobData: JobData<ProcessVideoOptions>, cb: Funct
                 reject(new Error("Source does not exist"));
             }
         } catch (error) {
-            reject(new Error(error.message));
+            Job.get(jobData.id, async (err: any, job: Job) => {
+                job.failed();
+            });
         }
     });
 
@@ -151,7 +156,9 @@ export const processUploadTask: (jobData: JobData<FileUploadOptions>, cb: Functi
                 reject(new Error("Source does not exist"));
             }
         } catch (error) {
-            reject(new Error(error.message));
+            Job.get(jobData.id, async (err: any, job: Job) => {
+                job.failed();
+            });
         }
     });
 
