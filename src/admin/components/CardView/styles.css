@@ -1,0 +1,10 @@
+.cardView {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.cardView > * {
+    flex-shrink: 0;
+    width: calc(100%/3);
+    padding: 1em;
+}

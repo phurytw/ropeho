@@ -72,9 +72,16 @@ describe("Redux selectors", () => {
         }).should.deep.equal(error);
     });
     it("Should get all productions", () => {
+        const [prodA, prodB]: Models.Production[] = productions;
         getProductions({
-            productionIndex: productionIndexReducer({ productions } as any, { type: "" })
-        }).should.deep.equal(productions);
+            productionIndex: productionIndexReducer({
+                order: [prodA._id, prodB._id],
+                productions: {
+                    [prodA._id]: prodA,
+                    [prodB._id]: prodB
+                }
+            } as any, { type: "" })
+        }).should.deep.equal([prodA, prodB]);
     });
     it("Should get the production being edited", () => {
         getProduction({

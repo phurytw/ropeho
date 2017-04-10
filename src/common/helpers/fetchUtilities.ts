@@ -56,7 +56,7 @@ export function fetchThunk<A, R, S>(input: RequestInfo, init?: any, callback?: a
             ...init
         })
             .then<Response>(errorHandler)
-            .then<A>((response: Response) => response.json().then((result: R) => callback(dispatch, result, getState)))
+            .then<A>((response: Response) => response.json().then((result: R) => callback && callback(dispatch, result, getState)))
             .catch((response: Response) => {
                 if (response.json) {
                     return response.json().then((error: Ropeho.IErrorResponse) => dispatch({ ...extras.error, error }));

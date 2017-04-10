@@ -7,30 +7,38 @@ import { should, use } from "chai";
 import { spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import * as React from "react";
-import { ReactWrapper, mount } from "enzyme";
+import { ShallowWrapper, shallow } from "enzyme";
 import hook from "../../../common/helpers/cssModulesHook";
-import { includes } from "lodash";
 hook();
 import { PreviewCardProps, default as PreviewCard } from "./PreviewCard";
-import { CardTitle, CardMedia } from "react-toolbox";
+import MediaPreview from "../../../common/components/MediaPreview";
+import { CardTitle, CardMedia, Button } from "react-toolbox";
 should();
 use(sinonChai);
 
 describe("Preview Card", () => {
-    let wrapper: ReactWrapper<any, {}>;
+    let wrapper: ShallowWrapper<PreviewCardProps, {}>;
     const onClickSpy: sinon.SinonSpy = spy(),
         props: PreviewCardProps = {
             onClick: onClickSpy,
             name: "item name",
-            src: "https://source.jpeg"
+            media: {
+                _id: "id",
+                sources: []
+            }
         };
-    before(() => wrapper = mount(<PreviewCard {...props} />));
+    before(() => wrapper = shallow(<PreviewCard {...props} />));
     it("Should display a name", () =>
-        includes<string>(wrapper.find(CardTitle).text(), props.name).should.be.true);
+        wrapper.find(CardTitle).prop("title").should.equal(props.name));
     it("Should display a banner", () =>
-        wrapper.find(CardMedia).prop("image").should.equal(props.src));
+        wrapper.find(CardMedia).findWhere((node: ShallowWrapper<any, any>) => node.type() === MediaPreview && node.prop("media") === props.media).should.have.lengthOf(1));
     it("Should have an onClick handler", () => {
-        wrapper.simulate("click");
+        wrapper.find("div").first().simulate("click");
         onClickSpy.should.have.been.calledOnce;
+    });
+    it("Should display ordering buttons when onLeft or onRight is set", () => {
+        const onLeft: () => any = (): any => ({});
+        wrapper = shallow(<PreviewCard {...props} onLeft={onLeft} />);
+        wrapper.find(Button).should.have.lengthOf(2);
     });
 });

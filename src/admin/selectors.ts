@@ -29,8 +29,8 @@ export const getError: (state: RopehoAdminState) => Ropeho.IErrorResponse =
 
 export const getProductions: (state: RopehoAdminState) => Production[] =
     (state: RopehoAdminState): Production[] => {
-        const productions: List<any> = state.productionIndex.get("productions");
-        return productions && productions.toJS();
+        const order: List<string> = state.productionIndex.get("order") as List<string>;
+        return order.map<any>((id: string) => state.productionIndex.getIn(["productions", id])).toJS();
     };
 
 export const getProduction: (state: RopehoAdminState) => Production =
