@@ -326,6 +326,9 @@ export const isProduction: (entity: Entity) => boolean =
                     break;
                 case "name":
                 case "description":
+                case "models":
+                case "location":
+                case "date":
                     if (typeof val !== "string") {
                         isProduction = false;
                     }
@@ -343,7 +346,7 @@ export const isProduction: (entity: Entity) => boolean =
             }
         }
         // It must includes all properties
-        return isProduction && propCount === 7;
+        return isProduction && propCount === 10;
     };
 
 /**

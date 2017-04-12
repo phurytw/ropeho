@@ -31,6 +31,12 @@ declare namespace Ropeho {
             name?: string;
             /** Description that appear when viewing this production */
             description?: string;
+            /** Models of the photo shooting */
+            models?: string;
+            /** Location of the photo shooting */
+            location?: string;
+            /** Date of the photo shooting */
+            date?: string;
             /** If this production can be browsed on the website */
             state?: number;
             /** Media shown up in the menus */

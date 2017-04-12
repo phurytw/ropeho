@@ -110,7 +110,7 @@ export class Layout extends React.Component<LayoutProps, {}> {
                 {
                     currentlyUploading ? <Snackbar
                         active={true}>
-                        <p>Envoie de {uploadQueue.length} fichiers</p>
+                        <p>Envoi de {uploadQueue.length} fichiers</p>
                         <ProgressBar
                             max={currentlyUploading.max}
                             mode="determinate"

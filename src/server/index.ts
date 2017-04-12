@@ -49,4 +49,12 @@ const admin: User = {
     password: computeHashSync(config.users.administrator.password).toString("hex"),
     facebookId: config.users.administrator.facebookId
 };
-userRepository.create(admin).then(startApp, startApp);
+
+if (process.env.NODE_ENV !== "production") {
+    require("../sampleData/demoDb").init().then(() =>
+        userRepository.create(admin).then(startApp, startApp), (err: Error) => {
+            throw err;
+        });
+} else {
+    userRepository.create(admin).then(startApp, startApp);
+}
