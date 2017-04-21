@@ -1,0 +1,20 @@
+.browser {
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    text-align: center;
+    background: black;
+    border-top: 1px solid white;
+}
+
+.browser > * {
+    width: 160px;
+    height: 80px;
+    display: inline-block;
+    transition: filter 250ms;
+    filter: brightness(50%);
+}
+
+.selectedStyle {
+    filter: brightness(100%);
+}

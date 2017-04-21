@@ -1,0 +1,96 @@
+.categoryBanner {
+    padding: 2em;
+    position: relative;
+    overflow: hidden;
+    transition: height 250ms ease-out;
+    height: 80px;
+}
+
+.categoryBanner > * {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.categoryBanner.selected {
+    height: 320px;
+}
+
+.categoryLink {
+    color: #fff;
+    cursor: pointer;
+}
+
+.layer {
+    position: absolute;
+}
+
+.categoryLayer {
+    display: flex;
+    flex-direction: row;
+}
+
+.categoryLayer > * {
+    width: 50%;
+    flex-basis: 50%;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.categoryLayer > ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    height: 0;
+    transition: height 250ms ease-out;
+}
+
+.categoryLayer > ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    height: 0;
+    transition: height 250ms ease-out;
+}
+
+.categoryLayer > ul.browse {
+    height: 100%;
+}
+
+.categoryLayer > ul::-webkit-scrollbar {
+    display: none; 
+}
+
+.categoryLayer > ul > li {
+    margin: 0.5em;
+}
+
+.mediaPreview {
+    filter: brightness(20%);
+    box-shadow: inset 0 0 80px 80px rgba(0, 0, 0, 0.9);
+    left: 0;
+    top: 0;
+    transition: filter 250ms ease-in-out;
+}
+
+.mediaPreview.browse {
+    filter: brightness(10%);
+}
+
+.categoryTitle {
+    font-family: 'Playfair Display SC', 'system-ui';
+    transition: filter 250ms ease-in-out;
+    filter: brightness(100%);
+}
+
+.categoryTitle.browse {
+    filter: brightness(20%);
+}
+
+.categoryBanner hr {
+    text-align: left;
+    margin-left: 0;
+    width: 4em;
+}

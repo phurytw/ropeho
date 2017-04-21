@@ -50,7 +50,3 @@ jspm_packages
 # Temporary files
 /media/
 /temp/
-
-# Not to be included
-/src/client/**/*
-/tsconfig.client.json

@@ -1,0 +1,61 @@
+:root {
+    --row-height: 18px;
+    --animation-duration: 250ms;
+}
+
+.menu {
+    width: 100%;
+    padding: 0.5em 1em;
+    text-align: center;
+    position: relative;
+    transition: top var(--animation-duration);
+}
+
+@media (width > 768px) {
+    .menu {
+        top: -100%;
+        display: none;
+    }
+}
+
+@media (width <= 768px) {
+    .menu {
+        top: 0;
+        display: block;
+    }
+}
+
+.logo {
+    padding: 0.5em;
+}
+
+.logo img {
+    width: auto;
+    height: auto;
+    max-height: var(--row-height);
+}
+
+.links {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.links > * {
+    display: block;
+    line-height: 1.5rem;
+}
+
+.socials {
+    height: 2em;
+    text-align: center;
+}
+
+.socials > * {
+    margin: 0 1em;
+}
+
+.socials p {
+    display: none;
+}

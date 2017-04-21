@@ -23,10 +23,11 @@ import {
     getMediaFromEntity,
     getSourceFromMedia,
     isUser,
-    filterProduction
+    filterProduction,
+    isMediaEmpty
 } from "../helpers/entityUtilities";
 import * as entityUtilities from "../helpers/entityUtilities";
-import { EntityType, MediaPermissions } from "../../enum";
+import { EntityType, MediaPermissions, MediaTypes } from "../../enum";
 import { categories, productions, presentations, users } from "../../sampleData/testDb";
 import { flatMap, cloneDeep, forEach } from "lodash";
 import * as deepFreeze from "deep-freeze";
@@ -173,6 +174,126 @@ describe("Entity utilities", () => {
             it("Should detect that it is a presentation container", () => getEntityType(containerA).should.equal(EntityType.PresentationContainer));
             it("Should detect that it is a media", () => getEntityType(mediaA).should.equal(EntityType.Media));
             it("Should detect that it is a source", () => getEntityType(sourceA).should.equal(EntityType.Source));
+        });
+        describe("Checking if media is empty", () => {
+            it("Should return true if it is not a valid media", () => {
+                isMediaEmpty({}).should.be.true;
+            });
+            it("Should return true if it has no sources and it's an image", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "Desc",
+                    sources: [],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Image
+                };
+                isMediaEmpty(media).should.be.true;
+            });
+            it("Should return true if it has no sources and it's a video", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "Desc",
+                    sources: [],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Video
+                };
+                isMediaEmpty(media).should.be.true;
+            });
+            it("Should return true if it has no sources and it's an slideshow", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "Desc",
+                    sources: [],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Slideshow
+                };
+                isMediaEmpty(media).should.be.true;
+            });
+            it("Should return true if it has no description and it's a text", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Text
+                };
+                isMediaEmpty(media).should.be.true;
+            });
+            it("Should return false if it has at least one source and it's an image", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [{
+                        _id: v4(),
+                        fallback: "",
+                        fileSize: 0,
+                        posX: 0,
+                        posY: 0,
+                        preview: "",
+                        src: "",
+                        zoom: 1
+                    }],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Image
+                };
+                isMediaEmpty(media).should.be.false;
+            });
+            it("Should return false if it has at least one source and it's a video", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [{
+                        _id: v4(),
+                        fallback: "",
+                        fileSize: 0,
+                        posX: 0,
+                        posY: 0,
+                        preview: "",
+                        src: "",
+                        zoom: 1
+                    }],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Video
+                };
+                isMediaEmpty(media).should.be.false;
+            });
+            it("Should return false if it has at least one source and it's an slideshow", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "",
+                    sources: [{
+                        _id: v4(),
+                        fallback: "",
+                        fileSize: 0,
+                        posX: 0,
+                        posY: 0,
+                        preview: "",
+                        src: "",
+                        zoom: 1
+                    }],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Slideshow
+                };
+                isMediaEmpty(media).should.be.false;
+            });
+            it("Should return false if it has a description and it's a text", () => {
+                const media: Media = {
+                    _id: v4(),
+                    delay: 0,
+                    description: "Desc",
+                    sources: [],
+                    state: MediaPermissions.Public,
+                    type: MediaTypes.Text
+                };
+                isMediaEmpty(media).should.be.false;
+            });
         });
     });
     describe("Finding functions", () => {

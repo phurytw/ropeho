@@ -1,0 +1,34 @@
+.separator {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.separator > * {
+    margin: 0 1em;
+}
+
+@media (width <= 425px) {
+    .separator > i {
+        display: none;
+    }
+}
+
+.masonryItem {
+    transition: all 250ms;
+}
+
+.masonryItem img, .masonryItem video {
+    transition: transform 250ms;
+}
+
+.masonryContainer:hover .masonryItem {
+    filter: brightness(70%);
+}
+
+.masonryContainer:hover .masonryItem:hover {
+    filter: brightness(100%);
+}
+
+.masonryContainer:hover .masonryItem:hover img, .masonryContainer:hover .masonryItem:hover video {
+    transform: scale(1.05);
+}

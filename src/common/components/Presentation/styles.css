@@ -1,0 +1,59 @@
+:root {
+    --media {
+        transition: opacity 500ms;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        z-index: 1;
+    }
+}
+
+.presentationStyles > * {
+    z-index: 2;
+    position: relative;
+}
+
+.mainMediaStyles {
+    opacity: 1;
+    @apply --media;
+}
+
+.alternateMediaStyles {
+    opacity: 0;
+    @apply --media;
+}
+
+.singleMediaStyles {
+    @apply --media;
+}
+
+.presentationStyles:hover .mainMediaStyles {
+    opacity: 0;
+}
+
+.presentationStyles:hover .alternateMediaStyles {
+    opacity: 1;
+}
+
+.caption {
+    position: absolute;
+    width: 100%;
+    transition: bottom 500ms;
+    padding: 1em;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.caption span {
+    font-size: 1.5rem;
+}
+
+.caption p {
+    margin: 0;
+}
+
+.caption hr {
+    text-align: left;
+    margin-left: 0;
+    width: 2em;
+}

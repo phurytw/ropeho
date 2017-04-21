@@ -1,0 +1,39 @@
+.container {
+    column-count: auto;
+    column-width: 320px;
+    column-gap: 0;
+}
+
+.container > * {
+    height: 320px;
+    break-inside: avoid;
+    position: relative;
+    transition: opacity 250ms;
+}
+
+.container > a {
+    display: block;
+}
+
+.hidden {
+    opacity: 0;
+    transition: opacity 0s;
+}
+
+.presentationEnter {
+    opacity: 0;
+}
+
+.presentationEnterActive {
+    opacity: 1;
+    transition: opacity 250ms ease-in;
+}
+
+.presentationLeave {
+    opacity: 1;
+}
+
+.presentationLeaveActive {
+    opacity: 0;
+    transition: opacity 0s;
+}

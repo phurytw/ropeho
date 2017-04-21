@@ -2,7 +2,7 @@
  * @file Module that manipulates entities
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-import { EntityType, MediaPermissions } from "../../enum";
+import { EntityType, MediaPermissions, MediaTypes } from "../../enum";
 import { isFinite, keys, isArray, flatMap, map, every, includes, filter } from "lodash";
 import * as _ from "lodash";
 import { isUUID } from "validator";
@@ -444,13 +444,15 @@ export const isPresentation: (entity: Entity) => boolean =
                     }
                     propCount++;
                     break;
+                case "options":
+                    break;
                 default:
                     isPresentation = false;
                     break;
             }
         }
         // It must includes all properties
-        return isPresentation && propCount === 6;
+        return isPresentation && (propCount === 6 || propCount === 7);
     };
 
 /**
@@ -490,13 +492,15 @@ export const isPresentationContainer: (entity: Entity) => boolean =
                     }
                     propCount++;
                     break;
+                case "options":
+                    break;
                 default:
                     isPresentationContainer = false;
                     break;
             }
         }
         // It must includes all properties
-        return isPresentationContainer && propCount === 3;
+        return isPresentationContainer && (propCount === 3 || propCount === 4);
     };
 
 /**
@@ -614,5 +618,26 @@ export const filterProduction: (production: Production, owned?: string[] | boole
                     medias: filter<Media>(production.medias, (m: Media) => m.state === MediaPermissions.Public)
                 };
             }
+        }
+    };
+
+export const isMediaEmpty: (media: Media) => boolean =
+    (media: Media): boolean => {
+        if (!isMedia(media)) {
+            return true;
+        }
+        switch (media.type) {
+            case MediaTypes.Image:
+            case MediaTypes.Video:
+            case MediaTypes.Slideshow:
+                return media.sources.length === 0;
+            case MediaTypes.Text:
+                if (media.description) {
+                    return false;
+                } else {
+                    return true;
+                }
+            default:
+                throw new TypeError("Unknown media type");
         }
     };

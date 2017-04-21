@@ -1,0 +1,35 @@
+:root {
+    --default-vertical-size: 320px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row > * {
+    flex-basis: var(--default-vertical-size);
+    flex-shrink: 0;
+    height: var(--default-vertical-size);
+    position: relative;
+    transition: opacity 250ms;
+    opacity: 1;
+}
+
+.row > a {
+    display: block;
+}
+
+.row > *:last-of-type {
+    flex-grow: 1;
+}
+
+.hidden {
+    opacity: 0;
+    transition: opacity 0s;
+}
