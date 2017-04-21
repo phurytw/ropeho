@@ -1,103 +1,192 @@
+/**
+ * @file Global type definitions for the project
+ * @author François Nguyen <https://github.com/lith-light-g>
+ */
+
 declare namespace Ropeho {
     namespace Models {
-        /** A user can view and download hidden production is they are allowed to */
+        /**
+         * A user can view and download hidden production is they are allowed to
+         */
         interface User {
-            /** Unique ID */
+            /**
+             *  Unique ID
+             */
             _id?: string;
-            /** Display name */
+            /**
+             * Display name
+             */
             name?: string;
-            /** Unique email */
+            /**
+             * Unique email
+             */
             email?: string;
-            /** Role */
+            /**
+             * Role
+             */
             role?: number;
-            /** IDs of the productions that can be downloaded by this user */
+            /**
+             * IDs of the productions that can be downloaded by this user
+             */
             productionIds?: string[];
-            /** Invitation token that the user can access to register the account */
+            /**
+             * Invitation token that the user can access to register the account
+             */
             token?: string;
-            /** Hashed password */
+            /**
+             * Hashed password
+             */
             password?: string;
-            /** User's Facebook ID */
+            /**
+             * User's Facebook ID
+             */
             facebookId?: string;
 
-            /** Productions owned by this user */
+            /**
+             * Productions owned by this user
+             */
             productions?: Production[];
         }
 
-        /** A Production is the entity that regroups many medias (usually photos) */
+        /**
+         * A Production is the entity that regroups many medias (usually photos)
+         */
         interface Production {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Production's title */
+            /**
+             * Production's title
+             */
             name?: string;
-            /** Description that appear when viewing this production */
+            /**
+             * Description that appear when viewing this production
+             */
             description?: string;
-            /** Models of the photo shooting */
+            /**
+             * Models of the photo shooting
+             */
             models?: string;
-            /** Location of the photo shooting */
+            /**
+             * Location of the photo shooting
+             */
             location?: string;
-            /** Date of the photo shooting */
+            /**
+             * Date of the photo shooting
+             */
             date?: string;
-            /** If this production can be browsed on the website */
+            /**
+             * If this production can be browsed on the website
+             */
             state?: number;
-            /** Media shown up in the menus */
+            /**
+             * Media shown up in the menus
+             */
             banner?: Media;
-            /** Media shown up in the presentation behind the description */
+            /**
+             * Media shown up in the presentation behind the description
+             */
             background?: Media;
-            /** Medias related to this production */
+            /**
+             * Medias related to this production
+             */
             medias?: Media[];
         }
 
         /**
          * A media is an entity that regroups one or many sources
-         * It dictates how a content must be displayed 
+         * It dictates how a content must be displayed
          */
         interface Media {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Description (primary content for text media) */
+            /**
+             * Description (primary content for text media)
+             */
             description?: string;
-            /** Delay between slides */
+            /**
+             * Delay between slides
+             */
             delay?: number;
-            /** 0=Image 1=Video 2=Text */
+            /**
+             * 0=Image 1=Video 2=Text
+             */
             type?: number;
-            /** Visible in website, only to the client or locked */
+            /**
+             * Visible in website, only to the client or locked
+             */
             state?: number;
-            /** Source medias */
+            /**
+             * Source medias
+             */
             sources?: Source[];
         }
 
-        /** Contains information about the source of a media and its positionning */
+        /**
+         * Contains information about the source of a media and its positionning
+         */
         interface Source {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Path to the source media */
+            /**
+             * Path to the source media
+             */
             src?: string;
-            /** Path to the downsized media */
+            /**
+             * Path to the downsized media
+             */
             preview?: string;
-            /** Fallback image for videos */
+            /**
+             * Fallback image for videos
+             */
             fallback?: string;
-            /** Size of the source content */
+            /**
+             * Size of the source content
+             */
             fileSize?: number;
-            /** Zoom 1 = 100% */
+            /**
+             * Zoom 1 = 100%
+             */
             zoom?: number;
-            /** X-Axis Placement */
+            /**
+             * X-Axis Placement
+             */
             posX?: number;
-            /** Y-Axis Placement */
+            /**
+             * Y-Axis Placement
+             */
             posY?: number;
         }
 
-        /** Every production must belong to a category */
+        /**
+         * Every production must belong to a category
+         */
         interface Category {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Category's name */
+            /**
+             * Category's name
+             */
             name?: string;
-            /** Productions IDs affected to this category */
+            /**
+             * Productions IDs affected to this category
+             */
             productionIds?: string[];
-            /** Media shown up in the list */
+            /**
+             * Media shown up in the list
+             */
             banner?: Media;
 
-            /** Productions affected to this category */
+            /**
+             * Productions affected to this category
+             */
             productions?: Production[];
         }
 
@@ -106,13 +195,21 @@ declare namespace Ropeho {
          * The main page will show every presentation container available
          */
         interface PresentationContainer {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Type of container */
+            /**
+             * Type of container
+             */
             type?: number;
-            /** Presentations */
+            /**
+             * Presentations
+             */
             presentations?: Presentation[];
-            /** Container specific options */
+            /**
+             * Container specific options
+             */
             options?: any;
         }
 
@@ -120,37 +217,67 @@ declare namespace Ropeho {
          * A presentation is a media container that changes when the user hover over it
          */
         interface Presentation {
-            /** Unique ID */
+            /**
+             * Unique ID
+             */
             _id?: string;
-            /** Text to display over the presentation */
+            /**
+             * Text to display over the presentation
+             */
             mainText?: string;
-            /** Alternate text to display when hovering */
+            /**
+             * Alternate text to display when hovering
+             */
             alternateText?: string;
-            /** Link to content */
+            /**
+             * Link to content
+             */
             href?: string;
-            /** Media shown by default */
+            /**
+             * Media shown by default
+             */
             mainMedia?: Media;
-            /** Media shown when hovering */
+            /**
+             * Media shown when hovering
+             */
             alternateMedia?: Media;
-            /** Presentation specific options */
+            /**
+             * Presentation specific options
+             */
             options?: any;
         }
 
-        /** Interface for the DAL */
+        /**
+         * Interface for the DAL
+         */
         interface IGenericRepository<T> {
-            /** Gets provided entities or all of them */
+            /**
+             * Gets provided entities or all of them
+             */
             get(...options: any[]): Promise<T | T[]>;
-            /** Gets entities by IDs */
+            /**
+             * Gets entities by ID
+             */
             getById(id: string | string[], ...options: any[]): Promise<T | T[]>;
-            /** Gets entities using filters */
+            /**
+             * Gets entities using filters
+             */
             search(filters: { [key: string]: string }, ...options: any[]): Promise<T[]>;
-            /** Creates entities */
+            /**
+             * Creates entities
+             */
             create(entity: T | T[], ...options: any[]): Promise<T | T[]>;
-            /** Update entities */
+            /**
+             * Update entities
+             */
             update(entity: T | T[], ...options: any[]): Promise<number>;
-            /** Deletes entities */
+            /**
+             * Deletes entities
+             */
             delete(entity: T | T[] | string | string[], ...options: any[]): Promise<number>;
-            /** Get/Set the order of the entities */
+            /**
+             * Get/Set the order of the entities
+             */
             order(order?: string[], ...options: any[]): Promise<string[]>;
         }
 
@@ -192,77 +319,141 @@ declare namespace Ropeho {
     }
 
     namespace Configuration {
-        /** Configuration object that has for each environment a different Configuration */
+        /**
+         * Configuration object that has for each environment a different Configuration
+         */
         interface ConfigurationFile {
-            /** Configuration to use in development */
+            /**
+             * Configuration to use in development
+             */
             development: ConfigurationObject;
-            /** Configuration to use for tests */
+            /**
+             * Configuration to use for tests
+             */
             test: ConfigurationObject;
-            /** Configuration to use in production */
+            /**
+             * Configuration to use in production
+             */
             production: ConfigurationObject;
         }
 
-        /** Configuration object with all the necessary configuration for the application */
+        /**
+         * Configuration object with all the necessary configuration for the application
+         */
         interface ConfigurationObject {
-            /** Database related configuration */
+            /**
+             * Database related configuration
+             */
             database?: DatabaseConfiguration;
-            /** Configuration related to user accounts */
+            /**
+             * Configuration related to user accounts
+             */
             users?: UserConfiguration;
-            /** Configuration related to session */
+            /**
+             * Configuration related to session
+             */
             session?: SessionConfiguration;
-            /** Redis connection */
+            /**
+             * Redis connection
+             */
             redis?: RedisConfiguration;
-            /** Hosts URLs */
+            /**
+             * Hosts URLs
+             */
             endPoints?: EndPointsConfiguration;
-            /** Mailer configuration */
+            /**
+             * Mailer configuration
+             */
             mailer?: MailerConfiguration;
-            /** Media configuration */
+            /**
+             * Media configuration
+             */
             media?: MediaConfiguration;
-            /** Task queue configuration */
+            /**
+             * Task queue configuration
+             */
             taskQueue?: TaskQueueConfiguration;
         }
 
-        /** Configuration related to the database */
+        /**
+         * Configuration related to the database
+         */
         interface DatabaseConfiguration {
-            /** Configuration for the category collection */
+            /**
+             * Configuration for the category collection
+             */
             categories: DatabaseCollectionConfiguration;
-            /** Configuration for the production collection */
+            /**
+             * Configuration for the production collection
+             */
             productions: DatabaseCollectionConfiguration;
-            /** Configuration for the user collection */
+            /**
+             * Configuration for the user collection
+             */
             users: DatabaseCollectionConfiguration;
-            /** Configuration for the presentation collection */
+            /**
+             * Configuration for the presentation collection
+             */
             presentations: DatabaseCollectionConfiguration;
-            /** Default key name to use for IDs */
+            /**
+             * Default key name to use for IDs
+             */
             defaultIdProperty: string;
         }
 
-        /** Configuration of a database collection */
+        /**
+         * Configuration of a database collection
+         */
         interface DatabaseCollectionConfiguration {
-            /** Redis namespace */
+            /**
+             * Redis namespace
+             */
             namespace: string;
-            /** Secondary indexes set to 1 if it must be unique or 2 if it must be unique but nullable */
+            /**
+             * Secondary indexes set to 1 if it must be unique or 2 if it must be unique but nullable
+             */
             indexes: { [key: string]: Models.IIndexOptions };
-            /** Name of the ID property */
+            /**
+             * Name of the ID property
+             */
             idProperty: string;
         }
 
-        /** Configuration related to user accounts */
+        /**
+         * Configuration related to user accounts
+         */
         interface UserConfiguration {
-            /** Length of the generated string (not the total length) */
+            /**
+             * Length of the generated string (not the total length)
+             */
             tokenLength: number;
-            /** Days until a newly created token expires */
+            /**
+             * Days until a newly created token expires
+             */
             daysTokenValid: number;
-            /** Size of the password hash */
+            /**
+             * Size of the password hash
+             */
             passwordHashBytes: number;
-            /** Size of the password salt */
+            /**
+             * Size of the password salt
+             */
             passwordSaltBytes: number;
-            /** Number of iterations when generating a hash */
+            /**
+             * Number of iterations when generating a hash
+             */
             passwordIteration: number;
-            /** Base algorithm used to generate hashes */
+            /**
+             * Base algorithm used to generate hashes
+             */
             passwordAlgorithm: string;
-            /** Facebook app credentials */
+            /**
+             * Facebook app credentials
+             */
             facebook: FacebookConfiguration;
-            /** Administrator account to be created */
+            /**
+             * Administrator account to be created
+             */
             administrator: {
                 email: string;
                 name: string;
@@ -271,7 +462,9 @@ declare namespace Ropeho {
             };
         }
 
-        /** Session options interface copied from express-session */
+        /**
+         * Session options interface copied from express-session
+         */
         interface SessionConfiguration {
             secret: string;
             name?: string;
@@ -285,134 +478,238 @@ declare namespace Ropeho {
             unset?: string;
         }
 
-        /** Facebook app credentials */
+        /**
+         * Facebook app credentials
+         */
         interface FacebookConfiguration {
             appId: string;
             appSecret: string;
         }
 
-        /** Hosts URLs */
+        /**
+         * Hosts URLs
+         */
         interface EndPointsConfiguration {
-            /** Web API server */
+            /**
+             * Web API server
+             */
             api: EndPointConfiguration;
-            /** Media storage */
+            /**
+             * Media storage
+             */
             media: EndPointConfiguration;
-            /** Client server */
+            /**
+             * Client server
+             */
             client: EndPointConfiguration;
-            /** Client webpack dev server */
+            /**
+             * Client webpack dev server
+             */
             clientDevServer: EndPointConfiguration;
-            /** Admin server */
+            /**
+             * Admin server
+             */
             admin: EndPointConfiguration;
-            /** Admin webpack dev server */
+            /**
+             * Admin webpack dev server
+             */
             adminDevServer: EndPointConfiguration;
-            /** Customer server */
+            /**
+             * Customer server
+             */
             customer: EndPointConfiguration;
-            /** Customer webpack dev server */
+            /**
+             * Customer webpack dev server
+             */
             customerDevServer: EndPointConfiguration;
         }
 
-        /** Config for a single end point */
+        /**
+         * Config for a single end point
+         */
         interface EndPointConfiguration {
-            /** host base URL */
+            /**
+             * host base URL
+             */
             host: string;
-            /** port */
+            /**
+             * port
+             */
             port: number;
         }
 
-        /** Nodemailer configuration */
+        /**
+         * Nodemailer configuration
+         */
         interface MailerConfiguration {
-            /** nodemailer options */
+            /**
+             * nodemailer options
+             */
             transporterOptions: any;
-            /** Default mail options to use with sendMail */
+            /**
+             * Default mail options to use with sendMail
+             */
             mailOptions: nodemailer.SendMailOptions;
         }
 
-        /** Assets settings */
+        /**
+         * Assets settings
+         */
         interface MediaConfiguration {
-            /** The directory to use when used with the local media manager */
+            /**
+             * The directory to use when used with the local media manager
+             */
             localDirectory: string;
-            /** The directory to use for temporary files */
+            /**
+             * The directory to use for temporary files
+             */
             tempDirectory: string;
-            /** The path to the S3 bucket (appended to media host) */
+            /**
+             * The path to the S3 bucket (appended to media host)
+             */
             s3Bucket: string;
-            /** Image encoding configuration */
+            /**
+             * Image encoding configuration
+             */
             imageEncoding: {
-                /** WebP quality */
+                /**
+                 * WebP quality
+                 */
                 quality: number;
             };
-            /** Video encoding configuration */
+            /**
+             * Video encoding configuration
+             */
             videoEncoding: {
-                /** WebM FPS */
+                /**
+                 * WebM FPS
+                 */
                 fps: number;
-                /** WebM Quality */
+                /**
+                 * WebM Quality
+                 */
                 bitrate: number;
-                /** WebM Screensho timestamp */
+                /**
+                 * WebM Screensho timestamp
+                 */
                 timestamp: string;
             };
-            /** Chunk size when transferring files */
+            /**
+             * Chunk size when transferring files
+             */
             chunkSize: number;
-            /** If true when uploading a media the previous media is overwritten */
+            /**
+             * If true when uploading a media the previous media is overwritten
+             */
             overwrite: boolean;
         }
 
-        /** Task Queue configuration */
+        /**
+         * Task Queue configuration
+         */
         interface TaskQueueConfiguration {
-            /** Number of retries if a job fails */
+            /**
+             * Number of retries if a job fails
+             */
             retriesOnFailure: number;
-            /** Maximum number of concurrent image processing tasks  */
+            /**
+             * Maximum number of concurrent image processing tasks
+             */
             imageProcessingConcurrency: number;
-            /** Maximum number of concurrent video processing tasks  */
+            /**
+             * Maximum number of concurrent video processing tasks
+             */
             videoProcessingConcurrency: number;
-            /** Maximum number of concurrent file uploading tasks  */
+            /**
+             * Maximum number of concurrent file uploading tasks
+             */
             fileUploadConcurrency: number;
         }
 
-        /** Redis configuration */
+        /**
+         * Redis configuration
+         */
         interface RedisConfiguration {
-            /** Server host */
+            /**
+             * Server host
+             */
             host?: string;
-            /** Server port */
+            /**
+             * Server port
+             */
             port?: number;
             url?: string;
-            /** Database to select */
+            /**
+             * Database to select
+             */
             db?: string;
-            /** Password to authenticate */
+            /**
+             * Password to authenticate
+             */
             password?: string;
         }
     }
 
     namespace Tasks {
-        /** Job data from kue */
+        /**
+         * Job data from kue
+         */
         interface JobData<T> {
             data: T;
-            /** Job's ID */
+            /**
+             * Job's ID
+             */
             id: number;
         }
-        /** Options when creating a task to process an incoming video */
+        /**
+         * Options when creating a task to process an incoming video
+         */
         interface ProcessImageOptions {
-            /** Path to image */
+            /**
+             * Path to image
+             */
             source: string;
-            /** Destination in the media directory */
+            /**
+             * Destination in the media directory
+             */
             dest: string;
         }
-        /** Options when creating a task to process an incoming image */
+        /**
+         * Options when creating a task to process an incoming image
+         */
         interface ProcessVideoOptions {
-            /** Path to video */
+            /**
+             * Path to video
+             */
             source: string;
-            /** Destination in the media directory */
+            /**
+             * Destination in the media directory
+             */
             dest: string;
-            /** Destination of the fallback screenshot */
+            /**
+             * Destination of the fallback screenshot
+             */
             fallbackDest: string;
-            /** Cut off the beginning of the video until this point */
+            /**
+             * Cut off the beginning of the video until this point
+             */
             offset?: number;
-            /** Duration for the preview video */
+            /**
+             * Duration for the preview video
+             */
             duration?: number;
         }
-        /** Options when creating a task to process a file upload */
+        /**
+         * Options when creating a task to process a file upload
+         */
         interface FileUploadOptions {
-            /** Path to file */
+            /**
+             * Path to file
+             */
             source: string;
-            /** Destination in the media directory */
+            /**
+             * Destination in the media directory
+             */
             dest: string;
         }
     }
@@ -464,41 +761,75 @@ declare namespace Ropeho {
             BadRequest: string;
             Exception: string;
         }
-        /** Data structure to retrieve a specific media in the database */
+        /**
+         * Data structure to retrieve a specific media in the database
+         */
         interface MediaTargetOptions {
-            /** Optional namespace or entity type to narrow search */
+            /**
+             * Optional namespace or entity type to narrow search
+             */
             entityType?: number | string;
-            /** ID of the Production/Category/Presentation */
+            /**
+             * ID of the Production/Category/Presentation
+             */
             mainId: string;
-            /** ID of the media containing the source */
+            /**
+             * ID of the media containing the source
+             */
             mediaId: string;
         }
-        /** Data structure to retrieve a specific source in the database */
+        /**
+         * Data structure to retrieve a specific source in the database
+         */
         interface SourceTargetOptions extends MediaTargetOptions {
-            /** ID of the source */
+            /**
+             * ID of the source
+             */
             sourceId?: string;
         }
-        /** Data structure relative to a connected client */
+        /**
+         * Data structure relative to a connected client
+         */
         interface SocketClient {
-            /** Socket.IO Socket of the client */
+            /**
+             * Socket.IO Socket of the client
+             */
             socket: SocketIO.Socket;
-            /** If the client is downloading, uploading or idle */
+            /**
+             * If the client is downloading, uploading or idle
+             */
             state: number;
-            /** Stream to write on when uploading */
+            /**
+             * Stream to write on when uploading
+             */
             uploadStream?: NodeJS.WritableStream;
-            /** Requested resource for upload */
+            /**
+             * Requested resource for upload
+             */
             target?: SourceTargetOptions;
-            /** Requested entity for upload */
+            /**
+             * Requested entity for upload
+             */
             entityTarget?: Models.Production | Models.Category | Models.PresentationContainer;
-            /** Requested media for upload */
+            /**
+             * Requested media for upload
+             */
             mediaTarget?: Models.Media;
-            /** Requested source for upload */
+            /**
+             * Requested source for upload
+             */
             sourceTarget?: Models.Source;
-            /** Hash to update while uploading */
+            /**
+             * Hash to update while uploading
+             */
             hash?: any;
-            /** Files requested for download */
+            /**
+             * Files requested for download
+             */
             downloading?: string[];
-            /** Authentication cookie */
+            /**
+             * Authentication cookie
+             */
             cookie?: string;
         }
         interface UploadEntry {
@@ -537,7 +868,7 @@ declare namespace Ropeho {
     interface FetchThunkExtras {
         host?: string;
         init?: RequestInit;
-        error?: { type: string; error?: IErrorResponse; }
+        error?: { type: string; error?: IErrorResponse; };
     }
 }
 

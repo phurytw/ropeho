@@ -1,3 +1,7 @@
+/**
+ * @file Type definitions used in the admin application
+ * @author François Nguyen <https://github.com/lith-light-g>
+ */
 /// <reference types="node" />
 /// <reference types="socket.io" />
 /// <reference path="../../definitions/http-proxy/index.d.ts" />
@@ -29,10 +33,4 @@ declare namespace NodeJS {
 
 declare module "react-hot-loader" {
     const AppContainer: () => JSX.Element;
-}
-
-declare module "serialize-javascript" {
-    namespace serializeJavascript { }
-    function serializeJavascript(any: any, options?: any): string;
-    export = serializeJavascript;
 }
