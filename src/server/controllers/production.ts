@@ -88,7 +88,7 @@ router.post("/",
     async (req: Request, res: Response) => {
         try {
             let production: Production = req.body;
-            const { banner, background, description, medias, state }: Production = production;
+            const { banner, background, description, medias, state, models, location, date }: Production = production;
             // Check if valid
             production.medias = medias || [];
             production._id = v4();
@@ -110,6 +110,9 @@ router.post("/",
             };
             production.state = state || MediaPermissions.Locked;
             production.description = description || "";
+            production.models = models || "";
+            production.location = location || "";
+            production.date = date || "";
             if (!isProduction(production) || !production.name) {
                 new ErrorResponse({
                     status: 400,

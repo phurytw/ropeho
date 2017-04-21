@@ -71,7 +71,7 @@ router.post("/",
             // Check if valid
             presentation.presentations = presentations || [];
             presentation._id = v4();
-            presentation.type = type || PresentationTypes.Horizontal;
+            presentation.type = type || PresentationTypes.StrictMasonry;
             if (!isPresentationContainer(presentation)) {
                 new ErrorResponse({
                     status: 400,

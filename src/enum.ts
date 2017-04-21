@@ -17,8 +17,8 @@ export enum MediaTypes {
 }
 
 export enum PresentationTypes {
-    Horizontal = 0,
-    Spiral = 1
+    StrictMasonry = 0,
+    AutoMasonry = 1
 }
 
 export enum SocketState {

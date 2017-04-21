@@ -112,6 +112,8 @@ declare namespace Ropeho {
             type?: number;
             /** Presentations */
             presentations?: Presentation[];
+            /** Container specific options */
+            options?: any;
         }
 
         /**
@@ -130,6 +132,8 @@ declare namespace Ropeho {
             mainMedia?: Media;
             /** Media shown when hovering */
             alternateMedia?: Media;
+            /** Presentation specific options */
+            options?: any;
         }
 
         /** Interface for the DAL */
@@ -159,6 +163,31 @@ declare namespace Ropeho {
         interface IIndexOptions {
             unique: boolean;
             nullable: boolean;
+        }
+
+        interface AutoMasonryContainerOptions {
+            /**
+             * Percentage of child's images and videos visible
+             */
+            percentVisible?: number;
+        }
+
+        interface AutoMasonryPresentationOptions {
+            /**
+             * Percentage of the image/video visible (overwrites container's setting)
+             */
+            percentVisible?: number;
+        }
+
+        interface StrictMasonryPresentationOptions {
+            /**
+             * Width is equal to width * base size
+             */
+            columnSpan?: number;
+            /**
+             * Height is equal to height * base size
+             */
+            rowSpan?: number;
         }
     }
 

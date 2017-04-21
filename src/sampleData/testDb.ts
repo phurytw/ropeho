@@ -22,6 +22,9 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production A",
         description: "Description A",
+        date: new Date().toString(),
+        location: "There",
+        models: "Me",
         state: MediaPermissions.Public,
         banner: {
             _id: v4(),
@@ -133,6 +136,9 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production B",
         description: "Description B",
+        date: new Date().toString(),
+        location: "There",
+        models: "Me",
         state: MediaPermissions.OwnerOnly,
         banner: {
             _id: v4(),
@@ -209,6 +215,9 @@ const [productionA, productionB, productionC]: Production[] = [
         _id: v4(),
         name: "Production C",
         description: "Description C",
+        date: new Date().toString(),
+        location: "There",
+        models: "Me",
         state: MediaPermissions.Locked,
         banner: {
             _id: v4(),
@@ -358,7 +367,7 @@ export const users: User[] = [
 export const presentations: Container[] = [
     {
         _id: v4(),
-        type: PresentationTypes.Horizontal,
+        type: PresentationTypes.StrictMasonry,
         presentations: [
             {
                 _id: v4(),
@@ -404,7 +413,7 @@ export const presentations: Container[] = [
     },
     {
         _id: v4(),
-        type: PresentationTypes.Spiral,
+        type: PresentationTypes.StrictMasonry,
         presentations: [
             {
                 _id: v4(),
