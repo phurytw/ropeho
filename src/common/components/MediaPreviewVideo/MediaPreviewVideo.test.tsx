@@ -28,18 +28,21 @@ describe("MediaPreviewVideo component", () => {
                         handler();
                     }
                 });
-            shallow(<MediaPreviewVideo
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo
                 source={{ _id: "sourceId", posX: 0, posY: 0, zoom: 0, preview: `data:image/png;base64, ${video}` }}
                 setDimensions={setDimensionsSpy}
             />);
+            const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
+            instance.videoElement = document.createElement("video");
+            instance.loadSource();
         });
     });
     describe("Lifecycle", () => {
-        it("Should set source dimensions when mounting", () => {
+        it("Should set source dimensions after mounting", () => {
             const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo />);
             const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
             const loadSourceStub: sinon.SinonStub = stub(instance, "loadSource");
-            instance.componentWillMount();
+            instance.componentDidMount();
             loadSourceStub.should.have.been.calledOnce;
         });
         it("Should set source dimensions when receiving a new source", () => {
@@ -57,9 +60,9 @@ describe("MediaPreviewVideo component", () => {
         });
         it("Should set auto zoom when updating with a new noFit value", () => {
             const shouldFitSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo shouldFit={shouldFitSpy} />);
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo shouldFit={shouldFitSpy} source={{ _id: "sourceId" }} />);
             const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
-            instance.componentWillReceiveProps({ noFit: true });
+            instance.componentWillReceiveProps({ noFit: true, source: {} });
             shouldFitSpy.should.have.been.calledOnce;
             shouldFitSpy.should.have.been.calledWith(false);
         });
@@ -71,9 +74,9 @@ describe("MediaPreviewVideo component", () => {
         });
         it("Should set the element zoom value when updating with a new scale value", () => {
             const setScaleSpy: sinon.SinonSpy = spy();
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo setScale={setScaleSpy} />);
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreviewVideo setScale={setScaleSpy} source={{ _id: "sourceId" }} />);
             const instance: MediaPreviewVideo = wrapper.instance() as MediaPreviewVideo;
-            instance.componentWillReceiveProps({ scale: 0.5 });
+            instance.componentWillReceiveProps({ scale: 0.5, source: {} });
             setScaleSpy.should.have.been.calledOnce;
             setScaleSpy.should.have.been.calledWith(0.5);
         });

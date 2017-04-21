@@ -4,6 +4,7 @@
  */
 import * as React from "react";
 import { isEqual } from "lodash";
+import { mediaPreviewWrapper } from "./styles.css";
 
 import Source = Ropeho.Models.Source;
 
@@ -76,9 +77,11 @@ export interface MediaPreviewProps extends MediaPreviewCoreState, MediaPreviewCo
     noFit?: boolean;
 }
 
-export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) => MediaPreviewCore<P> =
-    <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>): MediaPreviewCore<P> => {
+export const mediaPreview: <P, S>(WrappedComponent: MediaPreview<P & MediaPreviewProps, S>) => MediaPreviewCore<P> =
+    <P, S>(WrappedComponent: MediaPreview<P & MediaPreviewProps, S>): MediaPreviewCore<P> => {
         return class extends React.Component<P & MediaPreviewCoreProps, MediaPreviewCoreState> {
+            static displayName: string = `MediaPreviewCore(${(WrappedComponent as any).displayName || WrappedComponent.name || "Component"})`;
+            _isMounted: boolean;
             element: HTMLDivElement;
             constructor(props?: P & MediaPreviewCoreProps) {
                 super(props);
@@ -87,18 +90,20 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                     fit: true
                 };
             }
+            componentWillMount(): void {
+                this._isMounted = true;
+            }
             componentDidMount(): void {
                 this.handleSource();
             }
             componentWillReceiveProps(nextProps: MediaPreviewCoreProps): void {
-                if (this.props.source !== nextProps.source) {
-                    this.handleSource();
-                }
+                this.handleSource();
             }
             shouldComponentUpdate(nextProps: MediaPreviewCoreProps, nextState: MediaPreviewCoreProps): boolean {
                 return !isEqual(nextProps.source, this.props.source) || !isEqual(nextState, this.state);
             }
             componentWillUnmount(): void {
+                this._isMounted = false;
                 window.removeEventListener("resize", this.handleSource);
             }
             handleSource: () => void = (): void => {
@@ -140,11 +145,13 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                 }
             }
             setDimensions: (width: number, height: number) => void = (width: number, height: number): void => {
-                this.setState({
-                    width,
-                    height
-                });
-                this.handleSource();
+                if (this._isMounted) {
+                    this.setState({
+                        width,
+                        height
+                    });
+                    this.handleSource();
+                }
             }
             setScale: (scale: number) => void = (scale: number): void => {
                 this.setState({ scale });
@@ -160,8 +167,8 @@ export const mediaPreview: <P, S>(Comp: MediaPreview<P & MediaPreviewProps, S>) 
                 }
             }
             render(): JSX.Element {
-                return <div ref={this.setElement} style={{ width: "100%", height: "100%", overflow: "hidden" }}>
-                    <Comp {...this.state} {...this.props } setDimensions={this.setDimensions} setScale={this.setScale} shouldFit={this.shouldFit} />
+                return <div ref={this.setElement} className={mediaPreviewWrapper}>
+                    <WrappedComponent {...this.state} {...this.props } setDimensions={this.setDimensions} setScale={this.setScale} shouldFit={this.shouldFit} />
                 </div>;
             }
         };

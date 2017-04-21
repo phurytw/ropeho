@@ -165,14 +165,14 @@ describe("MediaPreview", () => {
             setCycleStub.should.have.been.calledOnce;
             setCycleStub.restore();
         });
-        it("Should set the source and interval when receiving props", () => {
-            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={slideshowMedia} />);
+        it("Should set the source when receiving props for an image or a video", () => {
+            const wrapper: ShallowWrapper<MediaPreviewProps, {}> = shallow(<MediaPreview media={imageMedia} />);
             const instance: MediaPreview = wrapper.instance() as MediaPreview;
             const cycleSourceStub: sinon.SinonStub = stub(instance, "cycleSource");
             instance.componentWillReceiveProps({
                 media: {
-                    type: MediaTypes.Slideshow,
-                    sources: slideshowMedia.sources
+                    type: MediaTypes.Image,
+                    sources: imageMedia.sources
                 }
             });
             cycleSourceStub.should.have.been.calledOnce;

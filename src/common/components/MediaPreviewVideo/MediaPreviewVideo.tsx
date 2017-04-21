@@ -5,8 +5,10 @@
 import * as React from "react";
 import { MediaPreviewProps, mediaPreview } from "../MediaPreviewCore";
 import { isEqual } from "lodash";
+import { videoPreview } from "./styles.css";
 
 export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
+    videoElement: HTMLVideoElement;
     constructor(props?: MediaPreviewProps) {
         super(props);
     }
@@ -18,11 +20,13 @@ export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
         if (typeof scale === "number" && isFinite(scale) && !isNaN(scale)) {
             setScale(scale);
         }
+    }
+    componentDidMount(): void {
         this.loadSource();
     }
     componentWillReceiveProps(nextProps: MediaPreviewProps): void {
         const { noFit, source, shouldFit, scale, setScale }: MediaPreviewProps = this.props;
-        if (source !== nextProps.source) {
+        if (source.preview !== nextProps.source.preview || source.src !== nextProps.source.src) {
             this.loadSource();
         }
         if (noFit !== nextProps.noFit) {
@@ -38,24 +42,24 @@ export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
     loadSource: () => void = (): void => {
         const { source, setDimensions }: MediaPreviewProps = this.props;
         if (source && setDimensions) {
-            const videoElement: HTMLVideoElement = document.createElement("video");
-            videoElement.src = source.preview;
+            const videoElement: HTMLVideoElement = this.videoElement;
             videoElement.addEventListener("loadedmetadata", () => {
                 setDimensions(videoElement.videoWidth, videoElement.videoHeight);
             });
+            videoElement.onerror = () => {
+                setDimensions(0, 0);
+            };
         }
+    }
+    setVideoRef: (video: HTMLVideoElement) => void = (video: HTMLVideoElement): void => {
+        this.videoElement = video;
     }
     render(): JSX.Element {
         const { source, computedHeight, computedWidth, offsetX, offsetY }: MediaPreviewProps = this.props;
         if (source) {
-            return <div style={{
-                width: "100%",
-                height: "100%",
-                position: "relative"
-            }}>
-                <video src={source.preview}
+            return <div className={videoPreview}>
+                <video ref={this.setVideoRef}
                     style={{
-                        position: "absolute",
                         top: `${offsetY * -1}px`,
                         left: `${offsetX * -1}px`,
                         width: `${computedWidth}px`,
@@ -66,8 +70,8 @@ export class MediaPreviewVideo extends React.Component<MediaPreviewProps, {}> {
                     loop={true}
                     poster={source.fallback}
                 >
-                    <source src={source.src} />
-                    <source src={source.preview} />
+                    <source src={source.preview} type="video/webm" />
+                    <source src={source.src} type="video/mp4" />
                     <img src={source.fallback} title="Sorry, your browser doesn't support HTML5 video." alt="HTML5 video not supported" />
                 </video>
             </div>;

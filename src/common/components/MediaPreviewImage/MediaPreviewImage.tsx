@@ -5,8 +5,10 @@
 import * as React from "react";
 import { MediaPreviewProps, mediaPreview } from "../MediaPreviewCore";
 import { isEqual } from "lodash";
+import { imagePreview } from "./styles.css";
 
 export class MediaPreviewImage extends React.Component<MediaPreviewProps, {}> {
+    imageElement: HTMLImageElement;
     constructor(props?: MediaPreviewProps) {
         super(props);
     }
@@ -18,11 +20,13 @@ export class MediaPreviewImage extends React.Component<MediaPreviewProps, {}> {
         if (typeof scale === "number" && isFinite(scale) && !isNaN(scale)) {
             setScale(scale);
         }
+    }
+    componentDidMount(): void {
         this.loadSource();
     }
     componentWillReceiveProps(nextProps: MediaPreviewProps): void {
         const { noFit, source, shouldFit, scale, setScale }: MediaPreviewProps = this.props;
-        if (source !== nextProps.source) {
+        if (source.preview !== nextProps.source.preview) {
             this.loadSource();
         }
         if (noFit !== nextProps.noFit) {
@@ -38,21 +42,35 @@ export class MediaPreviewImage extends React.Component<MediaPreviewProps, {}> {
     loadSource: () => void = (): void => {
         const { source, setDimensions }: MediaPreviewProps = this.props;
         if (source && setDimensions) {
-            const imgElement: HTMLImageElement = new Image();
+            const imgElement: HTMLImageElement = document.createElement("img");
             imgElement.onload = () => {
                 setDimensions(imgElement.width, imgElement.height);
             };
-            imgElement.src = source.preview;
+            imgElement.onerror = () => {
+                // retry on error
+                this.loadSource();
+            };
+            imgElement.src = source.src;
         }
+    }
+    setImgRef: (img: HTMLImageElement) => void = (img: HTMLImageElement): void => {
+        this.imageElement = img;
     }
     render(): JSX.Element {
         const { source, computedHeight, computedWidth, offsetX, offsetY }: MediaPreviewProps = this.props;
         if (source) {
-            return <div style={{
-                background: `url(${source.preview}) ${offsetX * -1}px ${offsetY * -1}px / ${`${computedWidth}px` || "auto"} ${`${computedHeight}px` || "auto"} no-repeat`,
-                width: "100%",
-                height: "100%"
-            }}></div>;
+            return <div className={imagePreview}>
+                <img ref={this.setImgRef}
+                    src={source.preview}
+                    alt="image"
+                    style={{
+                        top: `${offsetY * -1}px`,
+                        left: `${offsetX * -1}px`,
+                        width: `${`${computedWidth}px` || "auto"}`,
+                        height: `${`${computedHeight}px` || "auto"}`,
+                    }}
+                />
+            </div>;
         } else {
             return null;
         }

@@ -7,8 +7,7 @@ import * as ReactCSSTransitionGroup from "react-addons-css-transition-group";
 import { MediaTypes } from "../../../enum";
 import MediaPreviewImage from "../MediaPreviewImage";
 import MediaPreviewVideo from "../MediaPreviewVideo";
-import { mp, mpEnter, mpEnterActive, mpLeave, mpLeaveActive } from "./styles.css";
-import { isEqual } from "lodash";
+import { mp, mpEnter, mpEnterActive, mpLeave, mpLeaveActive, textStyles } from "./styles.css";
 
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
@@ -39,13 +38,11 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
         }
     }
     componentWillReceiveProps({ media: { type, delay, sources } }: MediaPreviewProps): void {
-        this.cycleSource(sources);
         if (type === MediaTypes.Slideshow && delay !== this.props.media.delay) {
             this.setCycle(delay);
+        } else if (type !== MediaTypes.Slideshow) {
+            this.cycleSource(sources);
         }
-    }
-    shouldComponentUpdate(nextProps: MediaPreviewProps, nextState: MediaPreviewState): boolean {
-        return !isEqual(nextProps.media, this.props.media) || !isEqual(nextState, this.state);
     }
     componentWillUnmount(): void {
         if (this.interval) {
@@ -72,7 +69,7 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
         }
     }
     render(): JSX.Element {
-        const { media, textStyles, scale }: MediaPreviewProps = this.props;
+        const { media, scale }: MediaPreviewProps = this.props;
         const { source }: MediaPreviewState = this.state;
         const fadeTransition: (Component: JSX.Element) => JSX.Element = (Component: JSX.Element) => <ReactCSSTransitionGroup
             transitionName={{
@@ -94,7 +91,7 @@ export class MediaPreview extends React.Component<MediaPreviewProps, {}> {
             case MediaTypes.Video:
                 return fadeTransition(<MediaPreviewVideo source={source} key={source && source._id} scale={scale} />);
             case MediaTypes.Text:
-                return fadeTransition(<div className={textStyles} key={media._id}>
+                return fadeTransition(<div className={this.props.textStyles || textStyles} key={media._id}>
                     <p>{media.description}</p>
                 </div>);
             default:

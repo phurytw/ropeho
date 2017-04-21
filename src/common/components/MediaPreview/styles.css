@@ -25,3 +25,10 @@
 .mp > * {
     position: absolute;
 }
+
+.textStyles p {
+    padding: 0 1rem;
+    font-size: 3rem;
+    line-height: 3rem;
+    word-wrap: break-word;
+}
