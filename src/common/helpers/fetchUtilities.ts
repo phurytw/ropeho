@@ -5,7 +5,7 @@
 import { ThunkAction } from "redux-thunk";
 import { Dispatch } from "redux";
 import { ErrorCodes } from "../../enum";
-import { ADMIN_END_POINT } from "./resolveEndPoint";
+import { API_END_POINT } from "./resolveEndPoint";
 
 /**
  * error handler to put as a then callback to a promise that will reject if the status code is 400 or above
@@ -43,12 +43,12 @@ export function fetchThunk<A, R, S>(input: RequestInfo, init?: any, callback?: a
         init = {};
     }
     return (dispatch: Dispatch<S>, getState: () => S, extras: Ropeho.FetchThunkExtras) => {
-        // if not absolute path append ADMIN_END_POINT or if specified the host in extras
+        // if not absolute path append API_END_POINT or if specified the host in extras
         if (typeof input === "string") {
             input = input.startsWith("//") ? `https:${input}` : input;
             // tslint:disable-next-line:no-http-string
             if (!input.startsWith("http://") && !input.startsWith("https://")) {
-                input = `${extras.host || ADMIN_END_POINT}${input}`;
+                input = `${extras.host || API_END_POINT}${input}`;
             }
         }
         return fetch(input, {
