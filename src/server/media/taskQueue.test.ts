@@ -107,7 +107,7 @@ describe("Task queue", () => {
             sandbox.stub(tempMediaManager, "exists").returns(true);
             sandbox.stub(tempMediaManager, "startDownload").returns(bufferToStream(new Buffer(100)));
             sandbox.stub(fileEncoder, "createWebm");
-            sandbox.stub(fileEncoder, "createWebp");
+            sandbox.stub(fileEncoder, "createJpeg");
             sandbox.stub(fileEncoder, "createScreenshot");
             sandbox.stub(mkdirp, "sync");
             sandbox.stub(taskQueue, "isSourceUsed").returns(() => Promise.resolve(false));
@@ -124,7 +124,7 @@ describe("Task queue", () => {
                 }
             }, callback);
             mediaManager.startUpload.should.have.been.calledOnce;
-            fileEncoder.createWebp.should.have.been.calledOnce;
+            fileEncoder.createJpeg.should.have.been.calledOnce;
             callback.should.have.been.calledOnce;
         });
         it("Should create a WebM file, and a screenshot then upload them", async () => {

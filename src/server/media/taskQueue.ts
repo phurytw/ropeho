@@ -9,7 +9,7 @@ import { Job } from "kue";
 import mediaManager from "./mediaManager";
 import tempMediaManager from "./tempMediaManager";
 import config from "../../config";
-import { createWebp, createWebm, createScreenshot } from "./fileEncoder";
+import { createJpeg, createWebm, createScreenshot } from "./fileEncoder";
 import { indexOf, map, includes } from "lodash";
 import { join, dirname, basename, extname } from "path";
 import * as mkdirp from "mkdirp";
@@ -40,7 +40,7 @@ export const processImageTask: (jobData: JobData<ProcessImageOptions>, cb: Funct
                 const tempSource: string = join(tempMediaManager.baseDirectory, source);
                 const tempWebP: string = join(tempMediaManager.baseDirectory, dest);
                 mkdirp.sync(dirname(tempWebP));
-                await createWebp(tempSource, tempWebP);
+                await createJpeg(tempSource, tempWebP);
                 // upload the webp to the destination
                 const destStream: NodeJS.WritableStream = mediaManager.startUpload(dest);
                 const tempStream: NodeJS.ReadableStream = tempMediaManager.startDownload(dest);
@@ -118,7 +118,7 @@ export const processVideoTask: (jobData: JobData<ProcessVideoOptions>, cb: Funct
                     // create a temp screenshot
                     mkdirp.sync(dirname(tempFallback));
                     await createScreenshot(tempSource, tempScreenshot);
-                    await createWebp(tempScreenshot, tempFallback);
+                    await createJpeg(tempScreenshot, tempFallback);
                     const fallbackDestStream: NodeJS.WritableStream = mediaManager.startUpload(fallbackDest);
                     const ssStream: NodeJS.ReadableStream = tempMediaManager.startDownload(fallbackDest);
                     ssStream.on("error", (error: NodeJS.ErrnoException) => reject(error))

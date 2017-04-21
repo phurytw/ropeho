@@ -4,7 +4,7 @@
  */
 
 /// <reference path="../../test.d.ts" />
-import { createWebp, createWebm, createScreenshot } from "../media/fileEncoder";
+import { createWebp, createJpeg, createWebm, createScreenshot } from "../media/fileEncoder";
 import * as fileEncoder from "../media/fileEncoder";
 import { getBufferFromFile, bufferToStream } from "../media/buffer";
 import { image, video } from "../../sampleData/testMedias";
@@ -63,7 +63,7 @@ describe("Media encoder", () => {
                 stream.write(testImage);
                 stream.end();
                 return {
-                    format: "webp",
+                    format: "jpeg",
                     width: 360,
                     height: 291,
                     channels: 4,
@@ -94,7 +94,48 @@ describe("Media encoder", () => {
         })();
     });
     after(() => sandbox.restore());
+    describe("Encoding images to jpeg", () => {
+        it("Should reject if the input is neither a file nor a buffer", () =>
+            createJpeg(undefined).should.be.rejected);
+        it("Should encode a file to a jpeg image", async () => {
+            const outputInfo: sharp.OutputInfo = await createJpeg(testImageSrc, testImageDest) as sharp.OutputInfo;
+            should().not.throw(accessSync.bind(fakeFs, testImageDest, constants.F_OK));
+            outputInfo.format.should.equal("jpeg");
+        });
+        it("Should encode a Buffer to a jpeg image", async () => {
+            const outputInfo: sharp.OutputInfo = await createJpeg(testImage, testImageDest) as sharp.OutputInfo;
+            should().not.throw(accessSync.bind(fakeFs, testImageDest, constants.F_OK));
+            outputInfo.format.should.equal("jpeg");
+        });
+        it("Should encode a file to a Buffer", async () => {
+            const data: Buffer = await createJpeg(testImageSrc) as Buffer;
+            data.should.not.be.empty;
+        });
+        it("Should encode a Buffer to another Buffer", async () => {
+            const data: Buffer = await createJpeg(testImage) as Buffer;
+            data.should.not.be.empty;
+        });
+    });
     describe("Encoding images to webp", () => {
+        beforeEach(() => {
+            sharp.prototype.toFile.restore();
+            sandbox.stub(sharp.prototype, "toFile").callsFake(async (dest: string): Promise<sharp.OutputInfo> => {
+                if (dest && dest.length > 0) {
+                    const stream: NodeJS.WritableStream = createWriteStream(dest);
+                    stream.write(testImage);
+                    stream.end();
+                    return {
+                        format: "webp",
+                        width: 360,
+                        height: 291,
+                        channels: 4,
+                        size: 25522
+                    };
+                } else {
+                    throw new Error("Invalid destination path");
+                }
+            });
+        });
         it("Should reject if the input is neither a file nor a buffer", () =>
             createWebp(undefined).should.be.rejected);
         it("Should encode a file to a webp image", async () => {
@@ -165,9 +206,9 @@ describe("Media encoder", () => {
     });
     describe("Creating thumbnails from a video", () => {
         let ffmpegScreenshotStub: sinon.SinonStub;
-        let createWebpStub: sinon.SinonStub;
+        let createJpegStub: sinon.SinonStub;
         beforeEach(() => {
-            createWebpStub = stub(fileEncoder, "createWebp").callsFake((src: string, dest: string): Promise<Buffer> => {
+            createJpegStub = stub(fileEncoder, "createJpeg").callsFake((src: string, dest: string): Promise<Buffer> => {
                 if (dest) {
                     const stream: NodeJS.WritableStream = fs.createWriteStream(dest);
                     stream.write(testImage);
@@ -180,7 +221,7 @@ describe("Media encoder", () => {
         });
         afterEach(() => {
             ffmpegScreenshotStub.restore();
-            createWebpStub.restore();
+            createJpegStub.restore();
         });
         it("Should create a thumbnail in the file system", async () => {
             const dest: string = "video.png";

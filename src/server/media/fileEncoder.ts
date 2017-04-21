@@ -36,6 +36,26 @@ export const createWebp: (src: string | Buffer, dest?: string) => Promise<Buffer
     };
 
 /**
+ * Create a lower quality jpeg image from another image
+ * @param {string|Buffer} src a path to an image or a Buffer containing the image data
+ * @param {string} dest if defined the encoded image will be created at this location
+ * @returns {Promise<Buffer|sharp.OutputInfo>} a promise to a Buffer containing the new image data or the results of the operation if dest is defined
+ */
+export const createJpeg: (src: string | Buffer, dest?: string) => Promise<Buffer | sharp.OutputInfo> =
+    async (src: string | Buffer, dest?: string): Promise<Buffer | sharp.OutputInfo> => {
+        if (typeof src !== "string" && src instanceof Buffer === false) {
+            throw new TypeError("Input should be a path or a Buffer");
+        }
+        const shrp: sharp.SharpInstance = sharp(src)
+            .jpeg({ quality });
+        if (dest) {
+            return shrp.toFile(dest);
+        } else {
+            return shrp.toBuffer();
+        }
+    };
+
+/**
  * Create a lower quality webm video from another video
  * @param {string|Buffer|NodeJS.ReadableStream} src a path to an video or a Buffer containing the video data
  * @param {CreateWebMOptions} options encoding options (duration, offset, destination)
@@ -56,8 +76,11 @@ export const createWebm: (src: string | Buffer | NodeJS.ReadableStream, options?
                 // Encoding
                 const { offset, duration, dest, setProgress }: CreateWebMOptions = options;
                 const command: any = ffmpeg(src)
+                    .videoCodec("libvpx-vp9")
+                    .audioCodec("libopus")
                     .fps(fps)
                     .videoBitrate(bitrate)
+                    .videoBitrate("64k")
                     .noAudio()
                     .format("webm")
                     .on("error", (err: Error) => reject(err));
@@ -135,7 +158,7 @@ export const createScreenshot: (src: string | Buffer | NodeJS.ReadableStream, de
                             reject(err);
                         })
                         .on("end", () =>
-                            createWebp(tmpFile.name)
+                            createJpeg(tmpFile.name)
                                 .then((thumbnail: Buffer) => {
                                     tmpFile.removeCallback();
                                     resolve(thumbnail);
