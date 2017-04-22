@@ -20,9 +20,9 @@ import { RopehoAdminState } from "../../reducer";
 import { getCurrentUser, getError, getHasRendered, getActiveUploadQueue } from "../../selectors";
 import { Roles } from "../../../enum";
 import ErrorDialog from "../ErrorDialog";
-import { Redirect } from "react-router";
+import { Redirect } from "react-router-dom";
 import { RouteConfig, renderRoutes } from "react-router-config";
-import { PartialRouteComponentProps } from "react-router-dom";
+import { RouteComponentProps } from "react-router-dom";
 
 export const mapStateToProps: (state: RopehoAdminState, ownProps?: LayoutProps) => LayoutProps =
     (state: RopehoAdminState, ownProps?: LayoutProps): LayoutProps => ({
@@ -39,7 +39,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LayoutProp
         setError: (error: Ropeho.IErrorResponse) => dispatch<ErrorActions.SetError, {}>(setError(error))
     });
 
-export interface LayoutProps extends PartialRouteComponentProps<void> {
+export interface LayoutProps extends Partial<RouteComponentProps<void>> {
     currentUser?: Ropeho.Models.User;
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;

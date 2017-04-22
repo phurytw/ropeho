@@ -12,7 +12,7 @@ import { Dispatch } from "redux";
 import { RopehoClientState } from "../../reducer";
 import { getError, getHasRendered } from "../../selectors";
 import { RouteConfig, renderRoutes } from "react-router-config";
-import { PartialRouteComponentProps } from "react-router-dom";
+import { RouteComponentProps } from "react-router-dom";
 import MenuSide from "../MenuSide";
 import MenuTop from "../MenuTop";
 import { container } from "./styles.css";
@@ -28,7 +28,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LayoutProp
         setError: (error: Ropeho.IErrorResponse) => dispatch<ErrorActions.SetError, {}>(setError(error))
     });
 
-export interface LayoutProps extends PartialRouteComponentProps<void> {
+export interface LayoutProps extends Partial<RouteComponentProps<void>> {
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;
     setError?: (error: Ropeho.IErrorResponse) => void;

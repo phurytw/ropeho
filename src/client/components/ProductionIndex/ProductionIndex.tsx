@@ -4,7 +4,7 @@
  */
 // tslint:disable:react-this-binding-issue
 import * as React from "react";
-import { Redirect, PartialRouteComponentProps } from "react-router-dom";
+import { Redirect, RouteComponentProps } from "react-router-dom";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import * as productionIndexModule from "../../modules/productionIndex";
@@ -43,7 +43,7 @@ export interface ProductionIndexParams {
     category?: string;
 }
 
-export interface ProductionIndexProps extends PartialRouteComponentProps<ProductionIndexParams> {
+export interface ProductionIndexProps extends Partial<RouteComponentProps<ProductionIndexParams>> {
     hasRendered?: boolean;
     productions?: Production[];
     categories?: Category[];

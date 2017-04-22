@@ -5,7 +5,6 @@
 /// <reference path="../../../test.d.ts" />
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
-import * as chaiEnzyme from "chai-enzyme";
 import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
 import { stub, spy } from "sinon";
 import * as React from "react";
@@ -29,10 +28,9 @@ import { MediaEdit } from "../MediaEdit";
 import SourceEdit from "../SourceEdit";
 import MediaSelector from "../MediaSelector";
 import { Button, Tab, Tabs, Dialog } from "react-toolbox";
-import { StaticRouter, Redirect } from "react-router";
+import { StaticRouter, Redirect, match } from "react-router-dom";
 should();
 use(sinonChai);
-use(chaiEnzyme);
 
 import Source = Ropeho.Models.Source;
 import Media = Ropeho.Models.Media;
@@ -89,7 +87,7 @@ describe("Production Edit component", () => {
                 params: {
                     productionId: production._id
                 }
-            },
+            } as match<any>,
             medias: [production.banner, production.background, ...production.medias],
             sources: production.banner.sources,
             setMedias: setMediasSpy,
@@ -172,8 +170,7 @@ describe("Production Edit component", () => {
             it("Should have a tab showing a the media editor for the banner", () => {
                 mount(<StaticRouter
                     location="/productions/id/banniere"
-                    context={{}}
-                    history={undefined}>
+                    context={{}}>
                     <ProductionEdit
                         {...props}
                         match={{
@@ -181,7 +178,7 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: "banniere"
                             }
-                        }}
+                        } as match<any>}
                         selectedMedia={production.banner._id}
                     />
                 </StaticRouter>)
@@ -190,8 +187,7 @@ describe("Production Edit component", () => {
             it("Should have a tab showing a the media editor for the background", () => {
                 mount(<StaticRouter
                     location="/productions/id/fond"
-                    context={{}}
-                    history={undefined}>
+                    context={{}}>
                     <ProductionEdit
                         {...props}
                         match={{
@@ -199,7 +195,7 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: "fond"
                             }
-                        }}
+                        } as match<any>}
                         selectedMedia={production.background._id}
                     />
                 </StaticRouter>)
@@ -208,8 +204,7 @@ describe("Production Edit component", () => {
             it("Should have a tab showing a the source editor for the banner", () => {
                 mount(<StaticRouter
                     location="/productions/id/banniere/sourceId"
-                    context={{}}
-                    history={undefined}>
+                    context={{}}>
                     <ProductionEdit
                         {...props}
                         match={{
@@ -218,7 +213,7 @@ describe("Production Edit component", () => {
                                 mediaId: "banniere",
                                 sourceId: "sourceId"
                             }
-                        }}
+                        } as match<any>}
                         selectedMedia={production.banner._id}
                     />
                 </StaticRouter>)
@@ -227,8 +222,7 @@ describe("Production Edit component", () => {
             it("Should have a tab showing a the source editor for the background", () => {
                 mount(<StaticRouter
                     location="/productions/id/fond/sourceId"
-                    context={{}}
-                    history={undefined}>
+                    context={{}}>
                     <ProductionEdit
                         {...props}
                         match={{
@@ -237,7 +231,7 @@ describe("Production Edit component", () => {
                                 mediaId: "fond",
                                 sourceId: "sourceId"
                             }
-                        }}
+                        } as match<any>}
                         selectedMedia={production.background._id}
                     />
                 </StaticRouter>)
@@ -246,8 +240,7 @@ describe("Production Edit component", () => {
             it("Should have a tab showing a the media selector", () => {
                 mount(<StaticRouter
                     location="/productions/id/medias"
-                    context={{}}
-                    history={undefined}>
+                    context={{}}>
                     <ProductionEdit
                         {...props}
                         match={{
@@ -255,7 +248,7 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: "medias"
                             }
-                        }}
+                        } as match<any>}
                         selectedMedia={production.background._id}
                     />
                 </StaticRouter>)
@@ -311,7 +304,7 @@ describe("Production Edit component", () => {
                     mediaId: "banniere",
                     sourceId: production.banner.sources[0]._id
                 }
-            }} />).instance() as ProductionEdit;
+            } as match<any>} />).instance() as ProductionEdit;
             instance.navigateToSource(production.banner.sources[0]._id);
             pushSpy.should.have.been.calledOnce;
             pushSpy.should.have.been.calledWith(`/productions/${production._id}/banniere/${production.banner.sources[0]._id}`);
@@ -322,7 +315,7 @@ describe("Production Edit component", () => {
                     productionId: production._id,
                     mediaId: production.medias[0]._id
                 }
-            }} />).instance() as ProductionEdit;
+            } as match<any>} />).instance() as ProductionEdit;
             instance.navigateToMedia(production.banner._id);
             pushSpy.should.have.been.calledOnce;
             pushSpy.should.have.been.calledWith(`/productions/${production._id}/${production.banner._id}`);
@@ -657,7 +650,7 @@ describe("Production Edit component", () => {
                     params: {
                         productionId: "id"
                     }
-                }}
+                } as match<any>}
             />);
             const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
             const fetchStub: sinon.SinonStub = stub(instance, "fetchProduction");
@@ -666,7 +659,7 @@ describe("Production Edit component", () => {
                     params: {
                         productionId: production._id
                     }
-                }
+                } as match<any>
             });
             fetchStub.should.have.been.calledOnce;
             fetchStub.should.have.been.calledWith(production._id);
@@ -678,7 +671,7 @@ describe("Production Edit component", () => {
                     params: {
                         productionId: production._id
                     }
-                }}
+                } as match<any>}
             />);
             const instance: ProductionEdit = wrapper.instance() as ProductionEdit;
             const selectStub: sinon.SinonStub = stub(instance, "selectFromParams");
@@ -691,7 +684,7 @@ describe("Production Edit component", () => {
                 production,
                 match: {
                     params
-                }
+                } as match<any>
             });
             selectStub.should.have.been.calledOnce;
             selectStub.should.have.been.calledWith(production, params);
@@ -707,7 +700,7 @@ describe("Production Edit component", () => {
                         productionId: "id",
                         mediaId: "banniere"
                     }
-                }
+                } as match<any>
             };
             shallow(<ProductionEdit {...paramsProps} />).state<number>("tab").should.equal(1);
         });
@@ -719,7 +712,7 @@ describe("Production Edit component", () => {
                         productionId: "id",
                         mediaId: "fond"
                     }
-                }
+                } as match<any>
             };
             shallow(<ProductionEdit {...paramsProps} />).state<number>("tab").should.equal(2);
         });
@@ -737,7 +730,7 @@ describe("Production Edit component", () => {
                         productionId: "id",
                         mediaId: "idmedia"
                     }
-                }
+                } as match<any>
             };
             shallow(<ProductionEdit {...paramsProps} />).state<number>("tab").should.equal(3);
         });
@@ -760,27 +753,27 @@ describe("Production Edit component", () => {
     describe("Server side redirections", () => {
         describe("Matching production ID", () => {
             it("Should redirect to production index if there's no production", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
                             params: {
                                 productionId: production._id
                             }
-                        }}
+                        } as match<any>}
                     />
                 </StaticRouter>);
                 wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === "/productions").should.have.lengthOf(1);
             });
             it("Should load the production if the production is found", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
                             params: {
                                 productionId: production._id
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                     />
                 </StaticRouter>);
@@ -790,7 +783,7 @@ describe("Production Edit component", () => {
         });
         describe("Matching media ID", () => {
             it("Should redirect to the production if the media could not be found", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
@@ -798,14 +791,14 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: "someMedia"
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                     />
                 </StaticRouter>);
                 wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}`).should.have.lengthOf(1);
             });
             it("Should load the production if a the media and production are found", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
@@ -813,7 +806,7 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: production.medias[0]._id
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                         medias={[production.banner, production.background, ...production.medias]}
                         selectedMedia={production.medias[0]}
@@ -823,7 +816,7 @@ describe("Production Edit component", () => {
                 wrapper.find(ProductionEdit).should.have.lengthOf(1);
             });
             it("Should load the production the media ID is medias", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
@@ -831,7 +824,7 @@ describe("Production Edit component", () => {
                                 productionId: production._id,
                                 mediaId: "medias"
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                         medias={[production.banner, production.background, ...production.medias]}
                     />
@@ -842,7 +835,7 @@ describe("Production Edit component", () => {
         });
         describe("Matching source ID", () => {
             it("Should redirect to the media if the source was not found", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
@@ -851,7 +844,7 @@ describe("Production Edit component", () => {
                                 mediaId: "banniere",
                                 sourceId: "someSource"
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                         medias={[production.banner, production.background, ...production.medias]}
                         sources={production.banner.sources}
@@ -861,7 +854,7 @@ describe("Production Edit component", () => {
                 wrapper.findWhere((node: ReactWrapper<any, any>) => node.type() === Redirect && node.prop("to") === `/productions/${production._id}/banniere`).should.have.lengthOf(1);
             });
             it("Should load the production if a the media, source and production are found", () => {
-                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}} history={undefined} >
+                const wrapper: ReactWrapper<any, {}> = mount(<StaticRouter location={`/productions/${production._id}`} context={{}}>
                     <ProductionEdit
                         hasRendered
                         match={{
@@ -870,7 +863,7 @@ describe("Production Edit component", () => {
                                 mediaId: production.medias[0]._id,
                                 sourceId: production.medias[0].sources[0]._id
                             }
-                        }}
+                        } as match<any>}
                         production={production}
                         medias={[production.banner, production.background, ...production.medias]}
                         sources={production.medias[0].sources}

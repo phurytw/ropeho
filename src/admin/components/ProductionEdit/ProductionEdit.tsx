@@ -19,7 +19,7 @@ import * as sourceModule from "../../modules/sourceEdit";
 import * as objectURLModule from "../../modules/objectURL";
 import { setError, Actions as ErrorActions } from "../../../common/modules/error";
 import { Dispatch } from "redux";
-import { PartialRouteComponentProps, Redirect, Route } from "react-router-dom";
+import { RouteComponentProps, Redirect, Route } from "react-router-dom";
 import { Button, Tabs, Tab, Dialog } from "react-toolbox";
 import { headerBar } from "./headerBar.css";
 import { deleteDialog } from "./deleteDialog.css";
@@ -82,7 +82,7 @@ export interface ProductionEditParams {
     sourceId?: string;
 }
 
-export interface ProductionEditProps extends PartialRouteComponentProps<ProductionEditParams> {
+export interface ProductionEditProps extends Partial<RouteComponentProps<ProductionEditParams>> {
     production?: Production;
     medias?: Media[];
     sources?: Source[];

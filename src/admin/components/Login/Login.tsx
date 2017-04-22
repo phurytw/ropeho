@@ -14,7 +14,7 @@ import { Input, Button, Card, CardTitle, CardText } from "react-toolbox";
 import { container, errorBox, element, logo as logoStyles } from "./container.css";
 import { isEmail } from "validator";
 import { logo } from "../../assets";
-import { PartialRouteComponentProps } from "react-router-dom";
+import { RouteComponentProps } from "react-router-dom";
 import { Roles, ErrorCodes } from "../../../enum";
 import { ADMIN_END_POINT } from "../../../common/helpers/resolveEndPoint";
 import * as facebookButtonStyles from "./facebook.css";
@@ -34,7 +34,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: LoginProps
         setError: (error: Ropeho.IErrorResponse) => dispatch<ErrorActions.SetError, {}>(setError(error))
     });
 
-export interface LoginProps extends PartialRouteComponentProps<void> {
+export interface LoginProps extends Partial<RouteComponentProps<void>> {
     currentUser?: Ropeho.Models.User;
     hasRendered?: boolean;
     error?: Ropeho.IErrorResponse;

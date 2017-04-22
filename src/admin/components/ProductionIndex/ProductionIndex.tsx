@@ -10,7 +10,7 @@ import { Dispatch } from "redux";
 import { getProductions, getHasRendered } from "../../selectors";
 import { fetchProductions, createProduction, saveOrder, setProductionPosition, Actions } from "../../../common/modules/productionIndex";
 import { Tabs, Tab, Dialog, Navigation, Button } from "react-toolbox";
-import { PartialRouteComponentProps } from "react-router-dom";
+import { RouteComponentProps } from "react-router-dom";
 import ProductionNew from "../ProductionNew";
 import PreviewCard from "../PreviewCard";
 import CardView from "../CardView";
@@ -32,7 +32,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<RopehoAdminState>, ownProps
         saveOrder: (order: string[]) => dispatch<Promise<void>, {}>(saveOrder(order))
     });
 
-export interface ProductionIndexProps extends PartialRouteComponentProps<void> {
+export interface ProductionIndexProps extends Partial<RouteComponentProps<void>> {
     hasRendered?: boolean;
     productions?: Production[];
     fetchProductions?: () => Promise<Actions.SetProductions>;
@@ -51,7 +51,7 @@ export class ProductionIndex extends React.Component<ProductionIndexProps, Produ
         super(props);
         const { location }: ProductionIndexProps = this.props;
         this.state = {
-            index: location && location.query && location.query.tab === "1" ? 1 : 0,
+            index: location && location.state && location.state.tab === "1" ? 1 : 0,
             promptNewOrder: false
         };
     }

@@ -5,15 +5,15 @@
 /// <reference path="../../../test.d.ts" />
 import * as React from "react";
 import { should, use } from "chai";
+import * as sinonChai from "sinon-chai";
 import { spy } from "sinon";
 import { shallow, ShallowWrapper } from "enzyme";
-import * as chaiEnzyme from "chai-enzyme";
 import hook from "../../../common/helpers/cssModulesHook";
 hook();
 import ProductionNew from "./ProductionNew";
 import { Input } from "react-toolbox";
 should();
-use(chaiEnzyme);
+use(sinonChai);
 
 describe("Production New compoennt", () => {
     it("Should show a form with inputs for name and description", () => {

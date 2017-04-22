@@ -6,7 +6,6 @@
 import * as React from "react";
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
-import * as chaiEnzyme from "chai-enzyme";
 import { stub, spy } from "sinon";
 import { shallow, mount, ReactWrapper, ShallowWrapper } from "enzyme";
 import { RopehoAdminState, default as rootReducer } from "../../reducer";
@@ -23,7 +22,6 @@ hook();
 import { LoginProps, mapDispatchToProps, mapStateToProps, Login } from "./Login";
 import { Card } from "react-toolbox";
 should();
-use(chaiEnzyme);
 use(sinonChai);
 
 describe("Login component", () => {

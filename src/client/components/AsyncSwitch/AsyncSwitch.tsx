@@ -4,7 +4,7 @@
  */
 // tslint:disable:react-this-binding-issue
 import * as React from "react";
-import { PartialRouteComponentProps, Redirect, Route } from "react-router-dom";
+import { RouteComponentProps, Redirect, Route } from "react-router-dom";
 import * as productionModule from "../../modules/production";
 import * as categoryIndexModule from "../../modules/categoryIndex";
 import { Dispatch } from "redux";
@@ -37,7 +37,7 @@ export interface AsyncSwitchParams {
     name?: string;
 }
 
-export interface AsyncSwitchProps extends PartialRouteComponentProps<AsyncSwitchParams> {
+export interface AsyncSwitchProps extends Partial<RouteComponentProps<AsyncSwitchParams>> {
     hasRendered?: boolean;
     category?: Category;
     categories?: Category[];
@@ -111,7 +111,7 @@ export class AsyncSwitch extends React.Component<AsyncSwitchProps, {}> {
             }
         }
         return <Route path="/:productionName/:mediaNumber?"
-            render={(routeProps: PartialRouteComponentProps<ProductionParams>) => production ? <ProductionComponent {...routeProps} production={production} /> : null} />;
+            render={(routeProps: Partial<RouteComponentProps<ProductionParams>>) => production ? <ProductionComponent {...routeProps} production={production} /> : null} />;
     }
 }
 

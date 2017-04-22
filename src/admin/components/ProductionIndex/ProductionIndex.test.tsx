@@ -5,7 +5,6 @@
 /// <reference path="../../../test.d.ts" />
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
-import * as chaiEnzyme from "chai-enzyme";
 import { shallow, ShallowWrapper } from "enzyme";
 import { stub, spy } from "sinon";
 import * as React from "react";
@@ -24,7 +23,6 @@ import { CardViewProps, default as CardView } from "../CardView";
 import PreviewCard from "../PreviewCard";
 should();
 use(sinonChai);
-use(chaiEnzyme);
 
 import Production = Ropeho.Models.Production;
 

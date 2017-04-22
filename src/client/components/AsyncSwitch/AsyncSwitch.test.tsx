@@ -6,7 +6,7 @@ import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { stub, spy } from "sinon";
 import * as React from "react";
-import { Redirect, StaticRouter } from "react-router-dom";
+import { Redirect, StaticRouter, match } from "react-router-dom";
 import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
 import * as selectors from "../../selectors";
 import { IStore, default as mockStore } from "redux-mock-store";
@@ -36,7 +36,7 @@ describe("AsyncSwitch component", () => {
             params: {
                 name: "prod"
             }
-        },
+        } as match<any>,
         fetchProduction: fetchProductionSpy,
         fetchCategories: fetchCategoriesSpy,
         selectProduction: selectProductionSpy,
@@ -62,7 +62,7 @@ describe("AsyncSwitch component", () => {
     });
     describe("Element", () => {
         it("Should render the Production component", () => {
-            const wrapper: ReactWrapper<AsyncSwitchProps, any> = mount(<StaticRouter history={undefined} location="/prod" context={{}}><AsyncSwitch {...props} /></StaticRouter>);
+            const wrapper: ReactWrapper<AsyncSwitchProps, any> = mount(<StaticRouter location="/prod" context={{}}><AsyncSwitch {...props} /></StaticRouter>);
             wrapper.find(ProductionComponent).should.have.lengthOf(1);
         });
     });
@@ -136,7 +136,7 @@ describe("AsyncSwitch component", () => {
             });
             it("Should eventually redirect to the category if a category has been found but no production", async () => {
                 const fetchProductionSpy: sinon.SinonSpy = spy(() => Promise.resolve({ productions: [] }));
-                const wrapper: ShallowWrapper<AsyncSwitchProps, any> = shallow(<AsyncSwitch {...props} fetchProduction={fetchProductionSpy} match={{ params: { name: uriFriendlyFormat(categories[0].name) } }} />);
+                const wrapper: ShallowWrapper<AsyncSwitchProps, any> = shallow(<AsyncSwitch {...props} fetchProduction={fetchProductionSpy} match={{ params: { name: uriFriendlyFormat(categories[0].name) } } as match<any>} />);
                 const instance: AsyncSwitch = wrapper.instance() as AsyncSwitch;
                 await instance.componentWillMount();
                 fetchCategoriesSpy.should.have.been.called;
@@ -164,7 +164,7 @@ describe("AsyncSwitch component", () => {
             it("Should fetch productions and categories and select if the name has changed", async () => {
                 const wrapper: ShallowWrapper<AsyncSwitchProps, any> = shallow(<AsyncSwitch {...props} />);
                 const instance: AsyncSwitch = wrapper.instance() as AsyncSwitch;
-                await instance.componentWillReceiveProps({ match: { params: { name: "new" } } });
+                await instance.componentWillReceiveProps({ match: { params: { name: "new" } } as match<any> });
                 fetchCategoriesSpy.should.have.been.called;
                 fetchProductionSpy.should.have.been.called;
                 selectProductionSpy.should.have.been.called;
@@ -174,7 +174,7 @@ describe("AsyncSwitch component", () => {
                 const fetchProductionSpy: sinon.SinonSpy = spy(() => Promise.resolve({ productions: [] }));
                 const wrapper: ShallowWrapper<AsyncSwitchProps, any> = shallow(<AsyncSwitch {...props} fetchProduction={fetchProductionSpy} />);
                 const instance: AsyncSwitch = wrapper.instance() as AsyncSwitch;
-                await instance.componentWillReceiveProps({ match: { params: { name: uriFriendlyFormat(categories[0].name) } } });
+                await instance.componentWillReceiveProps({ match: { params: { name: uriFriendlyFormat(categories[0].name) } } as match<any> });
                 fetchCategoriesSpy.should.have.been.called;
                 fetchProductionSpy.should.have.been.called;
                 selectProductionSpy.should.have.been.called;
@@ -186,7 +186,7 @@ describe("AsyncSwitch component", () => {
                 const fetchProductionSpy: sinon.SinonSpy = spy(() => Promise.resolve({ productions: [] }));
                 const wrapper: ShallowWrapper<AsyncSwitchProps, any> = shallow(<AsyncSwitch {...props} fetchProduction={fetchProductionSpy} fetchCategories={fetchCategoriesSpy} />);
                 const instance: AsyncSwitch = wrapper.instance() as AsyncSwitch;
-                await instance.componentWillReceiveProps({ match: { params: { name: "uwontfindit" } } });
+                await instance.componentWillReceiveProps({ match: { params: { name: "uwontfindit" } } as match<any> });
                 fetchCategoriesSpy.should.have.been.called;
                 fetchProductionSpy.should.have.been.called;
                 selectProductionSpy.should.have.been.called;

@@ -6,7 +6,7 @@ import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
 import { stub, spy } from "sinon";
 import * as React from "react";
-import { Redirect } from "react-router-dom";
+import { Redirect, match } from "react-router-dom";
 import { shallow, ShallowWrapper } from "enzyme";
 import * as selectors from "../../selectors";
 import { IStore, default as mockStore } from "redux-mock-store";
@@ -33,7 +33,7 @@ describe("ProductionIndex component", () => {
             params: {
                 param: "photographies"
             }
-        },
+        } as match<any>,
         fetchProductions: fetchProductionsSpy,
         fetchCategories: fetchCategoriesSpy,
         selectCategory: selectCategorySpy,
@@ -151,13 +151,13 @@ describe("ProductionIndex component", () => {
                 replaceSpy.should.have.been.calledWith("/photographies");
                 done();
             });
-            shallow(<ProductionIndex {...props} history={{ replace: replaceSpy } as any} match={{ params: { param: "photographies", category: "nope" } }} />);
+            shallow(<ProductionIndex {...props} history={{ replace: replaceSpy } as any} match={{ params: { param: "photographies", category: "nope" } } as match<any>} />);
             fetchCategoriesSpy.should.have.been.calledOnce;
         });
         it("Should select the category when receiving props", () => {
             const wrapper: ShallowWrapper<ProductionIndexProps, any> = shallow(<ProductionIndex {...props} />);
             const instance: ProductionIndex = wrapper.instance() as ProductionIndex;
-            instance.componentWillReceiveProps({ match: { params: { category: "name" } } });
+            instance.componentWillReceiveProps({ match: { params: { category: "name" } } as match<any> });
             // once in componentWillMount and the second one in componentWillReceiveProps
             selectCategorySpy.should.have.been.calledTwice;
             selectCategorySpy.should.have.been.calledWith("name");
@@ -186,7 +186,7 @@ describe("ProductionIndex component", () => {
                 params: {
                     param: "productions"
                 }
-            }} />);
+            } as match<any>} />);
             const instance: ProductionIndex = wrapper.instance() as ProductionIndex;
             instance.shouldRedirect().should.be.true;
             wrapper.find(Redirect).find({ to: "/photographies" }).should.have.lengthOf(1);
@@ -198,7 +198,7 @@ describe("ProductionIndex component", () => {
             wrapper.find(Redirect).should.have.lengthOf(0);
         });
         it("Should redirect to /photographies if rendering from the server and categories don't match", () => {
-            const wrapper: ShallowWrapper<ProductionIndexProps, any> = shallow(<ProductionIndex {...props} hasRendered match={{ params: { param: "photographies", category: "nope" } }} categories={categories} selectedCategory={undefined} />);
+            const wrapper: ShallowWrapper<ProductionIndexProps, any> = shallow(<ProductionIndex {...props} hasRendered match={{ params: { param: "photographies", category: "nope" } } as match<any>} categories={categories} selectedCategory={undefined} />);
             const instance: ProductionIndex = wrapper.instance() as ProductionIndex;
             instance.shouldRedirect().should.be.true;
             wrapper.find(Redirect).find({ to: "/photographies" }).should.have.lengthOf(1);

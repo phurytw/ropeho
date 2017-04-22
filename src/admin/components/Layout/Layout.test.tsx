@@ -6,7 +6,6 @@
 import * as React from "react";
 import { should, use } from "chai";
 import * as sinonChai from "sinon-chai";
-import * as chaiEnzyme from "chai-enzyme";
 import { stub, spy } from "sinon";
 import { shallow, ShallowWrapper } from "enzyme";
 import hook from "../../../common/helpers/cssModulesHook";
@@ -22,7 +21,6 @@ import { Link, AppBar, Snackbar } from "react-toolbox";
 import { LayoutProps, mapDispatchToProps, mapStateToProps, Layout } from "./Layout";
 import { Redirect } from "react-router-dom";
 should();
-use(chaiEnzyme);
 use(sinonChai);
 
 describe("Layout component", () => {
