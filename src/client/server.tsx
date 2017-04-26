@@ -22,23 +22,25 @@ import { CLIENT_DEV_SERVER_END_POINT, API_END_POINT } from "../common/helpers/re
 import createStore from "./store";
 import * as httpProxy from "http-proxy";
 import { createServer, Server } from "http";
+import * as serveFavicon from "serve-favicon";
 
 // hook to handle css modules
 import hook from "../common/helpers/cssModulesHook";
 hook();
-import routeConfig from "./routes";
-
-// jsdom for document
+// jsdom for document and window
 import { jsdom } from "jsdom";
-
 global.document = jsdom("");
 global.window = document.defaultView;
 global.Image = window.Image;
 global.navigator = {
     userAgent: "node.js"
 };
+import routeConfig from "./routes";
 
 const app: Express = express();
+
+// favicon
+app.use(serveFavicon("./favicon.ico"));
 
 // serving files
 app.use(express.static("./dist/client/static"));
@@ -89,7 +91,7 @@ app.get("*", (req: Request, res: Response) => {
                     [`${CLIENT_DEV_SERVER_END_POINT}/common.js`, `${CLIENT_DEV_SERVER_END_POINT}/vendor.js`, `${CLIENT_DEV_SERVER_END_POINT}/hot.js`, `${CLIENT_DEV_SERVER_END_POINT}/main.js`];
                 const head: HelmetData = Helmet.renderStatic();
                 const reactAppElement: string = renderToString(<Provider store={store}>
-                    <StaticRouter location={req.originalUrl} context={context} history={undefined}>
+                    <StaticRouter location={req.originalUrl} context={context}>
                         {renderRoutes(routeConfig)}
                     </StaticRouter>
                 </Provider>);
@@ -106,6 +108,7 @@ app.get("*", (req: Request, res: Response) => {
                         {head.title.toComponent()}
                         {head.meta.toComponent()}
                         {head.link.toComponent()}
+                        <link rel="stylesheet" href="styles.css"/>
                     </head>
                     <body>
                         <div id="root" dangerouslySetInnerHTML={{ __html: reactAppElement }}>

@@ -22,6 +22,7 @@ import { ADMIN_DEV_SERVER_END_POINT, API_END_POINT } from "../common/helpers/res
 import createStore from "./store";
 import * as httpProxy from "http-proxy";
 import { createServer, Server } from "http";
+import * as serveFavicon from "serve-favicon";
 
 // hook to handle css modules
 import hook from "../common/helpers/cssModulesHook";
@@ -39,6 +40,9 @@ global.navigator = {
 };
 
 const app: Express = express();
+
+// favicon
+app.use(serveFavicon("./favicon.ico"));
 
 // serving files
 app.use(express.static("./dist/admin/static"));
@@ -89,7 +93,7 @@ app.get("*", (req: Request, res: Response) => {
                     [`${ADMIN_DEV_SERVER_END_POINT}/common.js`, `${ADMIN_DEV_SERVER_END_POINT}/vendor.js`, `${ADMIN_DEV_SERVER_END_POINT}/hot.js`, `${ADMIN_DEV_SERVER_END_POINT}/main.js`];
                 const head: HelmetData = Helmet.renderStatic();
                 const reactAppElement: string = renderToString(<Provider store={store}>
-                    <StaticRouter location={req.originalUrl} context={context} history={undefined}>
+                    <StaticRouter location={req.originalUrl} context={context}>
                         {renderRoutes(routeConfig)}
                     </StaticRouter>
                 </Provider>);
@@ -106,6 +110,7 @@ app.get("*", (req: Request, res: Response) => {
                         {head.title.toComponent()}
                         {head.meta.toComponent()}
                         {head.link.toComponent()}
+                        <link rel="stylesheet" href="styles.css"/>
                     </head>
                     <body>
                         <div id="root" dangerouslySetInnerHTML={{ __html: reactAppElement }}>
