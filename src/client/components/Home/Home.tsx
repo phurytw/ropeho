@@ -14,6 +14,7 @@ import ContainerRenderer from "../../../common/components/ContainerRenderer";
 import { waitForContent } from "../../../common/helpers/contentLoaded";
 import { PresentationTypes } from "../../../enum";
 import { isEqual } from "lodash";
+import "../../../common/helpers/rAFTimers";
 
 import PresentationContainer = Ropeho.Models.PresentationContainer;
 
@@ -59,7 +60,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
         waitForContent().then(() => {
             this.renderAll();
         });
-        this.timeout = setTimeout(() => this.renderAll(), 5000) as any;
+        this.timeout = window.requestTimeout(() => this.renderAll(), 5000) as any;
     }
     componentDidUpdate(prevProps: HomeProps): void {
         if (!isEqual(prevProps.presentations, this.props.presentations)) {
@@ -70,11 +71,11 @@ export class Home extends React.Component<HomeProps, HomeState> {
     }
     componentWillUnmount(): void {
         if (this.interval) {
-            clearTimeout(this.interval);
+            window.clearRequestTimeout(this.interval);
             this.interval = undefined;
         }
         if (this.timeout) {
-            clearTimeout(this.timeout);
+            window.clearRequestTimeout(this.timeout);
             this.timeout = undefined;
         }
     }
@@ -83,11 +84,11 @@ export class Home extends React.Component<HomeProps, HomeState> {
         take++;
         if (this.props.presentations.length >= take) {
             this.setState({ take });
-            this.interval = setTimeout(() => {
+            this.interval = window.requestTimeout(() => {
                 this.renderAll(take);
             }, interval * this.props.presentations[take - 1].presentations.length) as any;
         } else if (this.timeout) {
-            clearTimeout(this.timeout);
+            window.clearRequestTimeout(this.timeout);
             this.timeout = undefined;
         }
     }

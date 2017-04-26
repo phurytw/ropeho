@@ -28,6 +28,9 @@ describe("Home page", () => {
     let store: IStore<RopehoClientState>,
         dispatchStub: sinon.SinonStub;
     before(() => {
+        // this is necessary because the server app overwrites window
+        delete require.cache[require.resolve("../../../common/helpers/rAFTimers")];
+        require("../../../common/helpers/rAFTimers");
         store = mockStore<RopehoClientState>(middlewares())(rootReducer(undefined, { type: "" }));
         dispatchStub = stub(store, "dispatch");
     });

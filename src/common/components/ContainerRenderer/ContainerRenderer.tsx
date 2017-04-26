@@ -6,6 +6,7 @@ import * as React from "react";
 import { Dimensions, getMediaDimensions } from "../../helpers/mediaDimensionsUtilities";
 import { isMediaEmpty } from "../../helpers/entityUtilities";
 import { isEqual } from "lodash";
+import "../../helpers/rAFTimers";
 
 import Presentation = Ropeho.Models.Presentation;
 import Media = Ropeho.Models.Media;
@@ -74,7 +75,7 @@ export class ContainerRenderer extends React.Component<ContainerRendererProps, C
                 this.renderNone();
             } else if (typeof render === "number") {
                 if (!this.timeout) {
-                    this.timeout = setTimeout(() => this.renderAll(interval), render) as any;
+                    this.timeout = window.requestTimeout(() => this.renderAll(interval), render) as any;
                 }
             }
         }
@@ -92,7 +93,9 @@ export class ContainerRenderer extends React.Component<ContainerRendererProps, C
             }
         } else if (typeof render === "number") {
             this.renderNone();
-            this.timeout = setTimeout(() => this.renderAll(interval), render) as any;
+            this.timeout = window.requestTimeout(() => {
+                this.renderAll(interval);
+            }, render) as any;
         } else {
             this.renderNone();
         }
@@ -102,11 +105,11 @@ export class ContainerRenderer extends React.Component<ContainerRendererProps, C
         this.mounted = false;
         this.loaded = false;
         if (this.interval) {
-            clearInterval(this.interval);
+            window.clearRequestInterval(this.interval);
             this.interval = undefined;
         }
         if (this.timeout) {
-            clearTimeout(this.timeout);
+            window.clearRequestTimeout(this.timeout);
             this.timeout = undefined;
         }
     }
@@ -135,7 +138,7 @@ export class ContainerRenderer extends React.Component<ContainerRendererProps, C
         // remove timeout and render if needed
         const renderCallback: () => void = (): void => {
             if (this.timeout) {
-                clearTimeout(this.timeout);
+                window.clearRequestTimeout(this.timeout);
                 this.timeout = undefined;
             }
             if (render !== false) {
@@ -160,11 +163,11 @@ export class ContainerRenderer extends React.Component<ContainerRendererProps, C
         }
         if (interval) {
             let take: number = this.state.take;
-            this.interval = setInterval(() => {
+            this.interval = window.requestInterval(() => {
                 take++;
                 this.setState({ take });
                 if (take >= this.props.presentations.length) {
-                    clearInterval(this.interval);
+                    window.clearRequestInterval(this.interval);
                     this.interval = undefined;
                 }
             }, interval) as any;
