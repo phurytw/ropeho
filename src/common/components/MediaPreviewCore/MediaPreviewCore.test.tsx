@@ -427,4 +427,36 @@ describe("MediaPreviewCore HOC", () => {
             wrapper.state("fit").should.equal(false);
         });
     });
+    describe("Lifecycle", () => {
+        it("Should handle source after mounting", () => {
+            const wrapper: ShallowWrapper<MediaPreviewCoreProps, {}> = shallow(<MediaPreview />);
+            const instance: Component = wrapper.instance() as Component;
+            const handleSourceStub: sinon.SinonStub = stub(instance, "handleSource");
+            (instance as any).componentDidMount();
+            handleSourceStub.should.have.been.calledOnce;
+        });
+        it("Should handle the new source when receiving new props", () => {
+            const wrapper: ShallowWrapper<MediaPreviewCoreProps, {}> = shallow(<MediaPreview source={source} />);
+            const instance: Component = wrapper.instance() as Component;
+            const handleSourceStub: sinon.SinonSpy = spy(instance, "handleSource");
+            const newSource: Source = {
+                ...source,
+                posX: 210,
+                posY: 210
+            };
+            (instance as any).element = {
+                clientHeight: 100,
+                clientWidth: 100
+            };
+            wrapper.setState({
+                width: 800,
+                height: 600
+            });
+            (instance as any).componentWillReceiveProps({ source: newSource });
+            handleSourceStub.should.have.been.calledOnce;
+            handleSourceStub.should.have.been.calledWith(newSource);
+            wrapper.state("offsetX").should.equal(160);
+            wrapper.state("offsetY").should.equal(160);
+        });
+    });
 });

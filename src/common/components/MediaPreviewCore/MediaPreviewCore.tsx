@@ -97,7 +97,7 @@ export const mediaPreview: <P, S>(WrappedComponent: MediaPreview<P & MediaPrevie
                 this.handleSource();
             }
             componentWillReceiveProps(nextProps: MediaPreviewCoreProps): void {
-                this.handleSource();
+                this.handleSource(nextProps.source);
             }
             shouldComponentUpdate(nextProps: MediaPreviewCoreProps, nextState: MediaPreviewCoreProps): boolean {
                 return !isEqual(nextProps.source, this.props.source) || !isEqual(nextState, this.state);
@@ -106,11 +106,11 @@ export const mediaPreview: <P, S>(WrappedComponent: MediaPreview<P & MediaPrevie
                 this._isMounted = false;
                 window.removeEventListener("resize", this.handleSource);
             }
-            handleSource: () => void = (): void => {
-                const { source }: MediaPreviewCoreProps = this.props;
+            handleSource: (source?: Source) => void = (source?: Source): void => {
+                const sourceToUse: Source = source || this.props.source;
                 const { height, width, scale, fit }: MediaPreviewCoreState = this.state;
-                if (source && this.element) {
-                    let { posX, posY, zoom }: Source = source;
+                if (sourceToUse && this.element) {
+                    let { posX, posY, zoom }: Source = sourceToUse;
                     zoom = typeof scale === "number" && !isNaN(scale) && isFinite(scale) ? zoom * scale : zoom;
                     const { clientHeight, clientWidth }: HTMLDivElement = this.element;
                     let offsetX: number,
