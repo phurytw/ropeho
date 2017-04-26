@@ -60,31 +60,31 @@ describe("Source Edit Metadata component", () => {
     it("Should set the production with the updated X axis value", () => {
         const wrapper: ShallowWrapper<SourceEditMetaDataProps, {}> = shallow(<SourceEditMetaData {...props} />);
         const instance: SourceEditMetaData = wrapper.instance() as SourceEditMetaData;
-        const posX: number = 10;
+        const posX: string = "10";
         instance.setPosX(posX);
         setSourceSpy.should.have.been.calledWith({
             ...source,
-            posX
+            posX: 10
         });
     });
     it("Should set the production with the updated Y axis value", () => {
         const wrapper: ShallowWrapper<SourceEditMetaDataProps, {}> = shallow(<SourceEditMetaData {...props} />);
         const instance: SourceEditMetaData = wrapper.instance() as SourceEditMetaData;
-        const posY: number = 10;
+        const posY: string = "10";
         instance.setPosY(posY);
         setSourceSpy.should.have.been.calledWith({
             ...source,
-            posY
+            posY: 10
         });
     });
     it("Should set the production with the updated zoom", () => {
         const wrapper: ShallowWrapper<SourceEditMetaDataProps, {}> = shallow(<SourceEditMetaData {...props} />);
         const instance: SourceEditMetaData = wrapper.instance() as SourceEditMetaData;
-        const zoom: number = 10;
+        const zoom: string = "10";
         instance.setZoom(zoom);
         setSourceSpy.should.have.been.calledWith({
             ...source,
-            zoom
+            zoom: 10
         });
     });
     it("Should remove the source", () => {
