@@ -65,6 +65,35 @@ describe("Admin server", () => {
     after(() => {
         Helmet.canUseDOM = true;
         server.close();
+
+        // requestAnimationFrame polyfill https://gist.github.com/paulirish/1579671
+        // needed because jsdom doesn't implement it
+        (() => {
+            let lastTime: number = 0;
+            const vendors: string[] = ["ms", "moz", "webkit", "o"];
+            for (let x: number = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+                global.window.requestAnimationFrame = window[vendors[x] + "RequestAnimationFrame"];
+                global.window.cancelAnimationFrame = window[vendors[x] + "CancelAnimationFrame"]
+                    || global.window[vendors[x] + "CancelRequestAnimationFrame"];
+            }
+
+            if (!global.window.requestAnimationFrame) {
+                window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+                    const currTime: number = new Date().getTime();
+                    const timeToCall: number = Math.max(0, 16 - (currTime - lastTime));
+                    const id: number = global.window.setTimeout(() => { callback(currTime + timeToCall); },
+                        timeToCall);
+                    lastTime = currTime + timeToCall;
+                    return id;
+                };
+            }
+
+            if (!global.window.cancelAnimationFrame) {
+                global.window.cancelAnimationFrame = (id: number): void => {
+                    clearTimeout(id);
+                };
+            }
+        })();
     });
     it("Should render the 404 page when the URL does not match any route", async () => {
         await agent.get("/cantBeFoundYo");
