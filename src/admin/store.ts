@@ -7,10 +7,12 @@ import { createStore, Store, applyMiddleware, Middleware, compose } from "redux"
 import { RopehoAdminState, default as reducer } from "./reducer";
 import reduxThunk from "redux-thunk";
 import { ActionTypes } from "../common/modules/error";
+import { ADMIN_END_POINT } from "../common/helpers/resolveEndPoint";
 
 import FetchThunkExtras = Ropeho.FetchThunkExtras;
 
 const defaultExtras: FetchThunkExtras = {
+    host: ADMIN_END_POINT,
     init: {
         credentials: "include"
     },
