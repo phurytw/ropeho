@@ -49,8 +49,13 @@ describe("Local media manager", () => {
         mockFs.restore();
     });
     describe("Instantiating", async () => {
-        it("Should create an empty media folder", () => {
+        it("Should create an empty media folder (relative path)", () => {
             mediaManager = new MediaManager();
+            statSync(path).isDirectory().should.be.true;
+            readdirSync(path).should.be.empty;
+        });
+        it("Should create an empty media folder (absolute path)", () => {
+            mediaManager = new MediaManager(path);
             statSync(path).isDirectory().should.be.true;
             readdirSync(path).should.be.empty;
         });

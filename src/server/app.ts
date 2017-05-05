@@ -20,7 +20,8 @@ import { normalizeEmail, isEmail } from "validator";
 import { renderFile } from "ejs";
 import { uriFriendlyFormat } from "../common/helpers/uriFriendlyFormat";
 import * as connectRedis from "connect-redis";
-import { join } from "path";
+import { join, isAbsolute } from "path";
+import * as kue from "kue";
 
 // Routes
 import homeRoutes from "./controllers/home";
@@ -129,8 +130,7 @@ app.use(expressSession({
         host: config.redis.host,
         port: config.redis.port,
         pass: config.redis.password
-    }),
-    secret: config.session.secret
+    })
 }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -138,11 +138,15 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // serve local medias
-app.use(express.static(join(process.cwd(), config.media.localDirectory)));
+const localDirectory: string = process.env.MEDIA_PATH || config.media.localDirectory;
+app.use(express.static(isAbsolute(localDirectory) ? localDirectory : join(process.cwd(), config.media.localDirectory)));
 
 // Routes
 app.use("/", homeRoutes);
 app.use("/api", apiRoutes);
+
+// kue app
+app.use("/kue", kue.app);
 
 /**
  * Render view as string

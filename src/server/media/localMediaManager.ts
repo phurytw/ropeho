@@ -4,7 +4,7 @@
  */
 
 /// <reference path="../typings.d.ts" />
-import { dirname, basename, join } from "path";
+import { dirname, basename, join, isAbsolute } from "path";
 import { constants, access, accessSync, createWriteStream, createReadStream, unlink, rename, readdirSync, rmdirSync, stat, Stats } from "fs";
 import config from "../../config";
 // import * as rimraf from "rimraf";
@@ -15,8 +15,8 @@ import { includes } from "lodash";
  * Uploads and downloads files to a local directory
  */
 export default class MediaManager implements Ropeho.Media.IMediaManager {
-    constructor(public baseDirectory: string = config.media.localDirectory) {
-        this.baseDirectory = join(process.cwd(), dirname(baseDirectory), basename(baseDirectory));
+    constructor(public baseDirectory: string = process.env.MEDIA_PATH || config.media.localDirectory) {
+        this.baseDirectory = isAbsolute(baseDirectory) ? join(dirname(baseDirectory), basename(baseDirectory)) : join(process.cwd(), dirname(baseDirectory), basename(baseDirectory));
         mkdirp.sync(this.baseDirectory);
         // rimraf.sync(join(this.baseDirectory, "**", "*"));
     }
