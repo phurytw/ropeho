@@ -8,7 +8,6 @@ import { RopehoAdminState } from "./reducer";
 import { API_END_POINT } from "../common/helpers/resolveEndPoint";
 import { getActiveUploadQueue, getFile } from "./selectors";
 import { SocketEvents } from "../../src/enum";
-import config from "../config";
 import { removeEntryFromUploadQueue, setEntryInUploadQueue, setActive } from "./modules/uploadQueue";
 import { setError } from "../common/modules/error";
 import { socketAuthentication } from "../common/modules/session";
@@ -17,7 +16,7 @@ import * as sparkMD5 from "spark-md5";
 import UploadEntry = Ropeho.Socket.UploadEntry;
 import UploadOptions = Ropeho.Socket.UploadOptions;
 
-const chunkSize: number = config.media.chunkSize;
+const chunkSize: number = process.env.SOCKET_CHUNK_SIZE || 131072;
 
 export default (store: Store<RopehoAdminState>, endPoint: string = API_END_POINT): SocketIOClient.Socket => {
     if (!store || !store.dispatch || !store.getState || !store.subscribe) {
