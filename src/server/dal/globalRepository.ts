@@ -27,7 +27,10 @@ const uuidv4WithNamespaceRegex: RegExp = /^([^:]+:){1}([a-fA-F0-9]{8}-[a-fA-F0-9
  * Generic repository that uses Redis
  */
 export default class RedisGlobalRepository extends RedisGenericRepository<Entity> implements Ropeho.Models.IGenericRepository<Entity> {
-    private repositories: any;
+    private _repositories: { [key: string]: RedisGenericRepository<Entity> };
+    get repositories(): { [key: string]: RedisGenericRepository<Entity> } {
+        return this._repositories;
+    }
     /**
      * Generic repository that uses Redis
      * @param {ICombinedRedisOptions} options redis repository options
@@ -41,14 +44,14 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
     constructor(clientOrOptions: any, options?: any) {
         try {
             super(clientOrOptions, options);
-            this.namespace = "";
-            this.indexes = undefined;
+            this._namespace = "";
+            this._indexes = undefined;
         } catch (error) {
-            if (!(this.redis instanceof (redis as any).RedisClient)) {
+            if (!(this._redis instanceof (redis as any).RedisClient)) {
                 throw new Error("Failed to create Redis client instance");
             }
         }
-        this.repositories = _(config.database)
+        this._repositories = _(config.database)
             .pickBy<DatabaseConfiguration>((val: CollectionConfiguration, key: string) => val.idProperty !== undefined)
             .mapKeys<CollectionConfiguration, string>((c: CollectionConfiguration, key: string) => c.namespace)
             .mapValues<CollectionConfiguration, RedisGenericRepository<any>>((c: CollectionConfiguration, key: string) => new RedisGenericRepository<any>({ ...config.redis, ...c }))
@@ -59,7 +62,7 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      * @param {Entity|Entity[]} entity Query
      * @returns {Promise<Entity|Entity[]>} A promise that fulfills with the found entities
      */
-    get(entity?: Entity | Entity[]): Promise<Entity> | Promise<Entity[]> {
+    get(entity?: Entity | Entity[]): Promise<Entity | Entity[]> {
         if (isArray<Entity>(entity)) {
             return this.getById(map<Entity, string>(entity, (e: Entity) => e._id));
         } else if (entity && entity._id) {
@@ -81,7 +84,7 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      * @param {string|string[]} _id A string containing the ID or an array of strings containing IDs
      * @returns {Promise<Entity>|Promise<Entity[]>} A promise that fulfills with the found entities
      */
-    getById(_id: string | string[]): Promise<Entity> | Promise<Entity[]> {
+    getById(_id: string | string[]): Promise<Entity | Entity[]> {
         return new Promise<Entity | Entity[]>(async (resolve: (value?: Entity | Entity[] | PromiseLike<Entity | Entity[]>) => void, reject: (reason?: any) => void) => {
             try {
                 let ids: string[] = [];
@@ -112,12 +115,12 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      * @param {string} namespace namespace to use
      * @returns {Promise<Entity>|Promise<Entity[]>} A promise that fulfills with the newly created elements
      */
-    create(entity: Entity | Entity[], namespace?: string): Promise<Entity> | Promise<Entity[]> {
+    create(entity: Entity | Entity[], namespace?: string): Promise<Entity | Entity[]> {
         if (!namespace || typeof namespace !== "string") {
             throw new TypeError("A namespace must be used for this operation");
         }
         namespace = last(namespace) === ":" ? namespace : `${namespace}:`;
-        const repo: RedisGenericRepository<any> = this.repositories[namespace];
+        const repo: RedisGenericRepository<any> = this._repositories[namespace];
         if (!repo) {
             throw new Error(`Namespace ${namespace} is not used by the current application`);
         }
@@ -161,7 +164,7 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
             let nUpdated: number = 0;
             for (const ns of keys(sorted)) {
                 try {
-                    nUpdated += await this.repositories[ns].update(sorted[ns]);
+                    nUpdated += await this._repositories[ns].update(sorted[ns]);
                 } catch (error) {
                     reject(error);
                 }
@@ -204,7 +207,7 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
             let nDeleted: number = 0;
             for (const ns of keys(sorted)) {
                 try {
-                    nDeleted += await this.repositories[ns].delete(sorted[ns]);
+                    nDeleted += await this._repositories[ns].delete(sorted[ns]);
                 } catch (error) {
                     reject(error);
                 }
@@ -224,7 +227,7 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
             throw new Error("Must be used with a namespace");
         }
         namespace = last(namespace) === ":" ? namespace : `${namespace}:`;
-        const repository: RedisGenericRepository<any> = this.repositories[namespace];
+        const repository: RedisGenericRepository<any> = this._repositories[namespace];
         if (!repository) {
             throw new Error(`Namespace ${namespace} is not used by the current application`);
         }
@@ -238,8 +241,8 @@ export default class RedisGlobalRepository extends RedisGenericRepository<Entity
      */
     search(filters: IDictionary): Promise<any[]> {
         let promises: Promise<any>[] = [];
-        for (const ns of keys(this.repositories)) {
-            const repo: RedisGenericRepository<any> = this.repositories[ns];
+        for (const ns of keys(this._repositories)) {
+            const repo: RedisGenericRepository<any> = this._repositories[ns];
             promises = [...promises, repo.search(filters)];
         }
         return Promise.all(promises).then((results: any[]) => flattenDeep<any>(results));

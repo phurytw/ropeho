@@ -4,7 +4,4 @@
  */
 import { init } from "../src/sampleData/demoDb";
 
-init().then(() => {
-    console.info("Done");
-    return Promise.resolve();
-});
+init().then(() => console.info("Database successfully initialized with the demo data"));

@@ -14,7 +14,7 @@ import RedisGlobalRepository from "../dal/globalRepository";
 import config from "../../config";
 import { createClient, RedisClient } from "redis";
 import { categories, users } from "../../sampleData/testDb";
-import { map } from "lodash";
+import { map, values } from "lodash";
 should();
 use(chaiAsPromised);
 use(sinonChai);
@@ -74,6 +74,9 @@ describe("Redis global repository", () => {
         getByIdSpy.restore();
         updateSpy.restore();
         deleteSpy.restore();
+        for (const subRepository of values(repository.repositories)) {
+            subRepository.redis.quit();
+        }
     });
     describe("Fetching data", () => {
         it("Should get all entities", async () => {

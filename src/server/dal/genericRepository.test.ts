@@ -30,7 +30,7 @@ describe("Redis generic repository", () => {
         redis = createClient({ ...config.redis, prefix: namespace });
         redis.on("ready", () => {
             // Initializing the repository
-            repository = new RedisGenericRepository(redis, {
+            repository = new RedisGenericRepository<Entity>(redis, {
                 namespace,
                 idProperty: config.database.defaultIdProperty
             });
@@ -48,6 +48,9 @@ describe("Redis generic repository", () => {
         multi.exec(() => {
             done();
         });
+    });
+    after(() => {
+        (repository as RedisGenericRepository<Entity>).redis.quit();
     });
     describe("Fetching data", () => {
         it("Should not fail if there is no entities", () => {

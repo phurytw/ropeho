@@ -23,7 +23,6 @@ import Category = Ropeho.Models.Category;
 import Media = Ropeho.Models.Media;
 import Source = Ropeho.Models.Source;
 import User = Ropeho.Models.User;
-import IGenericRepository = Ropeho.Models.IGenericRepository;
 
 // tslint:disable:no-http-string
 
@@ -1968,19 +1967,19 @@ export const init: () => Promise<void> =
     async (): Promise<void> => {
         // tslint:disable:no-console
         console.info("Initializing the database with demo data ...");
-        const categoryRepository: IGenericRepository<Category> = new GenericRepository<Category>({
+        const categoryRepository: GenericRepository<Category> = new GenericRepository<Category>({
             ...config.redis,
             ...config.database.categories
         });
-        const productionRepository: IGenericRepository<Production> = new GenericRepository<Production>({
+        const productionRepository: GenericRepository<Production> = new GenericRepository<Production>({
             ...config.redis,
             ...config.database.productions
         });
-        const presentationRepository: IGenericRepository<PresentationContainer> = new GenericRepository<PresentationContainer>({
+        const presentationRepository: GenericRepository<PresentationContainer> = new GenericRepository<PresentationContainer>({
             ...config.redis,
             ...config.database.presentations
         });
-        const userRepository: IGenericRepository<User> = new GenericRepository<User>({
+        const userRepository: GenericRepository<User> = new GenericRepository<User>({
             ...config.redis,
             ...config.database.users
         });
@@ -2011,7 +2010,7 @@ export const init: () => Promise<void> =
 
         const processVideoMedia: (url: string, srcBase: string, previewBase: string, fallbackBase: string) => Promise<void> =
             (url: string, srcBase: string, previewBase: string, fallbackBase: string): Promise<void> => new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
-                const handleImageResponse: (res: IncomingMessage) => void =
+                const handleVideoResponse: (res: IncomingMessage) => void =
                     (res: IncomingMessage): void => {
                         const destStream: NodeJS.WritableStream = mediaManager.startUpload(srcBase);
                         res.pipe(destStream);
@@ -2032,9 +2031,9 @@ export const init: () => Promise<void> =
                         });
                     };
                 if (url.startsWith("https")) {
-                    httpsGet(url, handleImageResponse);
+                    httpsGet(url, handleVideoResponse);
                 } else {
-                    httpGet(url, handleImageResponse);
+                    httpGet(url, handleVideoResponse);
                 }
             });
 
@@ -2138,4 +2137,10 @@ export const init: () => Promise<void> =
                 continue;
             }
         }
+
+        // close redis connections
+        productionRepository.redis.quit();
+        categoryRepository.redis.quit();
+        presentationRepository.redis.quit();
+        userRepository.redis.quit();
     };
