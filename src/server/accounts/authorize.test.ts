@@ -19,6 +19,7 @@ import { computeHashSync } from "../accounts/password";
 import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
 import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 import GenericRepository from "../dal/genericRepository";
 import { isAdmin, isAuthenticated, deserializeCookie } from "../accounts/authorize";
 import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
@@ -76,7 +77,7 @@ describe("Authorize middlewares", () => {
         sandbox = sinonSandbox.create();
 
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             testApp.use(app);
 

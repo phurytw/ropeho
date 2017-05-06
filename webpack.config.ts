@@ -8,6 +8,24 @@ import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 
 export const cssModulePattern: string = "[name]__[local]___[hash:base64:8]";
 
+const envDefines: { [key: string]: string } = {
+    "process.env.SOCKET_CHUNK_SIZE": JSON.stringify(process.env.SOCKET_CHUNK_SIZE),
+    "process.env.API_ADDR": JSON.stringify(process.env.API_ADDR),
+    "process.env.API_PORT": JSON.stringify(process.env.API_PORT),
+    "process.env.ADMIN_ADDR": JSON.stringify(process.env.ADMIN_ADDR),
+    "process.env.ADMIN_PORT": JSON.stringify(process.env.ADMIN_PORT),
+    "process.env.CLIENT_ADDR": JSON.stringify(process.env.CLIENT_ADDR),
+    "process.env.CLIENT_PORT": JSON.stringify(process.env.CLIENT_PORT),
+    "process.env.CUSTOMER_ADDR": JSON.stringify(process.env.CUSTOMER_ADDR),
+    "process.env.CUSTOMER_PORT": JSON.stringify(process.env.CUSTOMER_PORT),
+    "process.env.ADMIN_DEV_ADDR": JSON.stringify(process.env.ADMIN_DEV_ADDR),
+    "process.env.ADMIN_DEV_PORT": JSON.stringify(process.env.ADMIN_DEV_PORT),
+    "process.env.CLIENT_DEV_ADDR": JSON.stringify(process.env.CLIENT_DEV_ADDR),
+    "process.env.CLIENT_DEV_PORT": JSON.stringify(process.env.CLIENT_DEV_PORT),
+    "process.env.CUSTOMER_DEV_ADDR": JSON.stringify(process.env.CUSTOMER_DEV_ADDR),
+    "process.env.CUSTOMER_DEV_PORT": JSON.stringify(process.env.CUSTOMER_DEV_PORT)
+};
+
 export const adminConfig: (env: string) => Configuration =
     (env: string): Configuration => {
         // add hot module replacement if not in production
@@ -23,10 +41,12 @@ export const adminConfig: (env: string) => Configuration =
         const devtool: "source-map" | "eval-source-map" = env === "production" ? "source-map" : "source-map";
         let plugins: Plugin[] = [new optimize.CommonsChunkPlugin({
             names: ["vendor", "common"]
-        }), new ExtractTextPlugin("styles.css")];
+        }),
+        new ExtractTextPlugin("styles.css")];
         // set plugins hot module replacement plugins if not in production
         plugins = env === "production" ? [...plugins, new DefinePlugin({
-            "process.env.NODE_ENV": JSON.stringify("production")
+            "process.env.NODE_ENV": JSON.stringify("production"),
+            ...envDefines
         }),
         new LoaderOptionsPlugin({
             minimize: true,
@@ -38,7 +58,7 @@ export const adminConfig: (env: string) => Configuration =
                 warnings: false
             },
             sourceMap: true
-        })] : [...plugins,
+        })] : [...plugins, new DefinePlugin(envDefines),
         new HotModuleReplacementPlugin(),
         new NamedModulesPlugin()];
         const cssRule: Rule = env === "production" ? {
@@ -69,7 +89,7 @@ export const adminConfig: (env: string) => Configuration =
             entry,
             output: {
                 filename: "[name].js",
-                path: resolve(__dirname, "dist", "static"),
+                path: resolve(__dirname, "dist", "admin", "static"),
                 publicPath: "/"
             },
             devtool,
@@ -80,7 +100,7 @@ export const adminConfig: (env: string) => Configuration =
                 rules: [
                     {
                         test: /\.tsx?$/,
-                        use: ["awesome-typescript-loader?configFileName=tsconfig.admin.json"],
+                        use: ["awesome-typescript-loader"],
                         exclude: /node_modules/
                     },
                     cssRule
@@ -108,7 +128,8 @@ export const clientConfig: (env: string) => Configuration =
         }), new ExtractTextPlugin("styles.css")];
         // set plugins hot module replacement plugins if not in production
         plugins = env === "production" ? [...plugins, new DefinePlugin({
-            "process.env.NODE_ENV": JSON.stringify("production")
+            "process.env.NODE_ENV": JSON.stringify("production"),
+            ...envDefines
         }),
         new LoaderOptionsPlugin({
             minimize: true,
@@ -120,7 +141,7 @@ export const clientConfig: (env: string) => Configuration =
                 warnings: false
             },
             sourceMap: true
-        })] : [...plugins,
+        })] : [...plugins, new DefinePlugin(envDefines),
         new HotModuleReplacementPlugin(),
         new NamedModulesPlugin()];
         const cssRule: Rule = env === "production" ? {
@@ -151,7 +172,7 @@ export const clientConfig: (env: string) => Configuration =
             entry,
             output: {
                 filename: "[name].js",
-                path: resolve(__dirname, "dist", "static"),
+                path: resolve(__dirname, "dist", "client", "static"),
                 publicPath: "/"
             },
             devtool,
@@ -162,7 +183,7 @@ export const clientConfig: (env: string) => Configuration =
                 rules: [
                     {
                         test: /\.tsx?$/,
-                        use: ["awesome-typescript-loader?configFileName=tsconfig.client.json"],
+                        use: ["awesome-typescript-loader"],
                         exclude: /node_modules/
                     },
                     cssRule,

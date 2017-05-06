@@ -2,7 +2,6 @@
  * @file Layout for the client application
  * @author François Nguyen <https://github.com/lith-light-g>
  */
-/// <reference path="../../typings.d.ts" />
 /// <reference path="../../../../definitions/react-router-config/index.d.ts" />
 import * as React from "react";
 import Helmet from "react-helmet";
@@ -45,6 +44,7 @@ export class Layout extends React.Component<LayoutProps, {}> {
         return <div className={container}>
             <Helmet>
                 <html lang="fr" />
+                <base href="/" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <link href="https://fonts.googleapis.com/css?family=Playfair+Display|Playfair+Display+SC" rel="stylesheet" />
                 <script src="https://use.fontawesome.com/c4ead80743.js"></script>

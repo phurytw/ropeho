@@ -3,11 +3,10 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 import { trim } from "lodash";
-import config from "../../config";
-const endPoints: Ropeho.Configuration.EndPointsConfiguration = config.endPoints;
 
 const resolveEndPoint: (host: string, port?: number) => string =
     (host: string, port?: number): string => {
+        port = typeof port === "string" ? parseInt(port) : port;
         host = host.toLowerCase();
         host = trim(host);
         host = trim(host, ":");
@@ -23,8 +22,38 @@ const resolveEndPoint: (host: string, port?: number) => string =
         }
     };
 
+// tslint:disable:no-http-string
+export const endPoints: Ropeho.Configuration.EndPointsConfiguration = {
+    api: {
+        host: process.env.API_ADDR || "http://localhost",
+        port: process.env.API_PORT || 8000
+    },
+    client: {
+        host: process.env.CLIENT_ADDR || "http://localhost",
+        port: process.env.CLIENT_PORT || 3000
+    },
+    admin: {
+        host: process.env.ADMIN_ADDR || "http://localhost",
+        port: process.env.ADMIN_PORT || 3010
+    },
+    customer: {
+        host: process.env.CUSTOMER_ADDR || "http://localhost",
+        port: process.env.CUSTOMER_PORT || 3020
+    },
+    clientDevServer: {
+        host: process.env.CLIENT_DEV_ADDR || "http://localhost",
+        port: process.env.CLIENT_DEV_PORT || 3001
+    },
+    adminDevServer: {
+        host: process.env.ADMIN_DEV_ADDR || "http://localhost",
+        port: process.env.ADMIN_DEV_PORT || 3011
+    },
+    customerDevServer: {
+        host: process.env.CUSTOMER_DEV_ADDR || "http://localhost",
+        port: process.env.CUSTOMER_DEV_PORT || 3021
+    }
+};
 export const API_END_POINT: string = resolveEndPoint(endPoints.api.host, endPoints.api.port);
-export const MEDIA_END_POINT: string = resolveEndPoint(endPoints.media.host, endPoints.media.port);
 export const ADMIN_END_POINT: string = resolveEndPoint(endPoints.admin.host, endPoints.admin.port);
 export const ADMIN_DEV_SERVER_END_POINT: string = resolveEndPoint(endPoints.adminDevServer.host, endPoints.adminDevServer.port);
 export const CLIENT_END_POINT: string = resolveEndPoint(endPoints.client.host, endPoints.client.port);

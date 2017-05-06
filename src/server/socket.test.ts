@@ -549,18 +549,18 @@ describe("Socket IO Server", () => {
                     [src]: Source[] = media.sources,
                     filename: string = "test.txt";
                 src.src = "";
-                const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(`${src._id}_${filename}`)}`;
-                    clientIo.on(SocketEvents.UploadEnd, () => {
-                        if (media.type === MediaTypes.Video) {
-                            task.createProcessVideoTask.should.have.been.calledOnce;
-                        } else {
-                            task.createProcessImageTask.should.have.been.calledOnce;
-                        }
-                        task.createFileUploadTask.should.have.been.calledOnce;
-                        task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
-                        GlobalRepository.prototype.update.should.have.been.calledOnce;
-                        done();
-                    });
+                const expectedSrc: string = `categories/${uriFriendlyFormat(category.name)}/${uriFriendlyFormat(filename)}`;
+                clientIo.on(SocketEvents.UploadEnd, () => {
+                    if (media.type === MediaTypes.Video) {
+                        task.createProcessVideoTask.should.have.been.calledOnce;
+                    } else {
+                        task.createProcessImageTask.should.have.been.calledOnce;
+                    }
+                    task.createFileUploadTask.should.have.been.calledOnce;
+                    task.createFileUploadTask.should.have.been.calledWith({ source: expectedSrc, dest: expectedSrc } as Ropeho.Tasks.FileUploadOptions);
+                    GlobalRepository.prototype.update.should.have.been.calledOnce;
+                    done();
+                });
                 clientIo.on(SocketEvents.UploadInit, () => {
                     for (let i: number = 0; i < expectedBuffer.length; i += chunkSize) {
                         clientIo.emit(SocketEvents.Upload, expectedBuffer.slice(i, i + chunkSize));

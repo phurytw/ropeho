@@ -79,12 +79,11 @@ export class Layout extends React.Component<LayoutProps, {}> {
             return <div className={container}>
                 <Helmet>
                     <html lang="fr" />
+                    <base href="/" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
                     <title>Ropeho Administration</title>
                     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" />
                     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-                    {/* tslint:disable-next-line:no-http-string */}
-                    <link rel="stylesheet" href="http://localhost:3011/styles.css" />
                 </Helmet>
                 <AppBar fixed={true}>
                     <h1 className={title}><a href="/">Ropeho Administration</a></h1>

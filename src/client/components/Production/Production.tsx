@@ -4,7 +4,7 @@
  */
 // tslint:disable:react-this-binding-issue
 import * as React from "react";
-import { PartialRouteComponentProps, Route } from "react-router-dom";
+import { RouteComponentProps, Route } from "react-router-dom";
 import Banner from "../../../common/components/Banner";
 import ContainerRenderer from "../../../common/components/ContainerRenderer";
 import StrictMasonryContainer from "../../../common/components/StrictMasonryContainer";
@@ -16,7 +16,7 @@ export interface ProductionParams {
     mediaNumber?: string;
 }
 
-export interface ProductionProps extends PartialRouteComponentProps<ProductionParams> {
+export interface ProductionProps extends Partial<RouteComponentProps<ProductionParams>> {
     production: Ropeho.Models.Production;
 }
 
@@ -41,7 +41,7 @@ export class Production extends React.Component<ProductionProps, {}> {
                 <StrictMasonryContainer blockSize={160} containerClassName={masonryContainer} presentationClassName={masonryItem} />
             </ContainerRenderer>
             <Route path={`/:productionName/:mediaNumber`}
-                render={(routeProps: PartialRouteComponentProps<ViewerParams>) => <Viewer {...routeProps} medias={medias} />} />
+                render={(routeProps: Partial<RouteComponentProps<ViewerParams>>) => <Viewer {...routeProps} medias={medias} />} />
         </div>;
     }
 }

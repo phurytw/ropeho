@@ -13,10 +13,8 @@ import {
     CLIENT_END_POINT,
     CUSTOMER_DEV_SERVER_END_POINT,
     CUSTOMER_END_POINT,
-    MEDIA_END_POINT
+    endPoints
 } from "./resolveEndPoint";
-import config from "../../config";
-const endPoints: Ropeho.Configuration.EndPointsConfiguration = config.endPoints;
 should();
 
 describe("End point helpers", () => {
@@ -45,8 +43,6 @@ describe("End point helpers", () => {
     describe("Pre resolved end points", () => {
         it("Should expose a string to the API server", () =>
             API_END_POINT.should.equal(resolveEndPoint(endPoints.api.host, endPoints.api.port)));
-        it("Should expose a string to the media server", () =>
-            MEDIA_END_POINT.should.equal(resolveEndPoint(endPoints.media.host, endPoints.media.port)));
         it("Should expose a string to the admin server", () =>
             ADMIN_END_POINT.should.equal(resolveEndPoint(endPoints.admin.host, endPoints.admin.port)));
         it("Should expose a string to the admin dev server", () =>

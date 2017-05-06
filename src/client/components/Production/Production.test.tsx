@@ -22,7 +22,10 @@ describe("Production component", () => {
         match: {
             params: {
                 productionName: production.name
-            }
+            },
+            isExact: false,
+            path: "",
+            url: ""
         }
     };
     describe("Element", () => {
@@ -40,7 +43,7 @@ describe("Production component", () => {
             containerRenderer.prop("presentations").should.have.lengthOf(production.medias.length);
         });
         it("Should display the currently viewed media", () => {
-            const wrapper: ReactWrapper<ProductionProps, {}> = mount(<StaticRouter history={undefined} location={`/${production.name}/0`}>
+            const wrapper: ReactWrapper<ProductionProps, {}> = mount(<StaticRouter location={`/${production.name}/0`} context={{}}>
                 <Production {...props} />
             </StaticRouter>);
             wrapper.find(Viewer).should.have.lengthOf(1);

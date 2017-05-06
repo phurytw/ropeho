@@ -3,7 +3,7 @@
  * @author François Nguyen <https://github.com/lith-light-g>
  */
 import * as React from "react";
-import { PartialRouteComponentProps } from "react-router-dom";
+import { RouteComponentProps } from "react-router-dom";
 import { viewerStyles, viewingStyles, closeButtonStyles } from "./styles.css";
 import { MediaTypes } from "../../../enum";
 import MediaPreview from "../../../common/components/MediaPreview";
@@ -19,7 +19,7 @@ export interface ViewerParams {
     mediaNumber?: string;
 }
 
-export interface ViewerProps extends PartialRouteComponentProps<ViewerParams> {
+export interface ViewerProps extends Partial<RouteComponentProps<ViewerParams>> {
     medias?: Media[];
 }
 

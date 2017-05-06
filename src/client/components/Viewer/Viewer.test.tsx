@@ -28,7 +28,10 @@ describe("Viewer component", () => {
             params: {
                 productionName: productions[0].name,
                 mediaNumber: "0"
-            }
+            },
+            isExact: false,
+            path: "",
+            url: ""
         }
     };
     const imageMedia: Media = {

@@ -4,6 +4,8 @@
         "removeComments": true
     },
     "files": [
-        "./src/client/index.tsx"
+        "./src/admin/server.tsx",
+        "./src/client/server.tsx",
+        "./src/server/index.ts"
     ]
 }

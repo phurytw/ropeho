@@ -6,7 +6,7 @@
 import * as React from "react";
 import { pointer } from "./styles.css";
 
-export default (props?: React.HTMLProps<HTMLDivElement>) => <div {...props}>
+export default (props?: React.HTMLProps<HTMLDivElement>) => <div style={(this.props && this.props.style) || {}}>
     <div className={pointer}>
         <div></div>
         <div></div>

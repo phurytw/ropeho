@@ -77,4 +77,4 @@ export class MediaPreviewImage extends React.Component<MediaPreviewProps, {}> {
     }
 }
 
-export default mediaPreview<MediaPreviewProps, {}>(MediaPreviewImage);
+export default mediaPreview(MediaPreviewImage);

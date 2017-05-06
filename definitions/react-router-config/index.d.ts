@@ -4,28 +4,30 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.2
 
-import * as React from "react";
-import { RouteComponentProps, match } from "react-router";
-import { Location } from "history";
+declare module "react-router-config" {
+    import * as React from "react";
+    import { RouteComponentProps, match } from "react-router";
+    import { Location } from "history";
 
-export interface RouteConfigComponentProps<T> extends RouteComponentProps<T> {
-    route?: RouteConfig;
+    export interface RouteConfigComponentProps<T> extends RouteComponentProps<T> {
+        route?: RouteConfig;
+    }
+
+    export interface RouteConfig {
+        location?: Location;
+        component?: React.SFC<Partial<RouteConfigComponentProps<any>> | void> | React.ComponentClass<Partial<RouteConfigComponentProps<any>> | void>;
+        path?: string;
+        exact?: boolean;
+        strict?: boolean;
+        routes?: RouteConfig[];
+    }
+
+    export interface MatchedRoute<T> {
+        route: RouteConfig;
+        match: match<T>;
+    }
+
+    export function matchRoutes<T>(routes: RouteConfig[], pathname: string): Array<MatchedRoute<T>>;
+
+    export function renderRoutes(routes: RouteConfig[] | undefined): JSX.Element;
 }
-
-export interface RouteConfig {
-    location?: Location;
-    component?: React.SFC<Partial<RouteConfigComponentProps<any>> | void> | React.ComponentClass<Partial<RouteConfigComponentProps<any>> | void>;
-    path?: string;
-    exact?: boolean;
-    strict?: boolean;
-    routes?: RouteConfig[];
-}
-
-export interface MatchedRoute<T> {
-    route: RouteConfig;
-    match: match<T>;
-}
-
-export function matchRoutes<T>(routes: RouteConfig[], pathname: string): Array<MatchedRoute<T>>;
-
-export function renderRoutes(routes: RouteConfig[] | undefined): JSX.Element;

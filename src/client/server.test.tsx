@@ -10,7 +10,7 @@ import * as sinonChai from "sinon-chai";
 import * as supertest from "supertest";
 import { Server } from "http";
 import * as detect from "detect-port";
-import config from "../config";
+import { endPoints } from "../common/helpers/resolveEndPoint";
 import app from "./server";
 import * as renderingModule from "../common/modules/rendering";
 import * as nock from "nock";
@@ -29,7 +29,7 @@ describe("Admin server", () => {
     let agent: supertest.SuperTest<supertest.Test>;
     before(async () => {
         // start the server
-        port = await detect(config.endPoints.admin.port);
+        port = await detect(endPoints.admin.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             server = app.listen(port, (err: Error) => {
                 if (err) {

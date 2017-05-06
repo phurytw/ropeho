@@ -7,6 +7,8 @@ import * as sinonChai from "sinon-chai";
 import * as React from "react";
 import { shallow, ShallowWrapper } from "enzyme";
 import { presentations } from "../../../sampleData/testDb";
+import hook from "../../helpers/cssModulesHook";
+hook();
 import { PresentationProps, Presentation } from "./Presentation";
 import MediaPreview from "../MediaPreview";
 should();

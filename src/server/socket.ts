@@ -15,6 +15,7 @@ import GlobalRepository from "./dal/globalRepository";
 import { map, filter, without, sumBy, isArray, isEmpty, cloneDeep, identity, includes } from "lodash";
 import * as _ from "lodash";
 import config from "../config";
+import { API_END_POINT } from "../common/helpers/resolveEndPoint";
 import { deserializeCookie } from "./accounts/authorize";
 import { createFileUploadTask, createProcessImageTask, createProcessVideoTask } from "./media/taskQueue";
 import { createHash, Hash } from "crypto";
@@ -310,9 +311,15 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     }
                     // Create a unique filename
                     const filename: string = uploadOptions.filename || "";
-                    source.src = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${filename}`)}`;
-                    source.preview = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_preview${extname(filename)}`)}`;
-                    source.fallback = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_fallback${extname(filename)}`)}`;
+                    if (basename(filename, extname(filename))) {
+                        source.src = `${directory}/${subDir}/${uriFriendlyFormat(filename)}`;
+                        source.preview = `${directory}/${subDir}/${uriFriendlyFormat(`${basename(filename, extname(filename))}_preview${extname(filename)}`)}`;
+                        source.fallback = `${directory}/${subDir}/${uriFriendlyFormat(`${basename(filename, extname(filename))}_fallback${extname(filename)}`)}`;
+                    } else {
+                        source.src = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${filename}`)}`;
+                        source.preview = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_preview${extname(filename)}`)}`;
+                        source.fallback = `${directory}/${subDir}/${uriFriendlyFormat(`${source._id}_${basename(filename, extname(filename))}_fallback${extname(filename)}`)}`;
+                    }
                     source.src = await mediaManager.newName(source.src);
                     source.preview = await mediaManager.newName(source.preview);
                     source.fallback = await mediaManager.newName(source.fallback);
@@ -402,9 +409,9 @@ export const attach: (incomingIo: SocketIO.Server) => SocketIO.Server =
                     }
 
                     // Update source with the real paths
-                    sourceTarget.src = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.src}`;
-                    sourceTarget.preview = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.preview}`;
-                    sourceTarget.fallback = `${config.endPoints.api.host}:${config.endPoints.api.port}/${sourceTarget.fallback}`;
+                    sourceTarget.src = `${API_END_POINT}/${sourceTarget.src}`;
+                    sourceTarget.preview = `${API_END_POINT}/${sourceTarget.preview}`;
+                    sourceTarget.fallback = `${API_END_POINT}/${sourceTarget.fallback}`;
 
                     // Fallback media only used in videos
                     if (mediaTarget.type !== MediaTypes.Video) {

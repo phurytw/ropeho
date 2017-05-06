@@ -17,6 +17,7 @@ import mailer from "../helpers/mailer";
 import { renderAsString } from "../app";
 import { authenticate, AuthenticateOptions } from "passport";
 import config from "../../config";
+import { CUSTOMER_END_POINT, API_END_POINT } from "../../common/helpers/resolveEndPoint";
 import { isUser } from "../../common/helpers/entityUtilities";
 import ErrorResponse from "../helpers/errorResponse";
 import { Roles, ErrorCodes } from "../../enum";
@@ -142,8 +143,8 @@ router.post("/",
             await mailer.sendMail({
                 ...config.mailer.mailOptions,
                 to: user.email,
-                text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.endPoints.client}/register/${user.token}`,
-                html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.endPoints.client })
+                text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${CUSTOMER_END_POINT}/register/${user.token}`,
+                html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: CUSTOMER_END_POINT })
             });
             res.status(200).send(user);
         } catch (error) {
@@ -240,8 +241,8 @@ router.post("/register/:token", async (req: Request, res: Response) => {
             ...config.mailer.mailOptions,
             to: user.email,
             subject: "Invitation sur Ropeho Productions",
-            text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${config.endPoints.client}/register/${user.token}`,
-            html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: config.endPoints.client })
+            text: `Vous êtes invités à vous inscrire sur Ropeho Productions. Veuillez suivre le lien suivant: ${CUSTOMER_END_POINT}/register/${user.token}`,
+            html: await renderAsString("invitation.html", { name: user.name, token: user.token, host: CUSTOMER_END_POINT })
         });
         res.status(200).send({});
     } catch (error) {
@@ -250,7 +251,7 @@ router.post("/register/:token", async (req: Request, res: Response) => {
 });
 
 router.get("/register/:token/facebook", (req: Request, res: Response, next: NextFunction) =>
-    authenticate("facebook", { callbackURL: `${config.endPoints.api}/api/users/register/${req.params.token}/facebook` } as AuthenticateOptions)(req, res, next),
+    authenticate("facebook", { callbackURL: `${API_END_POINT}/api/users/register/${req.params.token}/facebook` } as AuthenticateOptions)(req, res, next),
     async (req: Request, res: Response) => {
         try {
             let [user]: User[] = await userRepository.search({ token: req.params.token });
@@ -293,8 +294,8 @@ router.get("/register/:token/facebook", (req: Request, res: Response, next: Next
                 ...config.mailer.mailOptions,
                 to: user.email,
                 subject: "Confirmation de votre inscription sur Ropeho Productions",
-                text: `${user.name}, vous avez confirmé votre inscription sur Ropeho Productions. Vous pouvez dorénavant aller sur votre espace client et télécharger vos photos sur le lien suivant: ${config.endPoints.client}/dashboard`,
-                html: await renderAsString("confirmation.html", { name: user.name, host: config.endPoints.client })
+                text: `${user.name}, vous avez confirmé votre inscription sur Ropeho Productions. Vous pouvez dorénavant aller sur votre espace client et télécharger vos photos sur le lien suivant: ${CUSTOMER_END_POINT}/dashboard`,
+                html: await renderAsString("confirmation.html", { name: user.name, host: CUSTOMER_END_POINT })
             });
             res.status(200).send({});
         } catch (error) {

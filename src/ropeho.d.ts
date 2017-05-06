@@ -358,10 +358,6 @@ declare namespace Ropeho {
              */
             redis?: RedisConfiguration;
             /**
-             * Hosts URLs
-             */
-            endPoints?: EndPointsConfiguration;
-            /**
              * Mailer configuration
              */
             mailer?: MailerConfiguration;
@@ -494,10 +490,6 @@ declare namespace Ropeho {
              * Web API server
              */
             api: EndPointConfiguration;
-            /**
-             * Media storage
-             */
-            media: EndPointConfiguration;
             /**
              * Client server
              */
@@ -907,5 +899,25 @@ declare namespace nodemailer {
 declare namespace NodeJS {
     interface Global {
         window: Window;
+        [key: string]: any;
+        document: Document;
     }
+}
+
+interface Window {
+    [key: string]: any;
+    __REDUX_STATE__: any;
+    __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any;
+    File: typeof File;
+    Image: typeof Image;
+}
+
+// Remove those when type definitions are available
+interface NodeModule {
+    hot: {
+        accept: (pathToRootComponent: string, callback: () => void) => void
+    };
+}
+declare module "react-hot-loader" {
+    const AppContainer: (props?: { children: JSX.Element; }) => JSX.Element;
 }

@@ -27,3 +27,15 @@ RUN npm install -g typescript ts-node mocha
 
 # prepare to run as node
 USER node
+
+# copying files
+ADD . $HOME/app/
+
+# fixing type definition
+COPY ./docker/admin/DatePicker.d.ts $HOME/app/node_modules/react-toolbox/lib/date_picker/DatePicker.d.ts
+
+# building app
+ENV NODE_ENV=production
+RUN npm run build:servers
+EXPOSE 8000
+CMD ["node", "dist/src/server/index.js"]

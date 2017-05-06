@@ -6,7 +6,7 @@ import * as React from "react";
 import { Dispatch } from "redux";
 import * as errorModule from "../../../common/modules/error";
 import { connect } from "react-redux";
-import { PartialRouteComponentProps, Redirect } from "react-router-dom";
+import { RouteComponentProps, Redirect } from "react-router-dom";
 import { RouteConfig } from "react-router-config";
 
 export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: NotFoundProps) => NotFoundProps =
@@ -14,7 +14,7 @@ export const mapDispatchToProps: (dispatch: Dispatch<any>, ownProps?: NotFoundPr
         setError: (error: Ropeho.IErrorResponse) => dispatch<errorModule.Actions.SetError, {}>(errorModule.setError(error))
     });
 
-export interface NotFoundProps extends PartialRouteComponentProps<void> {
+export interface NotFoundProps extends Partial<RouteComponentProps<void>> {
     setError?: (error: Ropeho.IErrorResponse) => void;
     route?: RouteConfig;
 }
@@ -24,9 +24,9 @@ export class NotFound extends React.Component<NotFoundProps, {}> {
         super(props);
     }
     componentWillMount(): void {
-        const { setError, location: { pathname, query } }: NotFoundProps = this.props;
+        const { setError, location: { pathname, state } }: NotFoundProps = this.props;
         setError({
-            developerMessage: `Not found ${pathname}${query ? `?${query}` : ""}`,
+            developerMessage: `Not found ${pathname}${state ? `?${state}` : ""}`,
             userMessage: "Page non trouvée"
         });
     }

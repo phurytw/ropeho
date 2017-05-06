@@ -23,7 +23,7 @@ import { categories, productions } from "../../sampleData/testDb";
 import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import * as socket from "../socket";
 import * as detect from "detect-port";
-import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 should();
 use(sinonChai);
 
@@ -61,7 +61,7 @@ describe("Category controller", () => {
         reqUser: User;
     before(async () => {
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

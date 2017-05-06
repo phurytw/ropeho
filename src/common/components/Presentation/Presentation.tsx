@@ -44,15 +44,10 @@ export class Presentation extends React.Component<PresentationProps, Presentatio
     }
     render(): JSX.Element {
         const { mainMedia, alternateMedia, mainText, alternateText }: PresentationProps = this.props;
-        const divProps: React.HTMLProps<HTMLDivElement> = { ...this.props };
-        delete (divProps as PresentationProps).mainMedia;
-        delete (divProps as PresentationProps).alternateMedia;
-        delete (divProps as PresentationProps).mainText;
-        delete (divProps as PresentationProps).alternateText;
         const main: Media = isMediaEmpty(mainMedia) ? (isMediaEmpty(alternateMedia) ? undefined : alternateMedia) : mainMedia;
         const alternate: Media = isMediaEmpty(alternateMedia) ? undefined : alternateMedia;
         return <div
-            {...divProps}
+            style={this.props.style}
             onMouseEnter={this.setActive}
             onMouseLeave={this.setInactive}
             onClick={this.switchActive}

@@ -5,8 +5,8 @@
 
 /* tslint:disable:no-console */
 import app from "./app";
-import * as detect from "detect-port";
 import config from "../config";
+import { endPoints } from "../common/helpers/resolveEndPoint";
 import GenericRepository from "./dal/genericRepository";
 import { computeHashSync } from "./accounts/password";
 import { computeToken } from "./accounts/token";
@@ -19,24 +19,21 @@ import { Server, createServer } from "http";
  */
 const startApp: () => void =
     (): void => {
-        detect(config.endPoints.api.port, (err: Error, port: number) => {
+        userRepository.redis.quit();
+        const port: number = process.env.PORT || endPoints.api.port || 8000;
+        const server: Server = createServer(app);
+        init(server);
+        server.listen(port, (err: Error) => {
             if (err) {
-                throw err;
+                console.error(err);
             }
-            const server: Server = createServer(app);
-            init(server);
-            server.listen(port, (err: Error) => {
-                if (err) {
-                    console.error(err);
-                }
-                console.info(`API Server listening on ${port}`);
-            });
+            console.info(`API Server listening on ${port}`);
         });
     };
 
 // create admin account
 import User = Ropeho.Models.User;
-const userRepository: Ropeho.Models.IGenericRepository<User> = new GenericRepository<User>({
+const userRepository: GenericRepository<User> = new GenericRepository<User>({
     ...config.redis,
     ...config.database.users
 });

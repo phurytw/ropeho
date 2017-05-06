@@ -130,12 +130,11 @@ export class Login extends React.PureComponent<LoginProps, LoginState> {
         return <div className={container}>
             <Helmet>
                 <html lang="fr" />
+                <base href="/" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>Ropeho Administration</title>
                 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" />
                 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-                {/* tslint:disable-next-line:no-http-string */}
-                <link rel="stylesheet" href="http://localhost:3011/styles.css" />
             </Helmet>
             <div className={element}>
                 <img className={logoStyles} src={`data:image/jpeg;base64,${logo}`} alt="Ropeho Productions logo" />

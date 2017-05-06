@@ -1,18 +1,21 @@
 {
     "compilerOptions": {
         "lib": [
-            "es6",
+            "es2015",
             "dom"
         ],
         "target": "es5",
         "jsx": "react",
-        "noUnusedLocals": true,
         "noImplicitAny": true,
         "sourceMap": true,
         "pretty": true,
-        "allowJs": true
+        "allowJs": true,
+        "outDir": "dist"
     },
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "dist",
+        "DatePicker.d.ts",
+        "docker"
     ]
 }

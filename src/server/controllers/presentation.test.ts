@@ -22,7 +22,7 @@ import { Roles } from "../../enum";
 import { presentations } from "../../sampleData/testDb";
 import * as socket from "../socket";
 import * as detect from "detect-port";
-import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 should();
 use(sinonChai);
 
@@ -59,7 +59,7 @@ describe("PresentationContainer controller", () => {
         reqUser: User;
     before(async () => {
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

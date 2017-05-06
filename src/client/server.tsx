@@ -7,7 +7,6 @@ import * as React from "react";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import * as express from "express";
 import { Express, Request, Response, NextFunction } from "express-serve-static-core";
-import * as detect from "detect-port";
 import { Store, Dispatch } from "redux";
 import { RopehoClientState } from "./reducer";
 import { StaticRouter } from "react-router-dom";
@@ -17,7 +16,7 @@ import * as serialize from "serialize-javascript";
 import { setRendered } from "../common/modules/rendering";
 import { Provider } from "react-redux";
 import { Helmet, HelmetData } from "react-helmet";
-import config from "../config";
+import { endPoints } from "../common/helpers/resolveEndPoint";
 import { CLIENT_DEV_SERVER_END_POINT, API_END_POINT } from "../common/helpers/resolveEndPoint";
 import createStore from "./store";
 import * as httpProxy from "http-proxy";
@@ -102,13 +101,15 @@ app.get("*", (req: Request, res: Response) => {
                     return;
                 }
 
-                res.send(`<!DOCTYPE html>${renderToStaticMarkup(<html lang="fr" {...head.htmlAttributes.toComponent() }>
+                // uncomment when TypeScript bug is fixed
+                // res.send(`<!DOCTYPE html>${renderToStaticMarkup(<html lang="fr" {...(head.htmlAttributes.toComponent() as any) }>
+                res.send(`<!DOCTYPE html>${renderToStaticMarkup(<html lang="fr">
                     <head>
                         {head.base.toComponent()}
                         {head.title.toComponent()}
                         {head.meta.toComponent()}
                         {head.link.toComponent()}
-                        <link rel="stylesheet" href="styles.css"/>
+                        <link rel="stylesheet" href="styles.css" />
                     </head>
                     <body>
                         <div id="root" dangerouslySetInnerHTML={{ __html: reactAppElement }}>
@@ -131,17 +132,13 @@ app.get("*", (req: Request, res: Response) => {
 
 // start the app if not in test
 if (process.env.NODE_ENV !== "test") {
-    detect(config.endPoints.client.port, (err: Error, port: number) => {
+    const port: number = process.env.PORT || endPoints.client.port || 3000;
+    const server: Server = createServer(app);
+    server.listen(port, (err: Error) => {
         if (err) {
             throw err;
         }
-        const server: Server = createServer(app);
-        server.listen(port, (err: Error) => {
-            if (err) {
-                throw err;
-            }
-            console.info(`Client server listening on ${port}`);
-        });
+        console.info(`Client server listening on ${port}`);
     });
 }
 

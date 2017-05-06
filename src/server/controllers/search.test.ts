@@ -16,7 +16,7 @@ import GlobalRepository from "../dal/globalRepository";
 import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
 import { cloneDeep, filter, every, includes } from "lodash";
 import * as detect from "detect-port";
-import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 should();
 
 import Category = Ropeho.Models.Category;
@@ -42,7 +42,7 @@ describe("Search controller", () => {
                     includes(uriFriendlyFormat((e as any)[key]), uriFriendlyFormat(val))))));
 
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

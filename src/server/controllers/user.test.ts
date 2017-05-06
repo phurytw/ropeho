@@ -17,6 +17,7 @@ import { Express, Request, Response, NextFunction, RequestHandler } from "expres
 import * as supertest from "supertest";
 import app from "../app";
 import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 import { computeHashSync } from "../accounts/password";
 import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
@@ -112,7 +113,7 @@ describe("User controller", () => {
         reqUser: User;
     before(async () => {
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;

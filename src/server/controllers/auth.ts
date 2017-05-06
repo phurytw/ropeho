@@ -8,10 +8,10 @@ import { Router, Request, Response, NextFunction } from "express-serve-static-co
 import * as express from "express";
 import { authenticate, AuthenticateOptions } from "passport";
 import config from "../../config";
-import { trim } from "lodash";
 import ErrorResponse from "../helpers/errorResponse";
 import { assignCookieToClient } from "../socket";
 import { parse } from "cookie";
+import { ADMIN_END_POINT, CLIENT_END_POINT, API_END_POINT } from "../../common/helpers/resolveEndPoint";
 
 const router: Router = express.Router();
 
@@ -38,25 +38,17 @@ router.post("/", (req: Request, res: Response, next: NextFunction) => {
 });
 
 router.get("/facebook", (req: Request, res: Response, next: NextFunction) => {
-    const baseUrl: string = `${config.endPoints.api.host}:${config.endPoints.api.port}`;
     if (req.query.admin) {
-        authenticate("facebook", { callbackURL: `${baseUrl}/api/auth/facebook?admin=1` } as AuthenticateOptions)(req, res, next);
+        authenticate("facebook", { callbackURL: `${API_END_POINT}/api/auth/facebook?admin=1` } as AuthenticateOptions)(req, res, next);
     } else {
-        authenticate("facebook", { callbackURL: `${baseUrl}/api/auth/facebook` } as AuthenticateOptions)(req, res, next);
+        authenticate("facebook", { callbackURL: `${API_END_POINT}/api/auth/facebook` } as AuthenticateOptions)(req, res, next);
     }
 }, (req: Request, res: Response, next: NextFunction) => {
-    let host: string,
-        port: number,
-        url: string;
     if (req.query.admin) {
-        host = trim(config.endPoints.admin.host, ":");
-        port = config.endPoints.admin.port;
+        res.redirect(ADMIN_END_POINT);
     } else {
-        host = trim(config.endPoints.client.host, ":");
-        port = config.endPoints.client.port;
+        res.redirect(CLIENT_END_POINT);
     }
-    url = port === 80 || port === 443 ? host : `${host}:${port}`;
-    res.redirect(url);
 });
 
 router.post("/logout", (req: Request, res: Response) => {

@@ -168,7 +168,7 @@ export const mediaPreview: <P, S>(WrappedComponent: MediaPreview<P & MediaPrevie
             }
             render(): JSX.Element {
                 return <div ref={this.setElement} className={mediaPreviewWrapper}>
-                    <WrappedComponent {...this.state} {...this.props } setDimensions={this.setDimensions} setScale={this.setScale} shouldFit={this.shouldFit} />
+                    <WrappedComponent {...this.state} {...(this.props as any)} setDimensions={this.setDimensions} setScale={this.setScale} shouldFit={this.shouldFit} />
                 </div>;
             }
         };

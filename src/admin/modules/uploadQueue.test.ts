@@ -22,11 +22,10 @@ describe("Transfer queue modoule", () => {
         mediaId: productions[0].background._id,
         sourceId: productions[0].background.sources[0]._id
     };
-    const data: ArrayBuffer = new ArrayBuffer(100);
     const item: UploadEntry = {
         id: v4(),
         bytesSent: 0,
-        data,
+        max: 0,
         target,
         active: true,
         objectURL: ""

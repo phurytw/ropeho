@@ -20,6 +20,7 @@ import { computeHashSync } from "../accounts/password";
 import { computeToken } from "../accounts/token";
 import { Roles } from "../../enum";
 import config from "../../config";
+import { endPoints } from "../../common/helpers/resolveEndPoint";
 import GenericRepository from "../dal/genericRepository";
 import * as passport from "passport";
 import uriFriendlyFormat from "../../common/helpers/uriFriendlyFormat";
@@ -70,7 +71,7 @@ describe("Auth controller", () => {
         reqUser: User = undefined;
     before(async () => {
         // Setting up the server
-        port = await detect(config.endPoints.api.port);
+        port = await detect(endPoints.api.port);
         await new Promise<void>((resolve: () => void, reject: (reason?: any) => void) => {
             middleware = (req: Request, res: Response, next: NextFunction) => {
                 req.user = reqUser;
@@ -173,7 +174,7 @@ describe("Auth controller", () => {
             .callsFake(() => (req: Request, res: Response, next: NextFunction) => next());
         const response: supertest.Response = await agent.get("/api/auth/facebook?admin=1");
         response.should.have.property("status", 302);
-        response.should.have.property("header").with.property("location").that.contains(config.endPoints.admin.host);
+        response.should.have.property("header").with.property("location").that.contains(endPoints.admin.host);
         authenticateStub.restore();
     });
     it("Should redirect to client homepage when Facebook Authentication is successful", async () => {
@@ -182,7 +183,7 @@ describe("Auth controller", () => {
             .callsFake(() => (req: Request, res: Response, next: NextFunction) => next());
         const response: supertest.Response = await agent.get("/api/auth/facebook");
         response.should.have.property("status", 302);
-        response.should.have.property("header").with.property("location").that.contains(config.endPoints.client.host);
+        response.should.have.property("header").with.property("location").that.contains(endPoints.client.host);
         authenticateStub.restore();
     });
     it("Should authenticate the user in the socket server from a cookie", async () => {

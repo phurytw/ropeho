@@ -1,0 +1,66 @@
+version: "2"
+
+services:
+  nginx:
+    build: ./docker/nginx
+    ports:
+     - 80:80
+     - 443:443
+    links:
+     - api
+     - client
+     - admin
+  redis:
+    image: redis:3.0
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+    ports:
+     - 8000:8000
+    environment:
+      NODE_ENV: production
+      REDIS_ADDR: redis
+      REDIS_PORT: 6379
+      API_ADDR: http://localhost
+      CLIENT_ADDR: http://localhost
+      ADMIN_ADDR: http://localhost
+      API_PORT: 8000
+      CLIENT_PORT: 3000
+      ADMIN_PORT: 3010
+    links:
+     - redis
+    volumes:
+     - /home/node/app
+  client:
+    build:
+      context: .
+      dockerfile: ./docker/client/Dockerfile
+    environment:
+      NODE_ENV: production
+      API_ADDR: http://api
+      CLIENT_ADDR: http://client
+      API_PORT: 8000
+      CLIENT_PORT: 3000
+    ports:
+     - 3000:3000
+    links:
+     - api
+    volumes:
+     - /home/node/app
+  admin:
+    build:
+      context: .
+      dockerfile: ./docker/admin/Dockerfile
+    environment:
+      NODE_ENV: production
+      API_ADDR: http://api
+      ADMIN_ADDR: http://admin
+      API_PORT: 8000
+      ADMIN_PORT: 3010
+    ports:
+     - 3010:3010
+    links:
+     - api
+    volumes:
+     - /home/node/app

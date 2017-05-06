@@ -325,7 +325,7 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
         }
     }
     render(): JSX.Element {
-        const { production, selectedSource, sources, setError, selectedMedia, updateMedia, setSourcePosition, setFile, updateSource, medias, setMediaPosition }: ProductionEditProps = this.props;
+        const { production, selectedSource, sources, setError, selectedMedia, updateMedia, setSourcePosition, setFile, updateSource, medias, setMediaPosition, setProduction }: ProductionEditProps = this.props;
         const { tab, promptSave, promptDelete }: ProductionEditState = this.state;
         // tslint:disable:react-this-binding-issue
         // server side redirections
@@ -344,7 +344,7 @@ export class ProductionEdit extends React.Component<ProductionEditProps, Product
             </section>
             <Tabs index={tab} onChange={this.setTab}>
                 <Tab label="Production" onClick={this.navigateTo.bind(this, `/productions/${production._id}`)}>
-                    <ProductionEditMetaData {...this.props} />
+                    <ProductionEditMetaData production={production} setProduction={setProduction} />
                 </Tab>
                 <Tab label="Bannière" onClick={this.navigateTo.bind(this, `/productions/${production._id}/banniere`)}>
                     <Route

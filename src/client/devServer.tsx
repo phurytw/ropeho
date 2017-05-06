@@ -5,7 +5,7 @@
 /// <reference path="typings.d.ts" />
 import * as express from "express";
 import { Express } from "express-serve-static-core";
-import config from "../config";
+import { endPoints } from "../common/helpers/resolveEndPoint";
 import * as webpackDevMiddleware from "webpack-dev-middleware";
 import * as webpackHotMiddleware from "webpack-hot-middleware";
 import * as webpack from "webpack";
@@ -17,7 +17,7 @@ const app: Express = express();
 // tslint:disable:no-http-string
 
 if (process.env.NODE_ENV !== "production") {
-    const port: number = config.endPoints.clientDevServer.port;
+    const port: number = endPoints.clientDevServer.port;
     const webpackConfig: Configuration = clientConfig(process.env.NODE_ENV);
 
     // add hot middleware to the config with the correct port

@@ -1,0 +1,10 @@
+sites-available/*
+!sites-available/default.conf
+!sites-available/nginx.boilerplate.conf
+sites-enabled/*
+!sites-enabled/default.conf
+!sites-enabled/nginx.boilerplate.conf
+certs/*
+!certs/
+.idea
+.DS_Store

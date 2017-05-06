@@ -8,6 +8,8 @@ import { stub, spy } from "sinon";
 import * as sinonChai from "sinon-chai";
 import * as React from "react";
 import { shallow, ShallowWrapper, mount, ReactWrapper } from "enzyme";
+import hook from "../../helpers/cssModulesHook";
+hook();
 import { MediaPreviewCoreProps, default as mediaPreview, MediaPreviewCore } from "./MediaPreviewCore";
 should();
 use(sinonChai);

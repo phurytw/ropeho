@@ -28,4 +28,3 @@
 /// <reference types="redis" />
 /// <reference types="deep-freeze" />
 /// <reference types="cookie-signature" />
-/// <reference path="../definitions/detect-port/index.d.ts" />
